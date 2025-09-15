@@ -82,7 +82,7 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, isLoading, onDelete, onSta
               </TableCell>
               <TableCell>
                 <Badge variant="outline" className="text-xs">
-                  {task.weight}%
+                  {task.weight}
                 </Badge>
               </TableCell>
               <TableCell>

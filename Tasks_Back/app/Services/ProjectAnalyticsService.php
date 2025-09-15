@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class ProjectAnalyticsService
 {
-    public function getProjectHealthSummary(?Carbon $startDate = null, ?Carbon $endDate = null): array
+    public function getProjectHealthSummary(?Carbon $startDate = null, ?Carbon $endDate = null)
     {
         return [
             'total_projects' => $this->getTotalProjectsCount($startDate, $endDate),
@@ -19,7 +19,7 @@ class ProjectAnalyticsService
         ];
     }
 
-    public function getDetailedProjectAnalytics(?int $projectId = null, ?Carbon $startDate = null, ?Carbon $endDate = null): array
+    public function getDetailedProjectAnalytics(?int $projectId = null, ?Carbon $startDate = null, ?Carbon $endDate = null)
     {
         if ($projectId) {
             return $this->getSingleProjectAnalytics($projectId, $startDate, $endDate);
@@ -32,7 +32,7 @@ class ProjectAnalyticsService
         ];
     }
 
-    private function getSingleProjectAnalytics(int $projectId, ?Carbon $startDate, ?Carbon $endDate): array
+    private function getSingleProjectAnalytics(int $projectId, ?Carbon $startDate, ?Carbon $endDate)
     {
         return [
             'project_id' => $projectId,
@@ -45,7 +45,7 @@ class ProjectAnalyticsService
         ];
     }
 
-    private function getProjectBasicInfo(int $projectId): array
+    private function getProjectBasicInfo(int $projectId)
     {
         return DB::table('projects as p')
             ->leftJoin('users as u', 'p.stakeholder_id', '=', 'u.id')
@@ -64,7 +64,7 @@ class ProjectAnalyticsService
             ->first() ?: [];
     }
 
-    private function getProjectTaskAnalytics(int $projectId, ?Carbon $startDate, ?Carbon $endDate): array
+    private function getProjectTaskAnalytics(int $projectId, ?Carbon $startDate, ?Carbon $endDate)
     {
         $tasksQuery = DB::table('tasks as t')
             ->join('sections as s', 't.section_id', '=', 's.id')
@@ -88,7 +88,7 @@ class ProjectAnalyticsService
         ];
     }
 
-    private function getProjectRatingAnalytics(int $projectId, ?Carbon $startDate, ?Carbon $endDate): array
+    private function getProjectRatingAnalytics(int $projectId, ?Carbon $startDate, ?Carbon $endDate)
     {
         // Task ratings for this project
         $taskRatingsQuery = DB::table('task_ratings as tr')
@@ -120,7 +120,7 @@ class ProjectAnalyticsService
         ];
     }
 
-    private function getProjectTeamAnalytics(int $projectId, ?Carbon $startDate, ?Carbon $endDate): array
+    private function getProjectTeamAnalytics(int $projectId, ?Carbon $startDate, ?Carbon $endDate)
     {
         // Get users assigned to tasks in this project
         $teamQuery = DB::table('task_user as tu')
@@ -153,7 +153,7 @@ class ProjectAnalyticsService
         ];
     }
 
-    private function getProjectTimelineAnalytics(int $projectId, ?Carbon $startDate, ?Carbon $endDate): array
+    private function getProjectTimelineAnalytics(int $projectId, ?Carbon $startDate, ?Carbon $endDate)
     {
         $project = DB::table('projects')->where('id', $projectId)->first();
         
@@ -175,7 +175,7 @@ class ProjectAnalyticsService
         ];
     }
 
-    private function calculateProjectHealthScore(int $projectId, ?Carbon $startDate, ?Carbon $endDate): array
+    private function calculateProjectHealthScore(int $projectId, ?Carbon $startDate, ?Carbon $endDate)
     {
         $taskAnalytics = $this->getProjectTaskAnalytics($projectId, $startDate, $endDate);
         $ratingAnalytics = $this->getProjectRatingAnalytics($projectId, $startDate, $endDate);

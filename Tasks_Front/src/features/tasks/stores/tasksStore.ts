@@ -2,17 +2,26 @@ import { create } from 'zustand'
 import { taskService } from '../../../services/taskService'
 import { taskAssignmentService } from '../../../services/taskAssignmentService'
 import { userService } from '../../../services/userService'
+import { toast } from 'sonner'
 import type { Task, CreateTaskRequest, UpdateTaskRequest, UpdateTaskStatusRequest } from '../../../types/Task'
 import type { TaskWithAssignments } from '../../../types/TaskAssignment'
 import type { User } from '../../../types/User'
-import { toast } from 'sonner'
 
 interface TasksState {
-  tasks: Task[]
+  // Section-based tasks
+  tasksBySection: Record<number, Task[]>
+  // Global tasks list for pages that need all tasks
+  allTasks: Task[]
   currentTask: Task | null
   currentTaskWithAssignments: TaskWithAssignments | null
   availableUsers: User[]
-  pagination: {
+  pagination: Record<number, {
+    current_page: number
+    total: number
+    per_page: number
+    last_page: number
+  }>
+  globalPagination: {
     current_page: number
     total: number
     per_page: number
@@ -20,8 +29,9 @@ interface TasksState {
   } | null
   isLoading: boolean
   error: string | null
-  
+
   // Actions
+  fetchAllTasks: (page?: number) => Promise<void> // 🔑 NEW: Fetch all tasks globally
   fetchTasksBySection: (sectionId: number, page?: number) => Promise<void>
   fetchTask: (id: number) => Promise<void>
   fetchTaskWithAssignments: (id: number) => Promise<void>
@@ -35,30 +45,71 @@ interface TasksState {
   updateUserAssignment: (taskId: number, userId: number, percentage: number) => Promise<boolean>
   removeUserFromTask: (taskId: number, userId: number) => Promise<boolean>
   clearCurrentTask: () => void
+  getTasksBySection: (sectionId: number) => Task[]
 }
 
 export const useTasksStore = create<TasksState>((set, get) => ({
-  tasks: [],
+  tasksBySection: {},
+  allTasks: [], // 🔑 NEW: Global tasks array
   currentTask: null,
   currentTaskWithAssignments: null,
   availableUsers: [],
-  pagination: null,
+  pagination: {},
+  globalPagination: null, // 🔑 NEW: Global pagination
   isLoading: false,
   error: null,
+
+  // 🔑 NEW: Fetch all tasks globally
+  fetchAllTasks: async (page = 1) => {
+    set({ isLoading: true, error: null })
+    try {
+      const response = await taskService.getTasks(page) // Use the global getTasks method
+      if (response.success && response.data) {
+        set({
+          allTasks: response.data,
+          globalPagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1
+          },
+          isLoading: false
+        })
+      } else {
+        set({ error: response.message || 'Failed to fetch tasks', isLoading: false })
+        toast.error(response.message || 'Failed to fetch tasks')
+      }
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to fetch tasks'
+      set({ error: errorMessage, isLoading: false })
+      toast.error(errorMessage)
+    }
+  },
 
   fetchTasksBySection: async (sectionId: number, page = 1) => {
     set({ isLoading: true, error: null })
     try {
       const response = await taskService.getTasksBySection(sectionId, page)
-      if (response.success) {
-        set({
-          tasks: response.data,
-          pagination: response.pagination,
+      if (response.success && response.data) {
+        set(state => ({
+          tasksBySection: {
+            ...state.tasksBySection,
+            [sectionId]: response.data
+          },
+          pagination: {
+            ...state.pagination,
+            [sectionId]: response.pagination || {
+              current_page: 1,
+              total: response.data.length,
+              per_page: 15,
+              last_page: 1
+            }
+          },
           isLoading: false
-        })
+        }))
       } else {
-        set({ error: response.message, isLoading: false })
-        toast.error(response.message)
+        set({ error: response.message || 'Failed to fetch tasks', isLoading: false })
+        toast.error(response.message || 'Failed to fetch tasks')
       }
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to fetch tasks'
@@ -71,11 +122,11 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const response = await taskService.getTask(id)
-      if (response.success) {
+      if (response.success && response.data) {
         set({ currentTask: response.data, isLoading: false })
       } else {
-        set({ error: response.message, isLoading: false })
-        toast.error(response.message)
+        set({ error: response.message || 'Failed to fetch task', isLoading: false })
+        toast.error(response.message || 'Failed to fetch task')
       }
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to fetch task'
@@ -85,26 +136,23 @@ export const useTasksStore = create<TasksState>((set, get) => ({
   },
 
   fetchTaskWithAssignments: async (id: number) => {
-    set({ isLoading: true, error: null })
     try {
       const response = await taskAssignmentService.getTaskWithAssignments(id)
-      if (response.success) {
-        set({ currentTaskWithAssignments: response.data, isLoading: false })
+      if (response.success && response.data) {
+        set({ currentTaskWithAssignments: response.data })
       } else {
-        set({ error: response.message, isLoading: false })
-        toast.error(response.message)
+        toast.error(response.message || 'Failed to fetch task assignments')
       }
     } catch (error: any) {
-      const errorMessage = error.message || 'Failed to fetch task with assignments'
-      set({ error: errorMessage, isLoading: false })
-      toast.error(errorMessage)
+      console.error('Failed to fetch task assignments:', error)
+      toast.error(error.message || 'Failed to fetch task assignments')
     }
   },
 
   fetchAvailableUsers: async () => {
     try {
       const response = await userService.getUsers(1, 100)
-      if (response.success) {
+      if (response.success && response.data) {
         set({ availableUsers: response.data })
       }
     } catch (error: any) {
@@ -116,13 +164,27 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const response = await taskService.createTask(data)
-      if (response.success) {
-        set({ isLoading: false })
+      if (response.success && response.data) {
+        const newTask = response.data
+        const sectionId = newTask.section_id
+        
+        // Update both section-specific and global task lists
+        set(state => ({
+          tasksBySection: {
+            ...state.tasksBySection,
+            [sectionId]: state.tasksBySection[sectionId] 
+              ? [newTask, ...state.tasksBySection[sectionId]]
+              : [newTask]
+          },
+          allTasks: [newTask, ...state.allTasks], // 🔑 Also update global list
+          isLoading: false
+        }))
+        
         toast.success('Task created successfully')
-        return response.data
+        return newTask
       } else {
-        set({ error: response.message, isLoading: false })
-        toast.error(response.message)
+        set({ error: response.message || 'Failed to create task', isLoading: false })
+        toast.error(response.message || 'Failed to create task')
         return null
       }
     } catch (error: any) {
@@ -137,13 +199,30 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const response = await taskService.updateTask(id, data)
-      if (response.success) {
-        set({ currentTask: response.data, isLoading: false })
+      if (response.success && response.data) {
+        const updatedTask = response.data
+        const sectionId = updatedTask.section_id
+        
+        // Update both section-specific and global task lists
+        set(state => ({
+          tasksBySection: {
+            ...state.tasksBySection,
+            [sectionId]: state.tasksBySection[sectionId]?.map(task =>
+              task.id === id ? updatedTask : task
+            ) || [updatedTask]
+          },
+          allTasks: state.allTasks.map(task => // 🔑 Also update global list
+            task.id === id ? updatedTask : task
+          ),
+          currentTask: state.currentTask?.id === id ? updatedTask : state.currentTask,
+          isLoading: false
+        }))
+        
         toast.success('Task updated successfully')
-        return response.data
+        return updatedTask
       } else {
-        set({ error: response.message, isLoading: false })
-        toast.error(response.message)
+        set({ error: response.message || 'Failed to update task', isLoading: false })
+        toast.error(response.message || 'Failed to update task')
         return null
       }
     } catch (error: any) {
@@ -157,15 +236,28 @@ export const useTasksStore = create<TasksState>((set, get) => ({
   updateTaskStatus: async (id: number, data: UpdateTaskStatusRequest) => {
     try {
       const response = await taskService.updateTaskStatus(id, data)
-      if (response.success) {
+      if (response.success && response.data) {
+        const updatedTask = response.data
+        const sectionId = updatedTask.section_id
+        
+        // Update both section-specific and global task lists
+        set(state => ({
+          tasksBySection: {
+            ...state.tasksBySection,
+            [sectionId]: state.tasksBySection[sectionId]?.map(task =>
+              task.id === id ? updatedTask : task
+            ) || [updatedTask]
+          },
+          allTasks: state.allTasks.map(task => // 🔑 Also update global list
+            task.id === id ? updatedTask : task
+          ),
+          currentTask: state.currentTask?.id === id ? updatedTask : state.currentTask,
+        }))
+        
         toast.success('Task status updated')
-        // Refresh current task if it's the one being updated
-        if (get().currentTask?.id === id) {
-          set({ currentTask: response.data })
-        }
-        return response.data
+        return updatedTask
       } else {
-        toast.error(response.message)
+        toast.error(response.message || 'Failed to update task status')
         return null
       }
     } catch (error: any) {
@@ -179,12 +271,28 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     try {
       const response = await taskService.deleteTask(id)
       if (response.success) {
-        set({ isLoading: false })
+        // Remove from both section-specific and global task lists
+        set(state => {
+          const newTasksBySection = { ...state.tasksBySection }
+          Object.keys(newTasksBySection).forEach(sectionId => {
+            newTasksBySection[parseInt(sectionId)] = newTasksBySection[parseInt(sectionId)]?.filter(
+              task => task.id !== id
+            ) || []
+          })
+          
+          return {
+            tasksBySection: newTasksBySection,
+            allTasks: state.allTasks.filter(task => task.id !== id), // 🔑 Also remove from global list
+            currentTask: state.currentTask?.id === id ? null : state.currentTask,
+            isLoading: false
+          }
+        })
+        
         toast.success('Task deleted successfully')
         return true
       } else {
-        set({ error: response.message, isLoading: false })
-        toast.error(response.message)
+        set({ error: response.message || 'Failed to delete task', isLoading: false })
+        toast.error(response.message || 'Failed to delete task')
         return false
       }
     } catch (error: any) {
@@ -195,16 +303,17 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     }
   },
 
+  // ... rest of the assignment methods remain the same
+
   assignUsersToTask: async (taskId: number, assignments: { user_id: number; percentage: number }[]) => {
     try {
       const response = await taskAssignmentService.assignUsersToTask(taskId, { assignments })
       if (response.success) {
         toast.success('Users assigned to task successfully')
-        // Refresh task with assignments
         get().fetchTaskWithAssignments(taskId)
         return true
       } else {
-        toast.error(response.message)
+        toast.error(response.message || 'Failed to assign users to task')
         return false
       }
     } catch (error: any) {
@@ -218,11 +327,10 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       const response = await taskAssignmentService.addUserToTask(taskId, { user_id: userId, percentage })
       if (response.success) {
         toast.success('User added to task successfully')
-        // Refresh task with assignments
         get().fetchTaskWithAssignments(taskId)
         return true
       } else {
-        toast.error(response.message)
+        toast.error(response.message || 'Failed to add user to task')
         return false
       }
     } catch (error: any) {
@@ -236,11 +344,10 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       const response = await taskAssignmentService.updateUserAssignment(taskId, userId, { percentage })
       if (response.success) {
         toast.success('User assignment updated')
-        // Refresh task with assignments
         get().fetchTaskWithAssignments(taskId)
         return true
       } else {
-        toast.error(response.message)
+        toast.error(response.message || 'Failed to update user assignment')
         return false
       }
     } catch (error: any) {
@@ -254,11 +361,10 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       const response = await taskAssignmentService.removeUserFromTask(taskId, userId)
       if (response.success) {
         toast.success('User removed from task')
-        // Refresh task with assignments
         get().fetchTaskWithAssignments(taskId)
         return true
       } else {
-        toast.error(response.message)
+        toast.error(response.message || 'Failed to remove user from task')
         return false
       }
     } catch (error: any) {
@@ -271,5 +377,9 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     currentTask: null, 
     currentTaskWithAssignments: null, 
     error: null 
-  })
+  }),
+
+  getTasksBySection: (sectionId: number) => {
+    return get().tasksBySection[sectionId] || []
+  }
 }))

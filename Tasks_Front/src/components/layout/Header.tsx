@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { useSidebarStore } from '../../stores/sidebarStore'
 import { useAuthStore } from '../../features/auth/stores/authStore'
 import { useAuth } from '../../features/auth/hooks/useAuth'
-import { Menu, Search, Bell, User } from 'lucide-react'
+import { Menu, Search, User } from 'lucide-react'
 
 const Header: React.FC = () => {
   const { toggleSidebar } = useSidebarStore()
@@ -45,13 +45,6 @@ const Header: React.FC = () => {
 
         {/* Right side */}
         <div className="flex items-center space-x-4">
-          {/* Notifications */}
-          <Button variant="ghost" size="sm" className="p-2 relative hover:bg-accent">
-            <Bell className="w-5 h-5 text-foreground" />
-            <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              3
-            </span>
-          </Button>
 
           {/* User Menu */}
           <DropdownMenu>

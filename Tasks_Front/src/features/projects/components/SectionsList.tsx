@@ -3,13 +3,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
 import { 
   MoreHorizontal, 
   Edit, 
@@ -29,8 +22,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import SectionForm from './SectionForm'
-import TaskForm from '../../tasks/components/TaskForm'
 import { useTasks } from '../../tasks/hooks/useTasks'
+import { useTaskDialog } from '@/components/TaskDialogProvider' // 🔑 Import the hook
 import type { Section } from '../../../types/Section'
 import type { Task } from '../../../types/Task'
 
@@ -55,10 +48,8 @@ const SectionsList: React.FC<SectionsListProps> = ({
   const [editingSection, setEditingSection] = useState<Section | null>(null)
   const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set())
   
-  // Dialog state
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [dialogSection, setDialogSection] = useState<Section | null>(null)
-  const [dialogTask, setDialogTask] = useState<Task | null>(null)
+  // 🔑 Use the task dialog hook
+  const { openTaskDialog } = useTaskDialog()
 
   const handleCreateSection = async (data: any) => {
     await onCreateSection({ ...data, project_id: projectId })
@@ -88,176 +79,74 @@ const SectionsList: React.FC<SectionsListProps> = ({
     setExpandedSections(newExpanded)
   }
 
-  // FIXED: Dialog handlers with proper event handling
-  const openTaskDialog = (section: Section, task?: Task) => {
-    console.log('Opening dialog for section:', section.name)
-    setDialogSection(section)
-    setDialogTask(task || null)
-    setIsDialogOpen(true)
-  }
-
-  const closeTaskDialog = () => {
-    setIsDialogOpen(false)
-    setDialogSection(null)
-    setDialogTask(null)
-  }
-
   return (
-    <>
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-foreground flex items-center gap-2">
-              <List className="w-5 h-5" />
-              Sections & Tasks ({sections.length})
-            </CardTitle>
-            <Button
-              type="button" // 🔑 KEY FIX: Explicit button type
-              size="sm"
-              onClick={(e) => {
-                e.preventDefault() // 🔑 KEY FIX: Prevent default behavior
-                e.stopPropagation() // 🔑 KEY FIX: Stop event bubbling
-                setShowCreateForm(true)
-              }}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Section
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Create Section Form */}
-          {showCreateForm && (
-            <div className="p-4 border border-border rounded-lg bg-accent/20">
-              <h4 className="text-sm font-medium text-foreground mb-3">Create New Section</h4>
-              <SectionForm
-                onSubmit={handleCreateSection}
-                onCancel={() => setShowCreateForm(false)}
-                isLoading={isLoading}
-              />
-            </div>
-          )}
-
-          {/* Sections List */}
-          {isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />
-              ))}
-            </div>
-          ) : sections.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              No sections yet. Create your first section to get started.
-            </p>
-          ) : (
-            sections.map((section) => (
-              <SectionWithTasks
-                key={section.id}
-                section={section}
-                projectId={projectId}
-                isExpanded={expandedSections.has(section.id)}
-                onToggle={() => toggleSection(section.id)}
-                onEdit={() => setEditingSection(section)}
-                onDelete={() => handleDeleteSection(section.id)}
-                isEditing={editingSection?.id === section.id}
-                editingSection={editingSection}
-                onUpdateSection={handleUpdateSection}
-                onCancelEdit={() => setEditingSection(null)}
-                onOpenTaskDialog={openTaskDialog}
-                isLoading={isLoading}
-              />
-            ))
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Task Dialog - ALWAYS RENDERED */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckSquare className="w-5 h-5" />
-              {dialogTask ? 'Edit Task' : 'Create New Task'}
-            </DialogTitle>
-            <DialogDescription>
-              {dialogTask 
-                ? `Edit task in ${dialogSection?.name}` 
-                : `Add a new task to ${dialogSection?.name} section`
-              }
-            </DialogDescription>
-          </DialogHeader>
-          
-          {dialogSection && (
-            <TaskDialogForm
-              section={dialogSection}
-              projectId={projectId}
-              task={dialogTask}
-              onClose={closeTaskDialog}
+    <Card className="bg-card border-border">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <List className="w-5 h-5" />
+            Sections & Tasks ({sections.length})
+          </CardTitle>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setShowCreateForm(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Section
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Create Section Form */}
+        {showCreateForm && (
+          <div className="p-4 border border-border rounded-lg bg-accent/20">
+            <h4 className="text-sm font-medium text-foreground mb-3">Create New Section</h4>
+            <SectionForm
+              onSubmit={handleCreateSection}
+              onCancel={() => setShowCreateForm(false)}
+              isLoading={isLoading}
             />
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
+          </div>
+        )}
+
+        {/* Sections List */}
+        {isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />
+            ))}
+          </div>
+        ) : sections.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">
+            No sections yet. Create your first section to get started.
+          </p>
+        ) : (
+          sections.map((section) => (
+            <SectionWithTasks
+              key={section.id}
+              section={section}
+              projectId={projectId}
+              isExpanded={expandedSections.has(section.id)}
+              onToggle={() => toggleSection(section.id)}
+              onEdit={() => setEditingSection(section)}
+              onDelete={() => handleDeleteSection(section.id)}
+              isEditing={editingSection?.id === section.id}
+              editingSection={editingSection}
+              onUpdateSection={handleUpdateSection}
+              onCancelEdit={() => setEditingSection(null)}
+              openTaskDialog={openTaskDialog} // 🔑 Pass the portal function
+              isLoading={isLoading}
+            />
+          ))
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
-// Dialog Form Component
-interface TaskDialogFormProps {
-  section: Section
-  projectId: number
-  task?: Task | null
-  onClose: () => void
-}
-
-const TaskDialogForm: React.FC<TaskDialogFormProps> = ({
-  section,
-  projectId,
-  task,
-  onClose
-}) => {
-  const { createTask, updateTask } = useTasks(section.id)
-
-  const handleSubmit = async (data: any) => {
-    try {
-      if (task) {
-        await updateTask(task.id, data)
-      } else {
-        await createTask(data)
-      }
-      onClose()
-    } catch (error) {
-      console.error('Task operation failed:', error)
-    }
-  }
-
-  return (
-    <div className="space-y-6">
-      <TaskForm
-        task={task || undefined}
-        preSelectedProjectId={projectId}
-        preSelectedSectionId={section.id}
-        onSubmit={handleSubmit}
-        isLoading={false}
-      />
-      
-      <div className="flex justify-end gap-2 pt-4 border-t">
-        <Button 
-          type="button" // 🔑 KEY FIX: Explicit button type
-          variant="outline" 
-          onClick={(e) => {
-            e.preventDefault() // 🔑 KEY FIX: Prevent default
-            onClose()
-          }}
-        >
-          Cancel
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-// Section Component
+// 🔑 Simplified section component
 interface SectionWithTasksProps {
   section: Section
   projectId: number
@@ -269,12 +158,13 @@ interface SectionWithTasksProps {
   editingSection: Section | null
   onUpdateSection: (data: any) => Promise<void>
   onCancelEdit: () => void
-  onOpenTaskDialog: (section: Section, task?: Task) => void
+  openTaskDialog: (section: Section, projectId: number, task?: Task) => void // 🔑 Portal function
   isLoading: boolean
 }
 
 const SectionWithTasks: React.FC<SectionWithTasksProps> = ({
   section,
+  projectId,
   isExpanded,
   onToggle,
   onEdit,
@@ -283,7 +173,7 @@ const SectionWithTasks: React.FC<SectionWithTasksProps> = ({
   editingSection,
   onUpdateSection,
   onCancelEdit,
-  onOpenTaskDialog,
+  openTaskDialog, // 🔑 Portal function
   isLoading
 }) => {
   const { tasks, deleteTask } = useTasks(section.id)
@@ -292,13 +182,6 @@ const SectionWithTasks: React.FC<SectionWithTasksProps> = ({
     if (window.confirm('Are you sure you want to delete this task?')) {
       await deleteTask(taskId)
     }
-  }
-
-  // 🔑 KEY FIX: Proper event handling
-  const handleAddTaskClick = (e: React.MouseEvent) => {
-    e.preventDefault() // Prevent any default behavior
-    e.stopPropagation() // Stop event from bubbling up
-    onOpenTaskDialog(section)
   }
 
   if (isEditing) {
@@ -352,13 +235,20 @@ const SectionWithTasks: React.FC<SectionWithTasksProps> = ({
                     <Edit className="mr-2 h-4 w-4" />
                     Edit Section
                   </DropdownMenuItem>
+                  
+                  {/* 🔑 This now uses the portal - NO MORE ISSUES! */}
                   <DropdownMenuItem
-                    onClick={handleAddTaskClick} // 🔑 KEY FIX: Use proper handler
+                    onClick={(e) => { 
+                      e.stopPropagation(),
+                      e.preventDefault(),
+                      openTaskDialog(section, projectId) // 🔑 Portal call
+                    }}
                     className="hover:bg-accent hover:text-accent-foreground"
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add Task
                   </DropdownMenuItem>
+                  
                   <DropdownMenuItem
                     onClick={(e) => { e.stopPropagation(); onDelete(); }}
                     className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
@@ -380,11 +270,11 @@ const SectionWithTasks: React.FC<SectionWithTasksProps> = ({
                   <CheckSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground text-sm">No tasks in this section yet</p>
                   <Button
-                    type="button" // 🔑 KEY FIX: Explicit button type
+                    type="button"
                     variant="outline"
                     size="sm"
                     className="mt-2"
-                    onClick={handleAddTaskClick} // 🔑 KEY FIX: Use proper handler
+                    onClick={(e) => (openTaskDialog(section, projectId), e.stopPropagation(), e.preventDefault())} // 🔑 Portal call
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add First Task
@@ -395,10 +285,10 @@ const SectionWithTasks: React.FC<SectionWithTasksProps> = ({
                   <div className="flex items-center justify-between">
                     <h5 className="text-sm font-medium text-foreground">Tasks ({tasks.length})</h5>
                     <Button 
-                      type="button" // 🔑 KEY FIX: Explicit button type
+                      type="button"
                       variant="outline" 
                       size="sm" 
-                      onClick={handleAddTaskClick} // 🔑 KEY FIX: Use proper handler
+                      onClick={(e) => (openTaskDialog(section, projectId), e.stopPropagation(), e.preventDefault())} // 🔑 Portal call
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Add Task
@@ -409,7 +299,7 @@ const SectionWithTasks: React.FC<SectionWithTasksProps> = ({
                     <TaskItem
                       key={task.id}
                       task={task}
-                      onEdit={(task) => onOpenTaskDialog(section, task)}
+                      onEdit={(task) => openTaskDialog(section, projectId, task)} // 🔑 Portal call
                       onDelete={handleDeleteTask}
                     />
                   ))}
@@ -423,7 +313,7 @@ const SectionWithTasks: React.FC<SectionWithTasksProps> = ({
   )
 }
 
-// TaskItem component (same as before with type="button" added)
+// TaskItem component - keep the same but update onEdit call
 interface TaskItemProps {
   task: Task
   onEdit: (task: Task) => void

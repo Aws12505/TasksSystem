@@ -57,6 +57,7 @@ interface TaskFormProps {
   preSelectedSectionId?: number
   onSubmit: (data: CreateTaskRequest | UpdateTaskRequest) => Promise<void>
   isLoading: boolean
+  sectionId?: number
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({ 

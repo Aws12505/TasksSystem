@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Enums\HelpRequestRating;
 
 class FormulaEvaluatorService
 {
@@ -152,6 +153,11 @@ class FormulaEvaluatorService
         $operation = $variable['operation'] ?? 'avg';
         $conditions = $variable['conditions'] ?? [];
 
+        // ✅ Special handling for HelpRequest dual scoping
+        if ($model === 'HelpRequest') {
+            return $this->getHelpRequestValue($variable, $userId, $periodStart, $periodEnd);
+        }
+
         $modelClass = "App\\Models\\{$model}";
         
         if (!class_exists($modelClass)) {
@@ -193,8 +199,121 @@ class FormulaEvaluatorService
         return floatval($result);
     }
 
+    // ✅ NEW: Special HelpRequest handling based on column/operation
+    private function getHelpRequestValue(array $variable, int $userId, Carbon $periodStart, Carbon $periodEnd): float
+    {
+        $column = $variable['column'];
+        $operation = $variable['operation'] ?? 'count';
+        $conditions = $variable['conditions'] ?? [];
+
+        $query = DB::table('help_requests')
+            ->whereBetween('created_at', [$periodStart, $periodEnd])
+            ->where('is_completed', true);
+
+        // Apply additional conditions
+        foreach ($conditions as $condition) {
+            $query->where($condition['column'], $condition['operator'], $condition['value']);
+        }
+
+        $result = 0;
+        $scopeType = '';
+
+        // ✅ Determine scoping based on column and operation
+        if ($column === 'rating' || $this->isPenaltyOperation($operation, $column)) {
+            // PENALTY SCOPE: Affects the requester negatively
+            $helpRequests = $query->where('requester_id', $userId)->get();
+            
+            if ($operation === 'count') {
+                // Count of help requests needed (negative indicator)
+                $result = count($helpRequests);
+                $scopeType = 'requester_count';
+            } else {
+                // Calculate penalty from ratings
+                $penaltySum = 0.0;
+                foreach ($helpRequests as $helpRequest) {
+                    if ($helpRequest->rating) {
+                        $ratingEnum = HelpRequestRating::tryFrom($helpRequest->rating);
+                        if ($ratingEnum) {
+                            $penaltySum += $ratingEnum->getPenaltyMultiplier();
+                        }
+                    }
+                }
+                
+                $result = match($operation) {
+                    'sum' => $penaltySum,
+                    'avg' => count($helpRequests) > 0 ? $penaltySum / count($helpRequests) : 0,
+                    default => $penaltySum
+                };
+                $scopeType = 'requester_penalty';
+            }
+
+            $this->calculationSteps[] = [
+                'variable' => $variable['name'],
+                'model' => 'HelpRequest',
+                'column' => $column,
+                'operation' => $operation,
+                'scope' => 'requester',
+                'scope_type' => $scopeType,
+                'result' => $result,
+                'description' => 'Penalty/negative impact for help requester',
+                'type' => 'help_request_requester_calculation'
+            ];
+
+        } else {
+            // HELPER SCOPE: Affects the helper positively
+            $query->where('helper_id', $userId);
+
+            $result = match($operation) {
+                'count' => $query->count(),
+                'sum' => $query->sum($column),
+                'avg' => $query->avg($column) ?? 0,
+                'min' => $query->min($column) ?? 0,
+                'max' => $query->max($column) ?? 0,
+                default => $query->count()
+            };
+            $scopeType = 'helper_positive';
+
+            $this->calculationSteps[] = [
+                'variable' => $variable['name'],
+                'model' => 'HelpRequest',
+                'column' => $column,
+                'operation' => $operation,
+                'scope' => 'helper',
+                'scope_type' => $scopeType,
+                'result' => $result,
+                'description' => 'Positive impact for help provider',
+                'type' => 'help_request_helper_calculation'
+            ];
+        }
+
+        return floatval($result);
+    }
+
+    // ✅ Helper method to determine if operation/column is penalty-related
+    private function isPenaltyOperation(string $operation, string $column): bool
+    {
+        // Check if column name suggests penalty
+        $penaltyColumns = ['rating', 'penalty', 'negative'];
+        
+        foreach ($penaltyColumns as $penaltyCol) {
+            if (str_contains(strtolower($column), $penaltyCol)) {
+                return true;
+            }
+        }
+
+        // Check if operation suggests penalty calculation
+        $penaltyOperations = ['penalty_sum', 'penalty_avg'];
+        
+        return in_array($operation, $penaltyOperations);
+    }
+
     private function applyUserScoping($query, string $modelClass, int $userId): void
     {
+        // Skip HelpRequest scoping here - handled in getHelpRequestValue
+        if ($modelClass === 'App\\Models\\HelpRequest') {
+            return;
+        }
+
         // Automatically scope data to the user based on model structure
         if (method_exists($modelClass, 'getFillable')) {
             $fillable = (new $modelClass)->getFillable();
@@ -207,10 +326,7 @@ class FormulaEvaluatorService
                 $query->where('stakeholder_id', $userId);
             } elseif (in_array('assigned_to', $fillable)) {
                 $query->where('assigned_to', $userId);
-            } elseif (in_array('helper_id', $fillable)) {
-                $query->where('helper_id', $userId);
             }
-            // Add more scoping rules as needed for your models
         }
     }
 

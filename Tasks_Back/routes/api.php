@@ -83,10 +83,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('sections/{sectionId}/tasks-with-assignments', [ProjectAssignmentController::class, 'getSectionTasksWithAssignments']);
 
     // ==================== HELP REQUESTS ====================
+    Route::get('help-requests/available', [HelpRequestController::class, 'available']);
     Route::apiResource('help-requests', HelpRequestController::class);
     
     // Help request specific actions
-    Route::get('help-requests/available', [HelpRequestController::class, 'available']);
     Route::post('help-requests/{id}/claim', [HelpRequestController::class, 'claim']);
     Route::post('help-requests/{id}/assign/{userId}', [HelpRequestController::class, 'assign']);
     Route::post('help-requests/{id}/complete', [HelpRequestController::class, 'complete']);
@@ -100,10 +100,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('users/{userId}/help-requests/helping', [HelpRequestController::class, 'getByHelper']);
 
         // ==================== TICKETS ====================
+    Route::get('tickets/available', [TicketController::class, 'available']);
     Route::apiResource('tickets', TicketController::class);
     
     // Ticket specific actions
-    Route::get('tickets/available', [TicketController::class, 'available']);
     Route::get('tickets/status/{status}', [TicketController::class, 'getByStatus']);
     Route::get('tickets/type/{type}', [TicketController::class, 'getByType']);
     Route::post('tickets/{id}/claim', [TicketController::class, 'claim']);

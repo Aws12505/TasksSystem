@@ -42,3 +42,4 @@ export interface UpdateTaskRequest {
 export interface UpdateTaskStatusRequest {
   status: TaskStatus;
 }
+

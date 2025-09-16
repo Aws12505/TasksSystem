@@ -32,7 +32,54 @@ import type {
   FinalRatingConfigData,
 } from '../../../types/RatingConfig'
 
-// Fixed Zod schemas
+// ✅ Model-to-columns mapping based on your actual database schema
+const MODEL_COLUMNS = {
+  TaskRating: [
+    'task_id',
+    'rater_id', 
+    'rating_data',
+    'final_rating',
+    'config_snapshot',
+    'rated_at',
+    'created_at',
+    'updated_at'
+  ],
+  StakeholderRating: [
+    'project_id',
+    'stakeholder_id',
+    'rating_data', 
+    'final_rating',
+    'config_snapshot',
+    'rated_at',
+    'created_at',
+    'updated_at'
+  ],
+  Ticket: [
+    'title',
+    'description',
+    'status',
+    'type', 
+    'priority',
+    'requester_id',
+    'assigned_to',
+    'completed_at',
+    'created_at',
+    'updated_at'
+  ],
+  HelpRequest: [
+    'description',
+    'task_id',
+    'requester_id',
+    'helper_id',
+    'rating',
+    'is_completed', 
+    'completed_at',
+    'created_at',
+    'updated_at'
+  ]
+}
+
+// Base field schemas
 const ratingFieldSchema = z.object({
   name: z.string().min(1, 'Field name is required'),
   max_value: z.number().min(1, 'Max value must be at least 1'),
@@ -50,19 +97,31 @@ const formulaVariableSchema = z.object({
   })).optional(),
 })
 
-// Fixed main schema - all fields properly optional
-const createRatingConfigSchema = z.object({
+// Task/Stakeholder rating schema
+const taskStakeholderSchema = z.object({
+  type: z.union([z.literal('task_rating'), z.literal('stakeholder_rating')]),
   name: z.string().min(1, 'Name is required').max(255),
   description: z.string().optional(),
-  type: z.enum(['task_rating', 'stakeholder_rating', 'final_rating']),
-  is_active: z.boolean().optional(),
-  fields: z.array(ratingFieldSchema).optional(),
-  expression: z.string().optional(),
-  variables: z.array(formulaVariableSchema).optional(),
+  is_active: z.boolean(),
+  fields: z.array(ratingFieldSchema).min(1, 'At least one field is required'),
 })
 
-// Infer the form type from schema
-type FormData = z.infer<typeof createRatingConfigSchema>
+// Final rating schema
+const finalRatingSchema = z.object({
+  type: z.literal('final_rating'),
+  name: z.string().min(1, 'Name is required').max(255),
+  description: z.string().optional(),
+  is_active: z.boolean(),
+  expression: z.string().min(1, 'Expression is required'),
+  variables: z.array(formulaVariableSchema).min(1, 'At least one variable is required'),
+})
+
+const ratingConfigSchema = z.discriminatedUnion('type', [
+  taskStakeholderSchema,
+  finalRatingSchema,
+])
+
+type FormData = z.infer<typeof ratingConfigSchema>
 
 interface RatingConfigFormProps {
   ratingConfig?: RatingConfig
@@ -80,78 +139,90 @@ const RatingConfigForm: React.FC<RatingConfigFormProps> = ({
     ratingConfig?.type || 'task_rating'
   )
 
-  // Fixed getInitialData function with proper typing
-  const getInitialData = (): FormData => {
-    if (!ratingConfig) {
+  const getDefaultValues = (type: RatingConfigType): FormData => {
+    const baseDefaults = {
+      name: ratingConfig?.name || '',
+      description: ratingConfig?.description || '',
+      is_active: ratingConfig?.is_active ?? false,
+    }
+
+    if (type === 'final_rating') {
+      if (ratingConfig && ratingConfig.type === 'final_rating') {
+        const configData = ratingConfig.config_data as FinalRatingConfigData
+        return {
+          type: 'final_rating',
+          ...baseDefaults,
+          expression: configData.expression || '',
+          variables: configData.variables || [{ 
+            name: '', 
+            model: 'TaskRating', 
+            column: 'final_rating', 
+            operation: 'avg' as const,
+            conditions: []
+          }]
+        }
+      }
       return {
-        name: '',
-        description: '',
-        type: 'task_rating',
-        is_active: false,
-        fields: [{ name: '', max_value: 50 }],
+        type: 'final_rating',
+        ...baseDefaults,
         expression: '',
         variables: [{ 
           name: '', 
-          model: '', 
-          column: '', 
-          operation: 'avg',
+          model: 'TaskRating', 
+          column: 'final_rating', 
+          operation: 'avg' as const,
           conditions: []
         }]
       }
-    }
-
-    const baseData = {
-      name: ratingConfig.name,
-      description: ratingConfig.description || '',
-      type: ratingConfig.type,
-      is_active: ratingConfig.is_active,
-    }
-
-    if (ratingConfig.type === 'final_rating') {
-      const configData = ratingConfig.config_data as FinalRatingConfigData
-      return {
-        ...baseData,
-        expression: configData.expression || '',
-        variables: configData.variables || [],
-        fields: []
-      }
     } else {
-      const configData = ratingConfig.config_data as TaskRatingConfigData | StakeholderRatingConfigData
+      if (ratingConfig && ratingConfig.type !== 'final_rating') {
+        const configData = ratingConfig.config_data as TaskRatingConfigData | StakeholderRatingConfigData
+        return {
+          type,
+          ...baseDefaults,
+          fields: configData.fields || [{ name: '', max_value: 50 }]
+        }
+      }
       return {
-        ...baseData,
-        fields: configData.fields || [],
-        expression: '',
-        variables: []
+        type,
+        ...baseDefaults,
+        fields: [{ name: '', max_value: 50 }]
       }
     }
   }
 
   const form = useForm<FormData>({
-    resolver: zodResolver(createRatingConfigSchema),
-    defaultValues: getInitialData(),
+    resolver: zodResolver(ratingConfigSchema),
+    defaultValues: getDefaultValues(selectedType),
+    mode: 'onSubmit',
   })
 
-  const { fields: fieldArrayFields, append: appendField, remove: removeField } = useFieldArray({
+  const fieldsArray = useFieldArray({
     control: form.control,
-    name: 'fields',
+    name: 'fields' as any,
   })
 
-  const { fields: variableArrayFields, append: appendVariable, remove: removeVariable } = useFieldArray({
+  const variablesArray = useFieldArray({
     control: form.control,
-    name: 'variables',
+    name: 'variables' as any,
   })
+
+  // ✅ Watch model changes for each variable to update column options
+  const watchedVariables = form.watch('variables' as any) || []
 
   const handleSubmit = async (data: FormData) => {
+    console.log('✅ Form validation passed, submitting:', data)
+
     let config_data: TaskRatingConfigData | StakeholderRatingConfigData | FinalRatingConfigData
 
     if (data.type === 'final_rating') {
       config_data = {
-        expression: data.expression || '',
-        variables: data.variables || []
+        expression: data.expression,
+        variables: data.variables
       } as FinalRatingConfigData
     } else {
       config_data = {
-        fields: data.fields || []
+        fields: data.fields
       } as TaskRatingConfigData | StakeholderRatingConfigData
     }
 
@@ -167,37 +238,34 @@ const RatingConfigForm: React.FC<RatingConfigFormProps> = ({
   }
 
   const handleTypeChange = (newType: RatingConfigType) => {
+    console.log('🔄 Changing type from', selectedType, 'to', newType)
     setSelectedType(newType)
-    form.setValue('type', newType)
+    const newDefaults = getDefaultValues(newType)
+    form.reset(newDefaults)
+  }
+
+  // ✅ Handle model change and update column options
+  const handleModelChange = (variableIndex: number, newModel: string) => {
+    const availableColumns = MODEL_COLUMNS[newModel as keyof typeof MODEL_COLUMNS] || []
+    const firstColumn = availableColumns[0] || ''
     
-    // Reset type-specific fields
-    if (newType === 'final_rating') {
-      form.setValue('fields', [])
-      if (!form.getValues('expression')) {
-        form.setValue('expression', '')
-      }
-      if (!form.getValues('variables') || form.getValues('variables')?.length === 0) {
-        form.setValue('variables', [{ 
-          name: '', 
-          model: '', 
-          column: '', 
-          operation: 'avg',
-          conditions: []
-        }])
-      }
-    } else {
-      form.setValue('expression', '')
-      form.setValue('variables', [])
-      if (!form.getValues('fields') || form.getValues('fields')?.length === 0) {
-        form.setValue('fields', [{ name: '', max_value: 50 }])
-      }
-    }
+    // Update both model and column values
+    form.setValue(`variables.${variableIndex}.model` as any, newModel)
+    form.setValue(`variables.${variableIndex}.column` as any, firstColumn)
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        {/* Basic Information */}
+      <form 
+        onSubmit={form.handleSubmit(
+          handleSubmit,
+          (errors) => {
+            console.log('❌ Form validation errors:', errors)
+          }
+        )} 
+        className="space-y-6"
+      >
+        {/* Basic Information - Same as before */}
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-foreground flex items-center gap-2">
@@ -254,7 +322,7 @@ const RatingConfigForm: React.FC<RatingConfigFormProps> = ({
                     <FormLabel className="text-foreground">Type</FormLabel>
                     <Select 
                       onValueChange={handleTypeChange} 
-                      defaultValue={field.value} 
+                      value={field.value} 
                       disabled={isLoading}
                     >
                       <FormControl>
@@ -337,10 +405,10 @@ const RatingConfigForm: React.FC<RatingConfigFormProps> = ({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => appendVariable({ 
+                    onClick={() => variablesArray.append({ 
                       name: '', 
-                      model: '', 
-                      column: '', 
+                      model: 'TaskRating', 
+                      column: 'final_rating', 
                       operation: 'avg',
                       conditions: []
                     })}
@@ -351,118 +419,139 @@ const RatingConfigForm: React.FC<RatingConfigFormProps> = ({
                   </Button>
                 </div>
                 
-                {variableArrayFields.map((variable, index) => (
-                  <Card key={variable.id} className="mb-4 bg-accent/20">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-sm font-medium text-foreground">Variable {index + 1}</h4>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeVariable(index)}
-                          disabled={isLoading || variableArrayFields.length <= 1}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name={`variables.${index}.name`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-foreground">Variable Name</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="e.g., task_avg"
-                                  {...field}
-                                  disabled={isLoading}
-                                  className="bg-background border-input text-foreground"
-                                />
-                              </FormControl>
-                              <FormMessage className="text-destructive" />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name={`variables.${index}.operation`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-foreground">Operation</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
+                {variablesArray.fields.map((variable, index) => {
+                  const currentModel = watchedVariables[index]?.model || 'TaskRating'
+                  const availableColumns = MODEL_COLUMNS[currentModel as keyof typeof MODEL_COLUMNS] || []
+                  
+                  return (
+                    <Card key={variable.id} className="mb-4 bg-accent/20">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-sm font-medium text-foreground">Variable {index + 1}</h4>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => variablesArray.remove(index)}
+                            disabled={isLoading || variablesArray.fields.length <= 1}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name={`variables.${index}.name` as any}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-foreground">Variable Name</FormLabel>
                                 <FormControl>
-                                  <SelectTrigger className="bg-background border-input text-foreground">
-                                    <SelectValue />
-                                  </SelectTrigger>
+                                  <Input
+                                    placeholder="e.g., task_avg"
+                                    {...field}
+                                    disabled={isLoading}
+                                    className="bg-background border-input text-foreground"
+                                  />
                                 </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="sum">Sum</SelectItem>
-                                  <SelectItem value="avg">Average</SelectItem>
-                                  <SelectItem value="count">Count</SelectItem>
-                                  <SelectItem value="min">Minimum</SelectItem>
-                                  <SelectItem value="max">Maximum</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage className="text-destructive" />
-                            </FormItem>
-                          )}
-                        />
+                                <FormMessage className="text-destructive" />
+                              </FormItem>
+                            )}
+                          />
 
-                        <FormField
-                          control={form.control}
-                          name={`variables.${index}.model`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-foreground">Model</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
-                                <FormControl>
-                                  <SelectTrigger className="bg-background border-input text-foreground">
-                                    <SelectValue placeholder="Select model" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="TaskRating">TaskRating</SelectItem>
-                                  <SelectItem value="StakeholderRating">StakeholderRating</SelectItem>
-                                  <SelectItem value="Ticket">Ticket</SelectItem>
-                                  <SelectItem value="HelpRequest">HelpRequest</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage className="text-destructive" />
-                            </FormItem>
-                          )}
-                        />
+                          <FormField
+                            control={form.control}
+                            name={`variables.${index}.operation` as any}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-foreground">Operation</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
+                                  <FormControl>
+                                    <SelectTrigger className="bg-background border-input text-foreground">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="sum">Sum</SelectItem>
+                                    <SelectItem value="avg">Average</SelectItem>
+                                    <SelectItem value="count">Count</SelectItem>
+                                    <SelectItem value="min">Minimum</SelectItem>
+                                    <SelectItem value="max">Maximum</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage className="text-destructive" />
+                              </FormItem>
+                            )}
+                          />
 
-                        <FormField
-                          control={form.control}
-                          name={`variables.${index}.column`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-foreground">Column</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="e.g., final_rating"
-                                  {...field}
+                          {/* ✅ Model Select with dynamic column update */}
+                          <FormField
+                            control={form.control}
+                            name={`variables.${index}.model` as any}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-foreground">Model</FormLabel>
+                                <Select 
+                                  onValueChange={(value) => handleModelChange(index, value)} 
+                                  value={field.value} 
                                   disabled={isLoading}
-                                  className="bg-background border-input text-foreground"
-                                />
-                              </FormControl>
-                              <FormMessage className="text-destructive" />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="bg-background border-input text-foreground">
+                                      <SelectValue placeholder="Select model" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="TaskRating">TaskRating</SelectItem>
+                                    <SelectItem value="StakeholderRating">StakeholderRating</SelectItem>
+                                    <SelectItem value="Ticket">Ticket</SelectItem>
+                                    <SelectItem value="HelpRequest">HelpRequest</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage className="text-destructive" />
+                              </FormItem>
+                            )}
+                          />
+
+                          {/* ✅ Dynamic Column Select based on selected model */}
+                          <FormField
+                            control={form.control}
+                            name={`variables.${index}.column` as any}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-foreground">Column</FormLabel>
+                                <Select 
+                                  onValueChange={field.onChange} 
+                                  value={field.value} 
+                                  disabled={isLoading}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="bg-background border-input text-foreground">
+                                      <SelectValue placeholder="Select column" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {availableColumns.map((column) => (
+                                      <SelectItem key={column} value={column}>
+                                        {column}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage className="text-destructive" />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
         ) : (
-          // Task/Stakeholder Rating Configuration
+          // Task/Stakeholder Rating Configuration - Same as before
           <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="text-foreground">Rating Fields</CardTitle>
@@ -476,7 +565,7 @@ const RatingConfigForm: React.FC<RatingConfigFormProps> = ({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => appendField({ name: '', max_value: 50 })}
+                  onClick={() => fieldsArray.append({ name: '', max_value: 50 })}
                   disabled={isLoading}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -484,7 +573,7 @@ const RatingConfigForm: React.FC<RatingConfigFormProps> = ({
                 </Button>
               </div>
               
-              {fieldArrayFields.map((field, index) => (
+              {fieldsArray.fields.map((field, index) => (
                 <Card key={field.id} className="bg-accent/20">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-4">
@@ -493,8 +582,8 @@ const RatingConfigForm: React.FC<RatingConfigFormProps> = ({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeField(index)}
-                        disabled={isLoading || fieldArrayFields.length <= 1}
+                        onClick={() => fieldsArray.remove(index)}
+                        disabled={isLoading || fieldsArray.fields.length <= 1}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -503,7 +592,7 @@ const RatingConfigForm: React.FC<RatingConfigFormProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
-                        name={`fields.${index}.name`}
+                        name={`fields.${index}.name` as any}
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-foreground">Field Name</FormLabel>
@@ -522,7 +611,7 @@ const RatingConfigForm: React.FC<RatingConfigFormProps> = ({
 
                       <FormField
                         control={form.control}
-                        name={`fields.${index}.max_value`}
+                        name={`fields.${index}.max_value` as any}
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-foreground">Max Value</FormLabel>

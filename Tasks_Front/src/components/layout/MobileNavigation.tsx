@@ -7,17 +7,64 @@ import {
   BarChart3, 
   Users, 
   FolderOpen, 
-  CheckSquare,
+  CheckSquare, 
+  HelpCircle, 
+  Ticket, 
+  Star, 
+  Shield,
   X
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const mobileNavItems = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Analytics", href: "/analytics", icon: BarChart3 },
-  { title: "Users", href: "/users", icon: Users },
-  { title: "Projects", href: "/projects", icon: FolderOpen },
-  { title: "Tasks", href: "/tasks", icon: CheckSquare },
+  {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard
+  },
+  {
+    title: "Analytics",
+    icon: BarChart3,
+    href: "/analytics"
+  },
+  {
+    title: "Users",
+    href: "/users",
+    icon: Users
+  },
+  {
+    title: "Projects",
+    href: "/projects",
+    icon: FolderOpen
+  },
+  {
+    title: "Tasks",
+    href: "/tasks",
+    icon: CheckSquare
+  },
+  {
+    title: "Help Requests",
+    icon: HelpCircle,
+    href: "/help-requests"
+  },
+  {
+    title: "Tickets",
+    icon: Ticket,
+    href: "/tickets"
+  },
+  {
+    title: "Ratings",
+    icon: Star,
+    children: [
+      { title: "Configurations", href: "/rating-configs" },
+      { title: "Ratings", href: "/ratings" },
+    ]
+  },
+  {
+    title: "Roles",
+    icon: Shield,
+    href: "/roles"
+  }
 ]
 
 const MobileNavigation: React.FC = () => {
@@ -35,13 +82,15 @@ const MobileNavigation: React.FC = () => {
       />
 
       {/* Slide-out menu */}
-      <div className="fixed inset-y-0 left-0 z-30 w-64 bg-sidebar shadow-xl lg:hidden border-r border-sidebar-border">
+      <div className="fixed inset-y-0 left-0 z-30 w-64 bg-sidebar shadow-xl lg:hidden border-r border-sidebar-border transform transition-transform duration-300 ease-in-out">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-6 border-b border-sidebar-border">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
-              <span className="text-sidebar-primary-foreground font-bold text-sm">PM</span>
-            </div>
+        <div className="flex items-center justify-between px-4 py-4 border-b border-sidebar-border">
+          <div className="flex items-center space-x-3">  {/* Increased space-x */}
+            <img 
+              src="/logo.svg" 
+              alt="Logo" 
+              className="h-10 w-auto"  // Increased from h-8 to h-10
+            />
             <span className="text-lg font-semibold text-sidebar-foreground font-sans">
               Project Manager
             </span>
@@ -57,7 +106,7 @@ const MobileNavigation: React.FC = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="px-2 py-4 space-y-1">
+        <nav className="px-2 py-4 space-y-1 overflow-y-auto h-full pb-20">
           {mobileNavItems.map((item) => {
             const Icon = item.icon
             const isActive = item.href === location.pathname
@@ -65,16 +114,16 @@ const MobileNavigation: React.FC = () => {
             return (
               <Link
                 key={item.title}
-                to={item.href}
+                to={item.href || ''}
                 onClick={toggleSidebar}
                 className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                  "flex items-center px-3 py-3 text-base font-medium rounded-md transition-colors",
                   isActive 
                     ? "bg-sidebar-accent text-sidebar-accent-foreground" 
                     : "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50"
                 )}
               >
-                <Icon className="w-5 h-5 mr-3" />
+                <Icon className="w-6 h-6 mr-3" />
                 {item.title}
               </Link>
             )

@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useTasksStore } from '../stores/tasksStore'
+import { useAuthStore } from '../../auth/stores/authStore'
 
 export const useTasks = (sectionId?: number) => {
   const {
@@ -18,6 +19,8 @@ export const useTasks = (sectionId?: number) => {
     getTasksBySection
   } = useTasksStore()
 
+  const { isAuthenticated, user } = useAuthStore()
+
   // 🔑 Select the appropriate tasks and pagination based on whether sectionId is provided
   const tasks = useMemo(() => {
     if (sectionId !== undefined) {
@@ -34,6 +37,11 @@ export const useTasks = (sectionId?: number) => {
   }, [sectionId, pagination, globalPagination])
 
   useEffect(() => {
+    // Only fetch if authenticated and user exists
+    if (!isAuthenticated || !user) {
+      return
+    }
+
     if (sectionId !== undefined) {
       // Fetch tasks for specific section
       if (!tasks.length) {
@@ -45,7 +53,7 @@ export const useTasks = (sectionId?: number) => {
         fetchAllTasks()
       }
     }
-  }, [sectionId, tasks.length, allTasks.length, fetchTasksBySection, fetchAllTasks])
+  }, [sectionId, tasks.length, allTasks.length, fetchTasksBySection, fetchAllTasks, isAuthenticated, user])
 
   return {
     tasks,

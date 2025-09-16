@@ -70,9 +70,9 @@ const navigationItems = [
 ]
 
 const Sidebar: React.FC = () => {
-  const { isOpen, isMobile } = useSidebarStore()
+  const { isOpen } = useSidebarStore()
   const location = useLocation()
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Analytics', 'Help Requests', 'Tickets', 'Ratings', 'System'])
+  const [expandedItems, setExpandedItems] = useState<string[]>([])
 
   const toggleExpanded = (title: string) => {
     setExpandedItems(prev => 
@@ -82,25 +82,31 @@ const Sidebar: React.FC = () => {
     )
   }
 
-  if (isMobile) return null
-
   return (
     <div className={cn(
-      "flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300",
-      isOpen ? "w-64" : "w-16"
+      "hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 h-full",
+      isOpen ? "w-64" : "w-20"  // Increased from w-16 to w-20 to accommodate larger logo
     )}>
       {/* Logo */}
-      <div className="flex items-center px-4 py-6 border-b border-sidebar-border">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
-            <span className="text-sidebar-primary-foreground font-bold text-sm">PM</span>
-          </div>
-          {isOpen && (
+      <div className="flex items-center justify-center px-4 py-4 border-b border-sidebar-border min-h-[64px]">
+        {isOpen ? (
+          <div className="flex items-center space-x-3">  {/* Increased space-x */}
+            <img 
+              src="/logo.svg" 
+              alt="Logo" 
+              className="h-10 w-auto"  // Increased from h-8 to h-10
+            />
             <span className="text-lg font-semibold text-sidebar-foreground font-sans">
               Project Manager
             </span>
-          )}
-        </div>
+          </div>
+        ) : (
+          <img 
+            src="/logo.svg" 
+            alt="Logo" 
+            className="h-10 w-auto"  // Increased from h-8 to h-10
+          />
+        )}
       </div>
 
       {/* Navigation */}
@@ -117,20 +123,25 @@ const Sidebar: React.FC = () => {
                 <Link
                   to={item.href}
                   className={cn(
-                    "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                    "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors group",
                     isActive 
                       ? "bg-sidebar-accent text-sidebar-accent-foreground" 
                       : "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50"
                   )}
                 >
                   <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                  {isOpen && <span>{item.title}</span>}
+                  {isOpen && <span className="truncate">{item.title}</span>}
+                  {!isOpen && (
+                    <div className="absolute left-16 ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                      {item.title}
+                    </div>
+                  )}
                 </Link>
               ) : (
                 <Button
                   variant="ghost"
                   className={cn(
-                    "w-full justify-start px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                    "w-full justify-start px-3 py-2 text-sm font-medium rounded-md transition-colors group",
                     "text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50"
                   )}
                   onClick={() => toggleExpanded(item.title)}
@@ -138,22 +149,27 @@ const Sidebar: React.FC = () => {
                   <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
                   {isOpen && (
                     <>
-                      <span className="flex-1 text-left">{item.title}</span>
+                      <span className="flex-1 text-left truncate">{item.title}</span>
                       {hasChildren && (
                         isExpanded ? (
-                          <ChevronDown className="w-4 h-4" />
+                          <ChevronDown className="w-4 h-4 flex-shrink-0" />
                         ) : (
-                          <ChevronRight className="w-4 h-4" />
+                          <ChevronRight className="w-4 h-4 flex-shrink-0" />
                         )
                       )}
                     </>
+                  )}
+                  {!isOpen && (
+                    <div className="absolute left-16 ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                      {item.title}
+                    </div>
                   )}
                 </Button>
               )}
 
               {/* Children */}
               {hasChildren && isExpanded && isOpen && (
-                <div className="ml-8 mt-1 space-y-1">
+                <div className="ml-6 mt-1 space-y-1 border-l border-sidebar-border pl-2">
                   {item.children!.map((child) => (
                     <Link
                       key={child.href}

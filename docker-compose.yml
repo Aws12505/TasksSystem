@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./Tasks_Back
+      dockerfile: Dockerfile
+    container_name: tasks_backend
+    ports:
+      - "2654:80"
+    volumes:
+      - ./Tasks_Back:/var/www/html
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./Tasks_Front
+      dockerfile: Dockerfile
+    container_name: tasks_frontend
+    ports:
+      - "2876:80"
+    volumes:
+      - ./Tasks_Front:/app
+    restart: unless-stopped

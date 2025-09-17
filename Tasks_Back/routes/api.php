@@ -17,6 +17,7 @@ use App\Http\Controllers\RatingConfigController;
 use App\Http\Controllers\TaskRatingController;
 use App\Http\Controllers\StakeholderRatingController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\KanbanController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -153,4 +154,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // System analytics
         Route::get('/system', [AnalyticsController::class, 'systemStats']);
     });
+
+    // Kanban routes
+Route::prefix('projects/{project}')->group(function () {
+    Route::get('kanban', [KanbanController::class, 'getProjectKanban']);
+});
+
+Route::prefix('tasks/{task}')->group(function () {
+    Route::post('move-section', [KanbanController::class, 'moveTaskToSection']);
+    Route::post('move-status', [KanbanController::class, 'moveTaskStatus']);
+});
+
 });

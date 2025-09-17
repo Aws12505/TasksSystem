@@ -9,7 +9,7 @@ import { useSectionsStore } from '../../sections/stores/sectionsStore'
 import ProjectStatusBadge from '../components/ProjectStatusBadge'
 import SectionsList from '../components/SectionsList'
 import type { CreateSectionRequest, UpdateSectionRequest } from '../../../types/Section'
-import { Edit, ArrowLeft, FolderOpen, Calendar, CheckSquare, Users, BarChart3 } from 'lucide-react'
+import { Edit, ArrowLeft, FolderOpen, Calendar, CheckSquare, Users, BarChart3, Kanban } from 'lucide-react'
 
 const ProjectDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -90,6 +90,12 @@ const ProjectDetailPage: React.FC = () => {
       Project Analytics
     </Link>
   </Button>
+  <Button variant="outline" asChild>
+  <Link to={`/projects/${project.id}/kanban`}>
+    <Kanban className="mr-2 h-4 w-4" />
+    Kanban View
+  </Link>
+</Button>
           <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
             <Link to={`/projects/${project.id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
@@ -169,7 +175,7 @@ const ProjectDetailPage: React.FC = () => {
         {/* Sections */}
         <div className="lg:col-span-2">
           <SectionsList
-            sections={sections}
+            sections={sections ?? []}
             projectId={project.id}
             onCreateSection={handleCreateSection}
             onUpdateSection={handleUpdateSection}

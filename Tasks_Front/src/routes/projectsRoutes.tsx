@@ -5,8 +5,7 @@ const ProjectsPage = lazy(() => import('@/features/projects/pages/index'))
 const ProjectDetailPage = lazy(() => import('@/features/projects/pages/ProjectDetailPage'))
 const ProjectEditPage = lazy(() => import('@/features/projects/pages/ProjectEditPage'))
 const CreateProjectPage = lazy(() => import('@/features/projects/pages/create'))
-
-
+const KanbanPage = lazy(() => import('@/features/kanban/pages/KanbanPage'))
 
 export const projectsRoutes: RouteObject[] = [
   {
@@ -33,4 +32,10 @@ export const projectsRoutes: RouteObject[] = [
       <ProjectEditPage />
     ),
   },
+  {
+    path: '/projects/:id/kanban',
+    element: (
+      <KanbanPage />
+    ),
+  }
 ]

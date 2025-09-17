@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
-import { MoreHorizontal, Edit, Trash2, Eye, BarChart3 } from 'lucide-react'
+import { MoreHorizontal, Edit, Trash2, Eye, BarChart3, Kanban } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -114,6 +114,12 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ projects, isLoading, onDele
     <Link to={`/analytics/projects/${project.id}`} className="flex items-center">
       <BarChart3 className="mr-2 h-4 w-4" />
       Analytics
+    </Link>
+  </DropdownMenuItem>
+  <DropdownMenuItem asChild className="hover:bg-accent hover:text-accent-foreground">
+    <Link to={`/projects/${project.id}/kanban`} className="flex items-center">
+      <Kanban className="mr-2 h-4 w-4" />
+      Kanban
     </Link>
   </DropdownMenuItem>
                     <DropdownMenuItem asChild className="hover:bg-accent hover:text-accent-foreground">

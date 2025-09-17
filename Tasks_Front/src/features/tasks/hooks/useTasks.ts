@@ -16,7 +16,8 @@ export const useTasks = (sectionId?: number) => {
     updateTask,
     updateTaskStatus,
     deleteTask,
-    getTasksBySection
+    getTasksBySection,
+    createTaskComprehensive
   } = useTasksStore()
 
   const { isAuthenticated, user } = useAuthStore()
@@ -64,6 +65,7 @@ export const useTasks = (sectionId?: number) => {
     createTask,
     updateTask,
     updateTaskStatus,
-    deleteTask
+    deleteTask,
+    createTaskComprehensive
   }
 }

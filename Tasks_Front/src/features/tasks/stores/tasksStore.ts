@@ -3,7 +3,7 @@ import { taskService } from '../../../services/taskService'
 import { taskAssignmentService } from '../../../services/taskAssignmentService'
 import { userService } from '../../../services/userService'
 import { toast } from 'sonner'
-import type { Task, CreateTaskRequest, UpdateTaskRequest, UpdateTaskStatusRequest } from '../../../types/Task'
+import type { Task, CreateTaskRequest, UpdateTaskRequest, UpdateTaskStatusRequest, ComprehensiveCreateTaskRequest } from '../../../types/Task'
 import type { TaskWithAssignments } from '../../../types/TaskAssignment'
 import type { User } from '../../../types/User'
 
@@ -46,6 +46,7 @@ interface TasksState {
   removeUserFromTask: (taskId: number, userId: number) => Promise<boolean>
   clearCurrentTask: () => void
   getTasksBySection: (sectionId: number) => Task[]
+  createTaskComprehensive: (data: ComprehensiveCreateTaskRequest) => Promise<Task | null>
 }
 
 export const useTasksStore = create<TasksState>((set, get) => ({
@@ -355,6 +356,40 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       return false
     }
   },
+
+  createTaskComprehensive: async (data: ComprehensiveCreateTaskRequest) => {
+  set({ isLoading: true, error: null });
+  try {
+    const response = await taskService.createTaskComprehensive(data);
+    if (response.success && response.data) {
+      const newTask = response.data;
+      const sectionId = newTask.section_id;
+      
+      set(state => ({
+        tasksBySection: {
+          ...state.tasksBySection,
+          [sectionId]: state.tasksBySection[sectionId] 
+            ? [newTask, ...state.tasksBySection[sectionId]]
+            : [newTask]
+        },
+        allTasks: [newTask, ...state.allTasks],
+        isLoading: false
+      }));
+      
+      toast.success('Task created successfully with subtasks and assignments');
+      return newTask;
+    } else {
+      set({ error: response.message || 'Failed to create task', isLoading: false });
+      toast.error(response.message || 'Failed to create task');
+      return null;
+    }
+  } catch (error: any) {
+    const errorMessage = error.message || 'Failed to create task';
+    set({ error: errorMessage, isLoading: false });
+    toast.error(errorMessage);
+    return null;
+  }
+},
 
   removeUserFromTask: async (taskId: number, userId: number) => {
     try {

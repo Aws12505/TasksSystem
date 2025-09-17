@@ -43,3 +43,23 @@ export interface UpdateTaskStatusRequest {
   status: TaskStatus;
 }
 
+// Add this interface
+export interface ComprehensiveCreateTaskRequest {
+  name: string;
+  description?: string;
+  weight: number;
+  due_date: string;
+  priority: Priority;
+  section_id: number;
+  subtasks?: {
+    name: string;
+    description?: string;
+    due_date: string;
+    priority: Priority;
+  }[];
+  assignments?: {
+    user_id: number;
+    percentage: number;
+  }[];
+}
+

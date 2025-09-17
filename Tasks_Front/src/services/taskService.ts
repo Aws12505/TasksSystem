@@ -1,6 +1,6 @@
 // services/taskService.ts
 import { apiClient } from './api';
-import type { Task, CreateTaskRequest, UpdateTaskRequest, UpdateTaskStatusRequest } from '../types/Task';
+import type { Task, CreateTaskRequest, UpdateTaskRequest, UpdateTaskStatusRequest, ComprehensiveCreateTaskRequest } from '../types/Task';
 import type { ApiResponse, PaginatedApiResponse } from '../types/ApiResponse';
 
 export class TaskService {
@@ -31,6 +31,10 @@ export class TaskService {
   async updateTaskStatus(id: number, data: UpdateTaskStatusRequest): Promise<ApiResponse<Task>> {
     return apiClient.post<Task>(`/tasks/${id}/status`, data);
   }
+  
+  async createTaskComprehensive(data: ComprehensiveCreateTaskRequest): Promise<ApiResponse<Task>> {
+  return apiClient.post<Task>('/tasks/comprehensive', data);
+}
 }
 
 export const taskService = new TaskService();

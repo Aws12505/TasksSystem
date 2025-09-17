@@ -11,6 +11,8 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Requests\AddUserToTaskRequest;
 use App\Http\Requests\UpdateUserAssignmentRequest;
 use App\Http\Requests\AssignUsersToTaskRequest;
+use App\Http\Requests\ComprehensiveCreateTaskRequest;
+
 class TaskController extends Controller
 {
     public function __construct(
@@ -264,5 +266,24 @@ public function removeUser(int $id, int $userId): JsonResponse
         'data' => $task,
         'message' => 'User removed from task successfully',
     ]);
+}
+
+public function storeComprehensive(ComprehensiveCreateTaskRequest $request): JsonResponse
+{
+    try {
+        $task = $this->taskService->createTaskComprehensive($request->validated());
+        
+        return response()->json([
+            'success' => true,
+            'data' => $task,
+            'message' => 'Task created successfully with subtasks and assignments',
+        ], 201);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Failed to create comprehensive task: ' . $e->getMessage(),
+        ], 500);
+    }
 }
 }

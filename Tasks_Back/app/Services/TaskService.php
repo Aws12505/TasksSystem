@@ -4,7 +4,8 @@ namespace App\Services;
 
 use App\Models\Task;
 use Illuminate\Pagination\LengthAwarePaginator;
-
+use App\Models\Subtask;
+use Illuminate\Support\Facades\DB;
 class TaskService
 {
     public function getAllTasks(int $perPage = 15): LengthAwarePaginator
@@ -72,4 +73,37 @@ class TaskService
         $task->update(['status' => $status]);
         return $task->fresh(['section', 'subtasks']);
     }
+
+    /**
+ * Create task with subtasks and assignments comprehensively
+ */
+public function createTaskComprehensive(array $data): Task
+{
+    return DB::transaction(function () use ($data) {
+        $subtasksData = $data['subtasks'] ?? [];
+        $assignmentsData = $data['assignments'] ?? [];
+        
+        $taskData = array_diff_key($data, ['subtasks' => '', 'assignments' => '']);
+        
+        $task = Task::create($taskData);
+        
+        if (!empty($subtasksData)) {
+            foreach ($subtasksData as $subtaskData) {
+                $subtaskData['task_id'] = $task->id;
+                Subtask::create($subtaskData);
+            }
+        }
+        
+        if (!empty($assignmentsData)) {
+            $syncData = [];
+            foreach ($assignmentsData as $assignment) {
+                $syncData[$assignment['user_id']] = ['percentage' => $assignment['percentage']];
+            }
+            $task->assignedUsers()->sync($syncData);
+        }
+        
+        return $task->fresh(['section', 'subtasks', 'assignedUsers']);
+    });
+}
+
 }

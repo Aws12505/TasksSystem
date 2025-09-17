@@ -2,39 +2,24 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { DashboardSummary } from '../../../types/Analytics'
+import { formatAvg, formatDate } from '../../../utils/formatters'
 
 interface TrendChartsProps {
   data: DashboardSummary | null
   isLoading: boolean
 }
 
-// Helpers
-const formatAvg = (v: unknown): string | null => {
-  // Accept number or numeric string; otherwise return null
-  const n =
-    typeof v === 'number'
-      ? v
-      : v == null
-      ? NaN
-      : Number.parseFloat(String(v).trim())
-
-  return Number.isFinite(n) ? n.toFixed(1) : null
-}
-
-const formatDate = (d: string | number | Date) =>
-  new Date(d).toLocaleDateString()
-
 const TrendCharts: React.FC<TrendChartsProps> = ({ data, isLoading }) => {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i}>
+          <Card key={i} className="bg-card border-border">
             <CardHeader>
-              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-5 w-32 bg-muted" />
             </CardHeader>
             <CardContent>
-              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full bg-muted" />
             </CardContent>
           </Card>
         ))}
@@ -44,9 +29,9 @@ const TrendCharts: React.FC<TrendChartsProps> = ({ data, isLoading }) => {
 
   if (!data || !data.trends) {
     return (
-      <Card>
+      <Card className="bg-card border-border">
         <CardContent className="p-6">
-          <p className="text-gray-500 text-center">No trend data available</p>
+          <p className="text-muted-foreground text-center">No trend data available</p>
         </CardContent>
       </Card>
     )
@@ -58,13 +43,13 @@ const TrendCharts: React.FC<TrendChartsProps> = ({ data, isLoading }) => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Card>
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-lg">Task Ratings Trend</CardTitle>
+          <CardTitle className="text-lg text-foreground">Task Ratings Trend</CardTitle>
         </CardHeader>
         <CardContent>
           {taskTrend.length === 0 ? (
-            <p className="text-gray-500">No data</p>
+            <p className="text-muted-foreground text-center py-4">No data</p>
           ) : (
             <div className="space-y-2">
               {taskTrend.slice(0, 5).map((item, index) => {
@@ -72,10 +57,10 @@ const TrendCharts: React.FC<TrendChartsProps> = ({ data, isLoading }) => {
                 const display = avg ?? (item as any).count ?? '—'
                 return (
                   <div key={index} className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-muted-foreground">
                       {formatDate((item as any).date)}
                     </span>
-                    <span className="text-sm font-medium">{display}</span>
+                    <span className="text-sm font-medium text-foreground">{display}</span>
                   </div>
                 )
               })}
@@ -84,21 +69,21 @@ const TrendCharts: React.FC<TrendChartsProps> = ({ data, isLoading }) => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-lg">Tickets Solved</CardTitle>
+          <CardTitle className="text-lg text-foreground">Tickets Solved</CardTitle>
         </CardHeader>
         <CardContent>
           {ticketsTrend.length === 0 ? (
-            <p className="text-gray-500">No data</p>
+            <p className="text-muted-foreground text-center py-4">No data</p>
           ) : (
             <div className="space-y-2">
               {ticketsTrend.slice(0, 5).map((item, index) => (
                 <div key={index} className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-muted-foreground">
                     {formatDate((item as any).date)}
                   </span>
-                  <span className="text-sm font-medium">
+                  <span className="text-sm font-medium text-foreground">
                     {(item as any).count ?? '—'}
                   </span>
                 </div>
@@ -108,21 +93,21 @@ const TrendCharts: React.FC<TrendChartsProps> = ({ data, isLoading }) => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-lg">Help Requests</CardTitle>
+          <CardTitle className="text-lg text-foreground">Help Requests</CardTitle>
         </CardHeader>
         <CardContent>
           {helpTrend.length === 0 ? (
-            <p className="text-gray-500">No data</p>
+            <p className="text-muted-foreground text-center py-4">No data</p>
           ) : (
             <div className="space-y-2">
               {helpTrend.slice(0, 5).map((item, index) => (
                 <div key={index} className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-muted-foreground">
                     {formatDate((item as any).date)}
                   </span>
-                  <span className="text-sm font-medium">
+                  <span className="text-sm font-medium text-foreground">
                     {(item as any).count ?? '—'}
                   </span>
                 </div>

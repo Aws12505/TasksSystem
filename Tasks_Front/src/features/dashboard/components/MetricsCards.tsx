@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Users, FolderOpen, CheckSquare, Star, Ticket, TrendingUp } from 'lucide-react'
 import type { DashboardSummary } from '../../../types/Analytics'
+import { safeToFixed } from '@/utils/formatters'
 
 interface MetricsCardsProps {
   data: DashboardSummary | null
@@ -64,7 +65,7 @@ const MetricsCards: React.FC<MetricsCardsProps> = ({ data, isLoading }) => {
     },
     {
       title: 'Average Rating',
-      value: data.system_metrics?.quality_stats?.avg_task_rating?.toFixed(1) || '0.0',
+      value: safeToFixed(data.system_metrics?.quality_stats?.avg_task_rating, 1),
       icon: Star,
       color: 'text-chart-4',
       bgColor: 'bg-chart-4/10'
@@ -78,7 +79,7 @@ const MetricsCards: React.FC<MetricsCardsProps> = ({ data, isLoading }) => {
     },
     {
       title: 'Performance Score',
-      value: data.user_metrics?.performance_score?.toFixed(0) || '0',
+      value: safeToFixed(data.user_metrics?.performance_score, 0),
       icon: TrendingUp,
       color: 'text-primary',
       bgColor: 'bg-primary/10'

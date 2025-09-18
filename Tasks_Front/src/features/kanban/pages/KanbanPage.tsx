@@ -1,9 +1,8 @@
 import React from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-// import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { 
   KanbanProvider, 
   KanbanBoard, 
@@ -19,56 +18,69 @@ import type { TaskStatus } from '../../../types/Task'
 import type { Task } from '../../../types/Task'
 import type { Section } from '../../../types/Section'
 
-// Types for the Kibo UI Kanban component
-type KanbanItem = {
+// Enhanced types for section-based Kanban
+type SectionKanbanItem = {
   id: string
   name: string
-  column: string
+  column: string // Format: "sectionId-status"
   task: Task
   section: Section
+  sectionId: number
+  status: TaskStatus
 }
 
-type KanbanColumn = {
-  id: string
+type SectionKanbanColumn = {
+  id: string // Format: "sectionId-status"
   name: string
+  sectionId: number
+  status: TaskStatus
+  section: Section
 }
 
 const ProjectKanbanPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const { project } = useProject(id!)
-  const { kanbanData, isLoading, error, moveTaskStatus } = useKanban(id!)
+  const { kanbanData, isLoading, error, moveTaskStatus, moveTaskToSection } = useKanban(id!)
 
-  // Transform data for Kibo UI Kanban component
-  const transformToKanbanData = () => {
+  // Transform data for section-based Kanban
+  const transformToSectionKanbanData = () => {
     if (!kanbanData) return { columns: [], items: [] }
 
-    const statusColumns: KanbanColumn[] = [
-      { id: 'pending', name: 'Pending' },
-      { id: 'in_progress', name: 'In Progress' },
-      { id: 'done', name: 'Done' },
-      { id: 'rated', name: 'Rated' }
-    ]
+    const columns: SectionKanbanColumn[] = []
+    const items: SectionKanbanItem[] = []
 
-    const items: KanbanItem[] = []
-
-    // Transform tasks from all sections
+    // Create columns for each section-status combination
     kanbanData.sections.forEach((sectionData) => {
-  Object
-    .entries(sectionData.tasks_by_status as Record<TaskStatus, Task[]>)
-    .forEach(([status, tasks]) => {
-      (tasks as Task[]).forEach((task: Task) => {
-        items.push({
-          id: task.id.toString(),
-          name: task.name,
-          column: status as TaskStatus,
-          task,
-          section: sectionData.section,
+      const statuses: TaskStatus[] = ['pending', 'in_progress', 'done', 'rated']
+      
+      statuses.forEach((status) => {
+        columns.push({
+          id: `${sectionData.section.id}-${status}`,
+          name: status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          sectionId: sectionData.section.id,
+          status: status,
+          section: sectionData.section
         })
       })
-    })
-})
 
-    return { columns: statusColumns, items }
+      // Add tasks
+      Object.entries(sectionData.tasks_by_status as Record<TaskStatus, Task[]>)
+        .forEach(([status, tasks]) => {
+          (tasks as Task[]).forEach((task: Task) => {
+            items.push({
+              id: task.id.toString(),
+              name: task.name,
+              column: `${sectionData.section.id}-${status}`,
+              task,
+              section: sectionData.section,
+              sectionId: sectionData.section.id,
+              status: status as TaskStatus
+            })
+          })
+        })
+    })
+
+    return { columns, items }
   }
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -77,13 +89,25 @@ const ProjectKanbanPage: React.FC = () => {
     if (!over || active.id === over.id) return
 
     const taskId = parseInt(active.id as string)
-    const newStatus = over.id as TaskStatus
-
-    // Check if we're moving to a different column
-    const { items } = transformToKanbanData()
+    const [targetSectionId, targetStatus] = (over.id as string).split('-')
+    
+    const { items } = transformToSectionKanbanData()
     const draggedItem = items.find(item => item.id === active.id)
     
-    if (draggedItem && draggedItem.column !== newStatus) {
+    if (!draggedItem) return
+
+    const currentSectionId = draggedItem.sectionId
+    const currentStatus = draggedItem.status
+    const newSectionId = parseInt(targetSectionId)
+    const newStatus = targetStatus as TaskStatus
+
+    // Check if we need to move to a different section
+    if (currentSectionId !== newSectionId) {
+      await moveTaskToSection(taskId, newSectionId)
+    }
+    
+    // Check if we need to change status
+    if (currentStatus !== newStatus) {
       await moveTaskStatus(taskId, newStatus)
     }
   }
@@ -105,7 +129,13 @@ const ProjectKanbanPage: React.FC = () => {
     )
   }
 
-  const { columns, items } = transformToKanbanData()
+  const { columns, items } = transformToSectionKanbanData()
+
+  // Group columns by section for organized display
+  const groupedColumns = kanbanData.sections.map(sectionData => ({
+    section: sectionData.section,
+    columns: columns.filter(col => col.sectionId === sectionData.section.id)
+  }))
 
   return (
     <div className="space-y-6">
@@ -124,10 +154,10 @@ const ProjectKanbanPage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground font-sans">
-                {project?.name} - Kanban Board
+                {project?.name} - Section-Based Kanban
               </h1>
               <p className="text-muted-foreground">
-                Manage tasks across {kanbanData.sections.length} sections
+                Manage tasks across {kanbanData.sections.length} sections and 4 statuses
               </p>
             </div>
           </div>
@@ -154,35 +184,35 @@ const ProjectKanbanPage: React.FC = () => {
               <div>
                 <p className="text-sm text-muted-foreground">In Progress</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {items.filter(item => item.column === 'in_progress').length}
+                  {items.filter(item => item.status === 'in_progress').length}
                 </p>
               </div>
               <CheckSquare className="w-8 h-8 text-chart-2" />
             </div>
           </CardContent>
         </Card>
-
+        
         <Card className="bg-card border-border">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Completed</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {items.filter(item => item.column === 'done').length}
+                  {items.filter(item => item.status === 'done').length}
                 </p>
               </div>
               <CheckSquare className="w-8 h-8 text-chart-3" />
             </div>
           </CardContent>
         </Card>
-
+        
         <Card className="bg-card border-border">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Rated</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {items.filter(item => item.column === 'rated').length}
+                  {items.filter(item => item.status === 'rated').length}
                 </p>
               </div>
               <CheckSquare className="w-8 h-8 text-chart-4" />
@@ -191,52 +221,68 @@ const ProjectKanbanPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Kanban Board */}
-      <div className="h-[600px]">
-        <KanbanProvider
-          columns={columns}
-          data={items}
-          onDragEnd={handleDragEnd}
-          className="h-full"
-        >
-          {(column) => (
-            <KanbanBoard key={column.id} id={column.id} className="h-full">
-              <KanbanHeader className="bg-background border-b">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">{column.name}</h3>
-                  <Badge variant="secondary" className="text-xs">
-                    {items.filter(item => item.column === column.id).length}
-                  </Badge>
-                </div>
-              </KanbanHeader>
-              <KanbanCards id={column.id}>
-                {(item: KanbanItem) => (
-                  <KanbanCard
-                    key={item.id}
-                    id={item.id}
-                    column={item.column} 
-                    name={item.name}
-                    className="bg-background"
-                  >
-                    <TaskCard task={item.task} section={item.section} />
-                  </KanbanCard>
-                )}
-              </KanbanCards>
-            </KanbanBoard>
-          )}
-        </KanbanProvider>
+      {/* Section-Based Kanban Board */}
+      <div className="space-y-8">
+        {groupedColumns.map((group) => (
+          <Card key={group.section.id} className="bg-background">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold flex items-center justify-between">
+                <span>{group.section.name}</span>
+                <Badge variant="outline">
+                  {items.filter(item => item.sectionId === group.section.id).length} tasks
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px]">
+                <KanbanProvider
+                  columns={group.columns}
+                  data={items}
+                  onDragEnd={handleDragEnd}
+                  className="h-full"
+                >
+                  {(column: SectionKanbanColumn) => (
+                    <KanbanBoard key={column.id} id={column.id} className="h-full">
+                      <KanbanHeader className="bg-background border-b">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold">{column.name}</h3>
+                          <Badge variant="secondary" className="text-xs">
+                            {items.filter(item => item.column === column.id).length}
+                          </Badge>
+                        </div>
+                      </KanbanHeader>
+                      <KanbanCards id={column.id}>
+                        {(item: SectionKanbanItem) => (
+                          <KanbanCard
+                            key={item.id}
+                            id={item.id}
+                            column={item.column}
+                            name={item.name}
+                            className="bg-background"
+                          >
+                            <TaskCard task={item.task} section={item.section} />
+                          </KanbanCard>
+                        )}
+                      </KanbanCards>
+                    </KanbanBoard>
+                  )}
+                </KanbanProvider>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   )
 }
 
-// Task Card Component
+// Keep the existing TaskCard component unchanged
 interface TaskCardProps {
   task: Task
   section: Section
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, section }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'critical': return 'bg-red-500'
@@ -260,11 +306,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, section }) => {
         </Button>
       </div>
 
-      {/* Section Badge */}
-      <Badge variant="outline" className="text-xs">
-        {section.name}
-      </Badge>
-
       {/* Task Details */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
@@ -283,27 +324,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, section }) => {
           <span>{new Date(task.due_date).toLocaleDateString()}</span>
           {isOverdue && <span className="text-red-500 font-medium">(Overdue)</span>}
         </div>
-
-        {/* Assigned Users
-        {task.assignedUsers && task.assignedUsers.length > 0 && (
-          <div className="flex items-center gap-1">
-            <Users className="w-3 h-3 text-muted-foreground" />
-            <div className="flex -space-x-1">
-              {task.assignedUsers.slice(0, 3).map((user: any) => (
-                <Avatar key={user.id} className="w-5 h-5 border border-background">
-                  <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                    {user.name?.charAt(0).toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-              {task.assignedUsers.length > 3 && (
-                <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground border border-background">
-                  +{task.assignedUsers.length - 3}
-                </div>
-              )}
-            </div>
-          </div>
-        )} */}
 
         {/* Subtasks Progress */}
         {task.subtasks && task.subtasks.length > 0 && (

@@ -34,6 +34,10 @@ export class RatingConfigService {
   async activateRatingConfig(id: number): Promise<ApiResponse<RatingConfig>> {
     return apiClient.post<RatingConfig>(`/rating-configs/${id}/activate`, {});
   }
+
+  async getActiveRatingConfigsByType(type: string): Promise<ApiResponse<RatingConfig[]>> {
+    return apiClient.get<RatingConfig[]>(`/rating-configs/type/${type}/active`);
+  }
 }
 
 export const ratingConfigService = new RatingConfigService();

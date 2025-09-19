@@ -151,4 +151,33 @@ class RatingConfigController extends Controller
             'message' => 'Rating configs retrieved successfully',
         ]);
     }
+
+    public function getActiveByType(string $type): JsonResponse
+    {
+        $configType = RatingConfigType::tryFrom($type);
+        
+        if (!$configType) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'Invalid config type',
+            ], 400);
+        }
+
+        $configs = $this->ratingConfigService->getActiveConfigsByType($configType);
+
+        if (is_null($configs) || $configs->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'No active config found for this type',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $configs,
+            'message' => 'Active rating config retrieved successfully',
+        ]);
+    }
 }

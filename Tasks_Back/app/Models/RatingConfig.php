@@ -39,6 +39,15 @@ class RatingConfig extends Model
                    ->first();
     }
 
+    public static function getActiveConfigsByType(RatingConfigType $type): \Illuminate\Database\Eloquent\Collection
+    {
+        return self::with('creator')
+    ->where('type', $type)
+    ->where('is_active', true)
+    ->latest('created_at')
+    ->get();
+    }
+
     // Get fields for task/stakeholder configs
     public function getFields(): array
     {

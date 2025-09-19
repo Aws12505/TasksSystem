@@ -16,6 +16,7 @@ import { ticketsRoutes } from './routes/ticketsRoutes'
 import { ratingConfigsRoutes } from './routes/ratingConfigsRoutes'
 import { ratingsRoutes } from './routes/ratingsRoutes'
 import { analyticsRoutes } from './routes/analyticsRoutes'
+import { publicRoutes } from './routes/publicRoutes'
 
 const LoadingSpinner = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -64,7 +65,7 @@ export const router = createBrowserRouter([
     children: [
       // Public routes
       ...wrapWithSuspense(authRoutes),
-      
+      ...wrapWithSuspense(publicRoutes),
       // Protected routes (single Suspense wrapping)
       ...wrapProtectedRoutes(dashboardRoutes),
       ...wrapProtectedRoutes(usersRoutes),

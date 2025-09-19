@@ -27,6 +27,7 @@ interface RatingConfigsState {
   fetchRatingConfigsByType: (type: string, page?: number) => Promise<void>
   activateRatingConfig: (id: number) => Promise<RatingConfig | null>
   clearCurrentRatingConfig: () => void
+  fetchActiveRatingConfigsByType: (type: string) => Promise<void>
 }
 
 export const useRatingConfigsStore = create<RatingConfigsState>((set, get) => ({
@@ -185,6 +186,29 @@ export const useRatingConfigsStore = create<RatingConfigsState>((set, get) => ({
       return null
     }
   },
+
+  fetchActiveRatingConfigsByType: async (type: string) => {
+  set({ isLoading: true, error: null })
+  try {
+    const response = await ratingConfigService.getActiveRatingConfigsByType(type)
+    if (response.success) {
+      set({
+        ratingConfigs: response.data, // array of active configs
+        isLoading: false
+      })
+      // optional: toast.success('Active rating configs loaded')
+    } else {
+      set({ error: response.message, isLoading: false })
+      toast.error(response.message)
+    }
+  } catch (error: any) {
+    // handle 400/404 rejections as well
+    const apiMsg = error?.response?.data?.message
+    const errorMessage = apiMsg || error.message || 'Failed to fetch active rating configs by type'
+    set({ error: errorMessage, isLoading: false })
+    toast.error(errorMessage)
+  }
+},
 
   clearCurrentRatingConfig: () => set({ currentRatingConfig: null, error: null })
 }))

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useRatingsStore } from '../stores/ratingsStore'
+import type { CreateTaskRatingRequest, UpdateTaskRatingRequest } from '../../../types/Rating'
 
 export const useTaskRating = (taskId: number | string) => {
   const {
@@ -29,8 +30,8 @@ export const useTaskRating = (taskId: number | string) => {
     pagination: taskRatingsPagination,
     isLoading,
     error,
-    createRating: (data: any) => createTaskRating({ ...data, task_id: id }),
-    updateRating: (ratingId: number, data: any) => updateTaskRating(ratingId, data),
+    createRating: (data: CreateTaskRatingRequest) => createTaskRating({ ...data, task_id: id }),
+    updateRating: (ratingId: number, data: UpdateTaskRatingRequest) => updateTaskRating(ratingId, data),
     refreshRatings: () => fetchTaskRatings(id)
   }
 }

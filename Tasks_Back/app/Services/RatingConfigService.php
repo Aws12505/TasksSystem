@@ -49,9 +49,9 @@ class RatingConfigService
                           ->paginate(15);
     }
 
-    public function getActiveConfigByType(RatingConfigType $type): ?RatingConfig
+    public function getActiveConfigsByType(RatingConfigType $type)
     {
-        return RatingConfig::getActiveByType($type);
+        return RatingConfig::getActiveConfigsByType($type);
     }
 
     public function activateConfig(int $id): ?RatingConfig

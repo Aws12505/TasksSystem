@@ -1,4 +1,3 @@
-// types/Rating.ts
 import type { User } from './User';
 import type { Task } from './Task';
 import type { Project } from './Project';
@@ -9,7 +8,7 @@ export interface TaskRating {
   task: Task;
   rater_id: number;
   rater: User;
-  rating_data: Record<string, number>; // {"Code Cleanliness": 45, "Collaboration": 35}
+  rating_data: Record<string, number>;
   final_rating: number; // Out of 100%
   config_snapshot: any;
   rated_at: string;
@@ -23,7 +22,7 @@ export interface StakeholderRating {
   project: Project;
   stakeholder_id: number;
   stakeholder: User;
-  rating_data: Record<string, number>; // {"Overall Quality": 80, "Timeline": 70}
+  rating_data: Record<string, number>;
   final_rating: number; // Out of 100%
   config_snapshot: any;
   rated_at: string;
@@ -37,7 +36,7 @@ export interface FinalRating {
   user: User;
   period_start: string;
   period_end: string;
-  final_rating: number; // Out of 100% (for bonus calculation)
+  final_rating: number;
   calculation_steps: Array<{
     expression?: string;
     function?: string;
@@ -57,7 +56,13 @@ export interface FinalRating {
 
 export interface CreateTaskRatingRequest {
   task_id: number;
+  rating_config_id: number; // ← we send which config to use
   rating_data: Record<string, number>;
+}
+
+export interface UpdateTaskRatingRequest {
+  rating_config_id?: number; // ← optionally switch config on update
+  rating_data?: Record<string, number>;
 }
 
 export interface CreateStakeholderRatingRequest {

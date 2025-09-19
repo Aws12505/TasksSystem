@@ -27,6 +27,9 @@ use App\Http\Controllers\KanbanController;
 // Auth routes (public)
 Route::post('/login', [AuthController::class, 'login']);
 
+// Public routes
+Route::post('tickets', [TicketController::class, 'store']);
+Route::get('users', [UserController::class, 'index']);
 // Protected routes
 // routes/api.php (Add to existing protected routes)
 Route::middleware(['auth:sanctum'])->group(function () {
@@ -35,7 +38,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     
     // ==================== USERS ====================
-    Route::apiResource('users', UserController::class);
+    Route::apiResource('users', UserController::class)->except(['index']);
     Route::get('users/{id}/with-projects', [UserController::class, 'showWithProjects']);
     Route::get('users/{id}/roles-and-permissions', [UserController::class, 'getRolesAndPermissions']);
     Route::post('users/{id}/sync-roles', [UserController::class, 'syncRoles']);
@@ -102,7 +105,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // ==================== TICKETS ====================
     Route::get('tickets/available', [TicketController::class, 'available']);
-    Route::apiResource('tickets', TicketController::class);
+    Route::apiResource('tickets', TicketController::class)->except(['store']);
     
     // Ticket specific actions
     Route::get('tickets/status/{status}', [TicketController::class, 'getByStatus']);
@@ -121,7 +124,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('rating-configs', RatingConfigController::class);
     Route::get('rating-configs/type/{type}', [RatingConfigController::class, 'getByType']);
     Route::post('rating-configs/{id}/activate', [RatingConfigController::class, 'activate']);
-    
+    Route::get('rating-configs/type/{type}/active', [RatingConfigController::class, 'getActiveByType']);
     // ==================== TASK RATINGS ====================
     Route::post('task-ratings', [TaskRatingController::class, 'store']);
     Route::put('task-ratings/{id}', [TaskRatingController::class, 'update']);

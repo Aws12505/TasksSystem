@@ -13,7 +13,8 @@ export const useRatingConfigs = () => {
     updateRatingConfig,
     deleteRatingConfig,
     fetchRatingConfigsByType,
-    activateRatingConfig
+    activateRatingConfig,
+    fetchActiveRatingConfigsByType
   } = useRatingConfigsStore()
 
   const { searchQuery } = useFiltersStore()
@@ -39,6 +40,7 @@ export const useRatingConfigs = () => {
     updateRatingConfig,
     deleteRatingConfig,
     fetchRatingConfigsByType,
-    activateRatingConfig
+    activateRatingConfig,
+    fetchActiveRatingConfigsByType
   }
 }

@@ -13,12 +13,11 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ./Tasks_Front
-      dockerfile: Dockerfile
+    image: busybox:latest
     container_name: tasks_frontend
+    command: httpd -f -v -p 80 -h /var/www/html
     ports:
       - "2876:80"
     volumes:
-      - ./Tasks_Front:/app
+      - ./Tasks_Front/dist:/var/www/html:ro
     restart: unless-stopped

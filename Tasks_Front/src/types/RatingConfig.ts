@@ -6,6 +6,7 @@ export type RatingConfigType = 'task_rating' | 'stakeholder_rating' | 'final_rat
 export interface RatingField {
   name: string; // e.g., "Code Cleanliness"
   max_value: number; // e.g., 50
+  description?: string; // NEW: Optional description field
 }
 
 export interface FormulaVariable {

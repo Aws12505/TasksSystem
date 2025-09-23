@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { usePermissions } from '@/hooks/usePermissions'
 import { 
   MoreHorizontal, 
   Edit, 
@@ -23,9 +24,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import SectionForm from './SectionForm'
 import { useTasks } from '../../tasks/hooks/useTasks'
-import { useTaskDialog } from '@/components/TaskDialogProvider' // 🔑 Import the hook
+import { useTaskDialog } from '@/components/TaskDialogProvider'
 import type { Section } from '../../../types/Section'
-import type { Task } from '../../../types/Task'
 
 interface SectionsListProps {
   sections: Section[]
@@ -47,8 +47,8 @@ const SectionsList: React.FC<SectionsListProps> = ({
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingSection, setEditingSection] = useState<Section | null>(null)
   const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set())
+  const { hasPermission } = usePermissions()
   
-  // 🔑 Use the task dialog hook
   const { openTaskDialog } = useTaskDialog()
 
   const handleCreateSection = async (data: any) => {
@@ -87,20 +87,22 @@ const SectionsList: React.FC<SectionsListProps> = ({
             <List className="w-5 h-5" />
             Sections & Tasks ({sections.length})
           </CardTitle>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => setShowCreateForm(true)}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Section
-          </Button>
+          {hasPermission('create sections') && (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setShowCreateForm(true)}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Section
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Create Section Form */}
-        {showCreateForm && (
+        {showCreateForm && hasPermission('create sections') && (
           <div className="p-4 border border-border rounded-lg bg-accent/20">
             <h4 className="text-sm font-medium text-foreground mb-3">Create New Section</h4>
             <SectionForm
@@ -120,7 +122,7 @@ const SectionsList: React.FC<SectionsListProps> = ({
           </div>
         ) : sections.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">
-            No sections yet. Create your first section to get started.
+            No sections yet. {hasPermission('create sections') ? 'Create your first section to get started.' : 'No sections available.'}
           </p>
         ) : (
           sections.map((section) => (
@@ -136,7 +138,7 @@ const SectionsList: React.FC<SectionsListProps> = ({
               editingSection={editingSection}
               onUpdateSection={handleUpdateSection}
               onCancelEdit={() => setEditingSection(null)}
-              openTaskDialog={openTaskDialog} // 🔑 Pass the portal function
+              openTaskDialog={openTaskDialog}
               isLoading={isLoading}
             />
           ))
@@ -146,23 +148,8 @@ const SectionsList: React.FC<SectionsListProps> = ({
   )
 }
 
-// 🔑 Simplified section component
-interface SectionWithTasksProps {
-  section: Section
-  projectId: number
-  isExpanded: boolean
-  onToggle: () => void
-  onEdit: () => void
-  onDelete: () => void
-  isEditing: boolean
-  editingSection: Section | null
-  onUpdateSection: (data: any) => Promise<void>
-  onCancelEdit: () => void
-  openTaskDialog: (section: Section, projectId: number, task?: Task) => void // 🔑 Portal function
-  isLoading: boolean
-}
-
-const SectionWithTasks: React.FC<SectionWithTasksProps> = ({
+// Updated SectionWithTasks component with permissions
+const SectionWithTasks: React.FC<any> = ({
   section,
   projectId,
   isExpanded,
@@ -173,12 +160,15 @@ const SectionWithTasks: React.FC<SectionWithTasksProps> = ({
   editingSection,
   onUpdateSection,
   onCancelEdit,
-  openTaskDialog, // 🔑 Portal function
+  openTaskDialog,
   isLoading
 }) => {
   const { tasks, deleteTask } = useTasks(section.id)
+  const { hasPermission } = usePermissions()
 
   const handleDeleteTask = async (taskId: number) => {
+    if (!hasPermission('delete tasks')) return
+    
     if (window.confirm('Are you sure you want to delete this task?')) {
       await deleteTask(taskId)
     }
@@ -221,43 +211,50 @@ const SectionWithTasks: React.FC<SectionWithTasksProps> = ({
               <Badge variant="outline" className="text-xs">
                 {tasks.length} tasks
               </Badge>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" type="button">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-popover border-border">
-                  <DropdownMenuItem 
-                    onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                    className="hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit Section
-                  </DropdownMenuItem>
-                  
-                  {/* 🔑 This now uses the portal - NO MORE ISSUES! */}
-                  <DropdownMenuItem
-                    onClick={(e) => { 
-                      e.stopPropagation(),
-                      e.preventDefault(),
-                      openTaskDialog(section, projectId) // 🔑 Portal call
-                    }}
-                    className="hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Task
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuItem
-                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                    className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Section
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {(hasPermission('edit sections') || hasPermission('delete sections') || hasPermission('create tasks')) && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" type="button">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-popover border-border">
+                    {hasPermission('edit sections') && (
+                      <DropdownMenuItem 
+                        onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                        className="hover:bg-accent hover:text-accent-foreground"
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit Section
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {hasPermission('create tasks') && (
+                      <DropdownMenuItem
+                        onClick={(e) => { 
+                          e.stopPropagation();
+                          e.preventDefault();
+                          openTaskDialog(section, projectId);
+                        }}
+                        className="hover:bg-accent hover:text-accent-foreground"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Task
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {hasPermission('delete sections') && (
+                      <DropdownMenuItem
+                        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                        className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Section
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
         </CollapsibleTrigger>
@@ -269,37 +266,49 @@ const SectionWithTasks: React.FC<SectionWithTasksProps> = ({
                 <div className="text-center py-8">
                   <CheckSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground text-sm">No tasks in this section yet</p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                    onClick={(e) => (openTaskDialog(section, projectId), e.stopPropagation(), e.preventDefault())} // 🔑 Portal call
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add First Task
-                  </Button>
+                  {hasPermission('create tasks') && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={(e) => {
+                        openTaskDialog(section, projectId);
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add First Task
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h5 className="text-sm font-medium text-foreground">Tasks ({tasks.length})</h5>
-                    <Button 
-                      type="button"
-                      variant="outline" 
-                      size="sm" 
-                      onClick={(e) => (openTaskDialog(section, projectId), e.stopPropagation(), e.preventDefault())} // 🔑 Portal call
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Task
-                    </Button>
+                    {hasPermission('create tasks') && (
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        size="sm" 
+                        onClick={(e) => {
+                          openTaskDialog(section, projectId);
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Task
+                      </Button>
+                    )}
                   </div>
                   
                   {tasks.map((task) => (
                     <TaskItem
                       key={task.id}
                       task={task}
-                      onEdit={(task) => openTaskDialog(section, projectId, task)} // 🔑 Portal call
+                      onEdit={(task: any) => hasPermission('edit tasks') && openTaskDialog(section, projectId, task)}
                       onDelete={handleDeleteTask}
                     />
                   ))}
@@ -313,14 +322,10 @@ const SectionWithTasks: React.FC<SectionWithTasksProps> = ({
   )
 }
 
-// TaskItem component - keep the same but update onEdit call
-interface TaskItemProps {
-  task: Task
-  onEdit: (task: Task) => void
-  onDelete: (id: number) => Promise<void>
-}
+// Updated TaskItem component with permissions
+const TaskItem: React.FC<any> = ({ task, onEdit, onDelete }) => {
+  const { hasPermission, hasAnyPermission } = usePermissions()
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, onDelete }) => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'critical': return 'bg-red-500'
@@ -343,8 +348,15 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, onDelete }) => {
   const isOverdue = new Date(task.due_date) < new Date() && task.status !== 'done' && task.status !== 'rated'
 
   const handleRateTask = () => {
-    window.open(`/ratings/tasks/${task.id}`, '_blank')
+    if (hasAnyPermission(['create task ratings', 'edit task ratings'])) {
+      window.open(`/ratings/tasks/${task.id}`, '_blank')
+    }
   }
+
+  const canEdit = hasPermission('edit tasks')
+  const canDelete = hasPermission('delete tasks')
+  const canRate = hasAnyPermission(['create task ratings', 'edit task ratings'])
+  const hasAnyAction = canEdit || canDelete || canRate
 
   return (
     <div className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-accent/30 transition-colors">
@@ -379,36 +391,46 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, onDelete }) => {
       </div>
 
       <div className="flex items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" type="button">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-popover border-border">
-            <DropdownMenuItem 
-              onClick={() => onEdit(task)}
-              className="hover:bg-accent hover:text-accent-foreground"
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              Edit Task
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={handleRateTask}
-              className="hover:bg-accent hover:text-accent-foreground"
-            >
-              <Star className="mr-2 h-4 w-4" />
-              Rate Task
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onDelete(task.id)}
-              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete Task
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {hasAnyAction ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" type="button">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover border-border">
+              {canEdit && (
+                <DropdownMenuItem 
+                  onClick={() => onEdit(task)}
+                  className="hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Task
+                </DropdownMenuItem>
+              )}
+              {canRate && (
+                <DropdownMenuItem 
+                  onClick={handleRateTask}
+                  className="hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Star className="mr-2 h-4 w-4" />
+                  Rate Task
+                </DropdownMenuItem>
+              )}
+              {canDelete && (
+                <DropdownMenuItem
+                  onClick={() => onDelete(task.id)}
+                  className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Task
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <span className="text-muted-foreground text-xs">No actions</span>
+        )}
       </div>
     </div>
   )

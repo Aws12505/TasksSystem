@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useHelpRequest } from '../hooks/useHelpRequest'
+// import { usePermissions } from '@/hooks/usePermissions'
 import HelpRequestStatusBadge from '../components/HelpRequestStatusBadge'
 import HelpRequestRatingBadge from '../components/HelpRequestRatingBadge'
 import CompleteHelpRequestModal from '../components/CompleteHelpRequestModal'
@@ -20,6 +21,7 @@ const HelpRequestDetailPage: React.FC = () => {
     completeRequest,
     unclaimRequest
   } = useHelpRequest(id!)
+  // const { hasPermission } = usePermissions()
 
   if (isLoading) {
     return (
@@ -42,16 +44,20 @@ const HelpRequestDetailPage: React.FC = () => {
   }
 
   const handleClaim = async () => {
+    // if (!hasPermission('claim help requests')) return
     await claimRequest()
   }
 
   const handleUnclaim = async () => {
+    // if (!hasPermission('claim help requests')) return
+    
     if (window.confirm('Are you sure you want to unclaim this help request?')) {
       await unclaimRequest()
     }
   }
 
   const handleComplete = async (data: { rating: any }) => {
+    // if (!hasPermission('complete help requests')) return
     await completeRequest(data)
   }
 
@@ -77,31 +83,33 @@ const HelpRequestDetailPage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {helpRequest.is_available && (
+          { helpRequest.is_available && (
             <Button variant="outline" size="sm" onClick={handleClaim}>
               <UserCheck className="mr-2 h-4 w-4" />
               Claim Request
             </Button>
           )}
-          {helpRequest.is_claimed && !helpRequest.is_completed && (
-            <>
-              <Button variant="outline" size="sm" onClick={handleUnclaim}>
-                <UserX className="mr-2 h-4 w-4" />
-                Unclaim
-              </Button>
-              <CompleteHelpRequestModal
-                ratingOptions={ratingOptions}
-                onComplete={handleComplete}
-                isLoading={isLoading}
-              />
-            </>
+          { helpRequest.is_claimed && !helpRequest.is_completed && (
+            <Button variant="outline" size="sm" onClick={handleUnclaim}>
+              <UserX className="mr-2 h-4 w-4" />
+              Unclaim
+            </Button>
           )}
-          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link to={`/help-requests/${helpRequest.id}/edit`}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Link>
-          </Button>
+          { helpRequest.is_claimed && !helpRequest.is_completed && (
+            <CompleteHelpRequestModal
+              ratingOptions={ratingOptions}
+              onComplete={handleComplete}
+              isLoading={isLoading}
+            />
+          )}
+          { (
+            <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Link to={`/help-requests/${helpRequest.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 

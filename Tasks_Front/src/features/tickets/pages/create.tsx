@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTicketsStore } from '../stores/ticketsStore'
 import TicketForm from '../components/TicketForm'
 import { ArrowLeft, Ticket } from 'lucide-react'
+import { useAuthStore } from '@/features/auth/stores/authStore'
 
 const CreateTicketPage: React.FC = () => {
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuthStore()
   
   const { 
     availableUsers, 
@@ -61,6 +63,7 @@ const CreateTicketPage: React.FC = () => {
               typeOptions={getTypeOptions()}
               onSubmit={handleCreateTicket}
               isLoading={isLoading}
+              isAuthenticated={isAuthenticated}
             />
           </CardContent>
         </Card>

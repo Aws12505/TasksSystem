@@ -52,7 +52,10 @@ interface TicketFormProps {
   typeOptions: TicketTypeOption[]
   onSubmit: (data: CreateTicketRequest | UpdateTicketRequest) => Promise<void>
   isLoading: boolean
+  isAuthenticated: boolean // Add this new prop
 }
+
+
 
 // Create Form Component
 const CreateTicketForm: React.FC<{
@@ -60,7 +63,8 @@ const CreateTicketForm: React.FC<{
   typeOptions: TicketTypeOption[]
   onSubmit: (data: CreateTicketRequest) => Promise<void>
   isLoading: boolean
-}> = ({ availableUsers, typeOptions, onSubmit, isLoading }) => {
+  isAuthenticated: boolean // Add this new prop
+}> = ({ availableUsers, typeOptions, onSubmit, isLoading, isAuthenticated }) => {
   const form = useForm<z.infer<typeof createTicketSchema>>({
     resolver: zodResolver(createTicketSchema),
     defaultValues: {
@@ -143,7 +147,7 @@ const CreateTicketForm: React.FC<{
                       <SelectItem key={option.value} value={option.value}>
                         <div className="flex flex-col">
                           <span className="font-medium">{option.label}</span>
-                          <span className="text-xs text-muted-foreground">{option.estimatedTime}</span>
+                          {/* <span className="text-xs text-muted-foreground">{option.estimatedTime}</span> */}
                         </div>
                       </SelectItem>
                     ))}
@@ -179,40 +183,43 @@ const CreateTicketForm: React.FC<{
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="assigned_to"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-foreground">
-                Assign to <span className="text-xs text-muted-foreground">(optional)</span>
-              </FormLabel>
-              <Select 
-                onValueChange={(value) => field.onChange(value === 'unassigned' ? undefined : Number(value))} 
-                value={field.value === undefined ? 'unassigned' : field.value.toString()}
-                disabled={isLoading}
-              >
-                <FormControl>
-                  <SelectTrigger className="bg-background border-input text-foreground">
-                    <SelectValue placeholder="Leave unassigned or select a user" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="unassigned">Leave unassigned</SelectItem>
-                  {availableUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.id.toString()}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{user.name}</span>
-                        <span className="text-xs text-muted-foreground">{user.email}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage className="text-destructive" />
-            </FormItem>
-          )}
-        />
+        {/* Conditionally render the assign to field */}
+        {isAuthenticated && (
+          <FormField
+            control={form.control}
+            name="assigned_to"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-foreground">
+                  Assign to <span className="text-xs text-muted-foreground">(optional)</span>
+                </FormLabel>
+                <Select 
+                  onValueChange={(value) => field.onChange(value === 'unassigned' ? undefined : Number(value))} 
+                  value={field.value === undefined ? 'unassigned' : field.value.toString()}
+                  disabled={isLoading}
+                >
+                  <FormControl>
+                    <SelectTrigger className="bg-background border-input text-foreground">
+                      <SelectValue placeholder="Leave unassigned or select a user" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Leave unassigned</SelectItem>
+                    {availableUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id.toString()}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{user.name}</span>
+                          <span className="text-xs text-muted-foreground">{user.email}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage className="text-destructive" />
+              </FormItem>
+            )}
+          />
+        )}
 
         <Button 
           type="submit" 
@@ -234,7 +241,8 @@ const EditTicketForm: React.FC<{
   typeOptions: TicketTypeOption[]
   onSubmit: (data: UpdateTicketRequest) => Promise<void>
   isLoading: boolean
-}> = ({ ticket, availableUsers, typeOptions, onSubmit, isLoading }) => {
+  isAuthenticated: boolean // Add this new prop
+}> = ({ ticket, availableUsers, typeOptions, onSubmit, isLoading, isAuthenticated }) => {
   const form = useForm<z.infer<typeof updateTicketSchema>>({
     resolver: zodResolver(updateTicketSchema),
     defaultValues: {
@@ -378,40 +386,43 @@ const EditTicketForm: React.FC<{
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="assigned_to"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-foreground">
-                Assign to <span className="text-xs text-muted-foreground">(optional)</span>
-              </FormLabel>
-              <Select 
-                onValueChange={(value) => field.onChange(value === 'unassigned' ? undefined : Number(value))} 
-                value={field.value === undefined ? 'unassigned' : field.value.toString()}
-                disabled={isLoading}
-              >
-                <FormControl>
-                  <SelectTrigger className="bg-background border-input text-foreground">
-                    <SelectValue placeholder="Leave unassigned or select a user" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="unassigned">Leave unassigned</SelectItem>
-                  {availableUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.id.toString()}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{user.name}</span>
-                        <span className="text-xs text-muted-foreground">{user.email}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage className="text-destructive" />
-            </FormItem>
-          )}
-        />
+        {/* Conditionally render the assign to field */}
+        {isAuthenticated && (
+          <FormField
+            control={form.control}
+            name="assigned_to"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-foreground">
+                  Assign to <span className="text-xs text-muted-foreground">(optional)</span>
+                </FormLabel>
+                <Select 
+                  onValueChange={(value) => field.onChange(value === 'unassigned' ? undefined : Number(value))} 
+                  value={field.value === undefined ? 'unassigned' : field.value.toString()}
+                  disabled={isLoading}
+                >
+                  <FormControl>
+                    <SelectTrigger className="bg-background border-input text-foreground">
+                      <SelectValue placeholder="Leave unassigned or select a user" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Leave unassigned</SelectItem>
+                    {availableUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id.toString()}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{user.name}</span>
+                          <span className="text-xs text-muted-foreground">{user.email}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage className="text-destructive" />
+              </FormItem>
+            )}
+          />
+        )}
 
         <Button 
           type="submit" 
@@ -432,7 +443,8 @@ const TicketForm: React.FC<TicketFormProps> = ({
   availableUsers = [],
   typeOptions,
   onSubmit,
-  isLoading
+  isLoading,
+  isAuthenticated
 }) => {
   if (ticket) {
     // Edit mode
@@ -443,6 +455,7 @@ const TicketForm: React.FC<TicketFormProps> = ({
         typeOptions={typeOptions}
         onSubmit={onSubmit as (data: UpdateTicketRequest) => Promise<void>}
         isLoading={isLoading}
+        isAuthenticated={isAuthenticated}
       />
     )
   }
@@ -454,6 +467,7 @@ const TicketForm: React.FC<TicketFormProps> = ({
       typeOptions={typeOptions}
       onSubmit={onSubmit as (data: CreateTicketRequest) => Promise<void>}
       isLoading={isLoading}
+      isAuthenticated={isAuthenticated}
     />
   )
 }

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useTicket } from '../hooks/useTicket'
+import { usePermissions } from '@/hooks/usePermissions'
 import TicketStatusBadge from '../components/TicketStatusBadge'
 import TicketTypeBadge from '../components/TicketTypeBadge'
 import TicketPriorityBadge from '../components/TicketPriorityBadge'
@@ -20,6 +21,7 @@ const TicketDetailPage: React.FC = () => {
     unassignTicket,
     updateStatus
   } = useTicket(id!)
+  const { hasPermission } = usePermissions()
 
   if (isLoading) {
     return (
@@ -42,22 +44,28 @@ const TicketDetailPage: React.FC = () => {
   }
 
   const handleClaim = async () => {
+    if (!hasPermission('edit tickets')) return
     await claimTicket()
   }
 
   const handleComplete = async () => {
+    if (!hasPermission('edit tickets')) return
+    
     if (window.confirm('Are you sure you want to mark this ticket as resolved?')) {
       await completeTicket()
     }
   }
 
   const handleUnassign = async () => {
+    if (!hasPermission('edit tickets')) return
+    
     if (window.confirm('Are you sure you want to unassign this ticket?')) {
       await unassignTicket()
     }
   }
 
   const handleStatusUpdate = async (status: string) => {
+    if (!hasPermission('edit tickets')) return
     await updateStatus(status)
   }
 
@@ -87,30 +95,32 @@ const TicketDetailPage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {ticket.is_available && (
+          {hasPermission('edit tickets') && ticket.is_available && (
             <Button variant="outline" size="sm" onClick={handleClaim}>
               <UserCheck className="mr-2 h-4 w-4" />
               Claim Ticket
             </Button>
           )}
-          {ticket.is_assigned && ticket.status === 'in_progress' && (
+          {hasPermission('edit tickets') && ticket.is_assigned && ticket.status === 'in_progress' && (
             <Button variant="outline" size="sm" onClick={handleComplete}>
               <CheckCircle className="mr-2 h-4 w-4" />
               Mark Resolved
             </Button>
           )}
-          {ticket.is_assigned && ticket.status !== 'resolved' && (
+          {hasPermission('edit tickets') && ticket.is_assigned && ticket.status !== 'resolved' && (
             <Button variant="outline" size="sm" onClick={handleUnassign}>
               <UserX className="mr-2 h-4 w-4" />
               Unassign
             </Button>
           )}
-          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link to={`/tickets/${ticket.id}/edit`}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Link>
-          </Button>
+          {hasPermission('edit tickets') && (
+            <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Link to={`/tickets/${ticket.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -238,40 +248,42 @@ const TicketDetailPage: React.FC = () => {
           </Card>
 
           {/* Quick Actions */}
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-foreground">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => handleStatusUpdate('open')}
-                disabled={ticket.status === 'open'}
-              >
-                Mark as Open
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => handleStatusUpdate('in_progress')}
-                disabled={ticket.status === 'in_progress'}
-              >
-                Mark In Progress
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => handleStatusUpdate('resolved')}
-                disabled={ticket.status === 'resolved'}
-              >
-                Mark Resolved
-              </Button>
-            </CardContent>
-          </Card>
+          {hasPermission('edit tickets') && (
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => handleStatusUpdate('open')}
+                  disabled={ticket.status === 'open'}
+                >
+                  Mark as Open
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => handleStatusUpdate('in_progress')}
+                  disabled={ticket.status === 'in_progress'}
+                >
+                  Mark In Progress
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => handleStatusUpdate('resolved')}
+                  disabled={ticket.status === 'resolved'}
+                >
+                  Mark Resolved
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

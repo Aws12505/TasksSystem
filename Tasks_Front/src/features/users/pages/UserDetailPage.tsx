@@ -5,11 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useUser } from '../hooks/useUser'
+import { usePermissions } from '@/hooks/usePermissions'
 import { Edit, ArrowLeft, Mail, Calendar, Shield, Key, TrendingUp } from 'lucide-react'
 
 const UserDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const { user, userRolesPermissions, isLoading, error } = useUser(id!)
+  const { hasPermission } = usePermissions()
 
   if (isLoading) {
     return (
@@ -60,18 +62,25 @@ const UserDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
-        <Button asChild variant="outline">
-  <Link to={`/analytics/users/${user.id}`}>
-    <TrendingUp className="mr-2 h-4 w-4" />
-    User Analytics
-  </Link>
-</Button>
-        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Link to={`/users/${user.id}/edit`}>
-            <Edit className="mr-2 h-4 w-4" />
-            Edit User
-          </Link>
-        </Button>
+        
+        <div className="flex items-center gap-2">
+          {hasPermission('view analytics') && (
+            <Button asChild variant="outline">
+              <Link to={`/analytics/users/${user.id}`}>
+                <TrendingUp className="mr-2 h-4 w-4" />
+                User Analytics
+              </Link>
+            </Button>
+          )}
+          {hasPermission('edit users') && (
+            <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Link to={`/users/${user.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit User
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Content Grid */}
@@ -136,31 +145,33 @@ const UserDetailPage: React.FC = () => {
         </Card>
 
         {/* Direct Permissions */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-foreground flex items-center gap-2">
-              <Key className="w-4 h-4" />
-              Direct Permissions ({userPermissions.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {userPermissions.length > 0 ? (
-                userPermissions.map((permission) => (
-                  <div key={permission.id} className="p-2 bg-accent/50 rounded">
-                    <span className="text-sm text-foreground">{permission.name}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground text-sm">No direct permissions assigned</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {hasPermission('view permissions') && (
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <Key className="w-4 h-4" />
+                Direct Permissions ({userPermissions.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {userPermissions.length > 0 ? (
+                  userPermissions.map((permission) => (
+                    <div key={permission.id} className="p-2 bg-accent/50 rounded">
+                      <span className="text-sm text-foreground">{permission.name}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-sm">No direct permissions assigned</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* All Permissions Summary */}
-      {userRolesPermissions && allPermissions.length > 0 && (
+      {hasPermission('view permissions') && userRolesPermissions && allPermissions.length > 0 && (
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-foreground">

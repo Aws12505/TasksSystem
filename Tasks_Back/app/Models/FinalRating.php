@@ -5,7 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 class FinalRating extends Model
 {
     use HasFactory;
@@ -34,5 +35,16 @@ class FinalRating extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    protected static function booted()
+    {
+        static::addGlobalScope('user_scope', function (Builder $builder) {
+            $user = Auth::user();
+            
+            if ($user && (!isset($user->role) || $user->role !== 'admin')) {
+                $builder->where('user_id', $user->id);
+            }
+        });
     }
 }

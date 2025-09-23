@@ -12,14 +12,20 @@ import {
 } from '@/components/ui/select'
 import { useProjects } from '../hooks/useProjects'
 import { useFiltersStore } from '../../../stores/filtersStore'
+import { usePermissions } from '@/hooks/usePermissions'
 import ProjectsList from '../components/ProjectsList'
 import { Plus, Search, FolderOpen } from 'lucide-react'
 
 const ProjectsPage: React.FC = () => {
   const { projects, isLoading, deleteProject } = useProjects()
   const { searchQuery, statusFilter, setSearchQuery, setStatusFilter } = useFiltersStore()
+  const { hasPermission } = usePermissions()
 
   const handleDelete = async (id: number) => {
+    if (!hasPermission('delete projects')) {
+      return
+    }
+    
     if (window.confirm('Are you sure you want to delete this project?')) {
       await deleteProject(id)
     }
@@ -38,12 +44,14 @@ const ProjectsPage: React.FC = () => {
             <p className="text-muted-foreground">Manage your projects and track progress</p>
           </div>
         </div>
-        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Link to="/projects/create">
-            <Plus className="mr-2 h-4 w-4" />
-            New Project
-          </Link>
-        </Button>
+        {hasPermission('create projects') && (
+          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link to="/projects/create">
+              <Plus className="mr-2 h-4 w-4" />
+              New Project
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Filters */}

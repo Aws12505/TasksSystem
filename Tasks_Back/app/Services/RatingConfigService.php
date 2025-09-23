@@ -62,11 +62,6 @@ class RatingConfigService
             return null;
         }
 
-        // Deactivate other configs of same type
-        RatingConfig::where('type', $config->type)
-                   ->where('id', '!=', $id)
-                   ->update(['is_active' => false]);
-
         $config->update(['is_active' => true]);
         
         return $config->fresh(['creator']);

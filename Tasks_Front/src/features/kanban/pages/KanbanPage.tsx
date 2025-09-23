@@ -13,10 +13,18 @@ import {
 } from '@/components/ui/kibo-ui/kanban'
 import { useKanban } from '../hooks/useKanban'
 import { useProject } from '../../projects/hooks/useProject'
-import { ArrowLeft, Calendar, Star, CheckSquare, MoreHorizontal } from 'lucide-react'
+import { usePermissions } from '@/hooks/usePermissions'
+import { ArrowLeft, Calendar, Star, CheckSquare, MoreHorizontal, Edit, Trash2, AlertCircle } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import type { TaskStatus } from '../../../types/Task'
 import type { Task } from '../../../types/Task'
 import type { Section } from '../../../types/Section'
+import { useTasks } from '@/features/tasks/hooks/useTasks'
 
 // Enhanced types for section-based Kanban
 type SectionKanbanItem = {
@@ -38,9 +46,16 @@ type SectionKanbanColumn = {
 }
 
 const ProjectKanbanPage: React.FC = () => {
+  const { deleteTask } = useTasks()
   const { id } = useParams<{ id: string }>()
   const { project } = useProject(id!)
   const { kanbanData, isLoading, error, moveTaskStatus, moveTaskToSection } = useKanban(id!)
+  const { hasPermission, hasAnyPermission } = usePermissions()
+
+  // Check permissions
+  const canEditTasks = hasPermission('edit tasks')
+  const canDeleteTasks = hasPermission('delete tasks')
+  const canRateTasks = hasAnyPermission(['create task ratings', 'edit task ratings'])
 
   // Transform data for section-based Kanban
   const transformToSectionKanbanData = () => {
@@ -84,6 +99,8 @@ const ProjectKanbanPage: React.FC = () => {
   }
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    if (!canEditTasks) return // Don't allow drag and drop if user can't edit tasks
+
     const { active, over } = event
     
     if (!over || active.id === over.id) return
@@ -112,6 +129,25 @@ const ProjectKanbanPage: React.FC = () => {
     }
   }
 
+  const handleEditTask = (task: Task) => {
+    if (!canEditTasks) return
+    // You might want to open a task edit dialog here
+    window.open(`/tasks/${task.id}/edit`, '_blank')
+  }
+
+  const handleDeleteTask = async (taskId: number) => {
+    if (!canDeleteTasks) return
+    
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      await deleteTask(taskId)
+    }
+  }
+
+  const handleRateTask = (taskId: number) => {
+    if (!canRateTasks) return
+    window.open(`/ratings/tasks/${taskId}`, '_blank')
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -125,6 +161,46 @@ const ProjectKanbanPage: React.FC = () => {
     return (
       <div className="text-center py-12">
         <p className="text-destructive">{error || 'Failed to load kanban data'}</p>
+      </div>
+    )
+  }
+
+  // Check if user has no permissions to interact with kanban
+  if (!hasPermission('view tasks')) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/projects/${id}`}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Project
+              </Link>
+            </Button>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                <CheckSquare className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground font-sans">
+                  {project?.name} - Kanban Board
+                </h1>
+                <p className="text-muted-foreground">Access restricted</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <Card className="bg-card border-border">
+          <CardContent className="p-12 text-center">
+            <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">Access Restricted</h3>
+            <p className="text-muted-foreground">
+              You don't have permission to view tasks in the Kanban board.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -158,6 +234,7 @@ const ProjectKanbanPage: React.FC = () => {
               </h1>
               <p className="text-muted-foreground">
                 Manage tasks across {kanbanData.sections.length} sections and 4 statuses
+                {!canEditTasks && ' (Read-only)'}
               </p>
             </div>
           </div>
@@ -221,6 +298,20 @@ const ProjectKanbanPage: React.FC = () => {
         </Card>
       </div>
 
+      {/* Permission Notice */}
+      {!canEditTasks && (
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-yellow-800">
+              <AlertCircle className="w-4 h-4" />
+              <p className="text-sm font-medium">
+                You have read-only access. You cannot move tasks or modify their status.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Section-Based Kanban Board */}
       <div className="space-y-8">
         {groupedColumns.map((group) => (
@@ -260,7 +351,16 @@ const ProjectKanbanPage: React.FC = () => {
                             name={item.name}
                             className="bg-background"
                           >
-                            <TaskCard task={item.task} section={item.section} />
+                            <TaskCard 
+                              task={item.task} 
+                              section={item.section}
+                              canEdit={canEditTasks}
+                              canDelete={canDeleteTasks}
+                              canRate={canRateTasks}
+                              onEdit={() => handleEditTask(item.task)}
+                              onDelete={() => handleDeleteTask(item.task.id)}
+                              onRate={() => handleRateTask(item.task.id)}
+                            />
                           </KanbanCard>
                         )}
                       </KanbanCards>
@@ -276,13 +376,27 @@ const ProjectKanbanPage: React.FC = () => {
   )
 }
 
-// Keep the existing TaskCard component unchanged
+// Updated TaskCard component with permissions
 interface TaskCardProps {
   task: Task
   section: Section
+  canEdit: boolean
+  canDelete: boolean
+  canRate: boolean
+  onEdit: () => void
+  onDelete: () => void
+  onRate: () => void
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ 
+  task, 
+  canEdit, 
+  canDelete, 
+  canRate,
+  onEdit,
+  onDelete,
+  onRate
+}) => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'critical': return 'bg-red-500'
@@ -296,14 +410,47 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const isOverdue = new Date(task.due_date) < new Date() && 
     task.status !== 'done' && task.status !== 'rated'
 
+  const hasAnyAction = canEdit || canDelete || canRate
+
   return (
     <div className="space-y-3">
       {/* Task Header */}
       <div className="flex items-start justify-between">
         <h4 className="font-medium text-foreground text-sm line-clamp-2">{task.name}</h4>
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-          <MoreHorizontal className="h-3 w-3" />
-        </Button>
+        {hasAnyAction ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => e.stopPropagation()}>
+                <MoreHorizontal className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover border-border">
+              {canEdit && (
+                <DropdownMenuItem onClick={onEdit} className="hover:bg-accent hover:text-accent-foreground">
+                  <Edit className="mr-2 h-3 w-3" />
+                  Edit Task
+                </DropdownMenuItem>
+              )}
+              {canRate && (
+                <DropdownMenuItem onClick={onRate} className="hover:bg-accent hover:text-accent-foreground">
+                  <Star className="mr-2 h-3 w-3" />
+                  Rate Task
+                </DropdownMenuItem>
+              )}
+              {canDelete && (
+                <DropdownMenuItem
+                  onClick={onDelete}
+                  className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  <Trash2 className="mr-2 h-3 w-3" />
+                  Delete Task
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <div className="h-6 w-6" /> // Placeholder to maintain layout
+        )}
       </div>
 
       {/* Task Details */}

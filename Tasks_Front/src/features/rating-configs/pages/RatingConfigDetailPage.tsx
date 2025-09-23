@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useRatingConfig } from '../hooks/useRatingConfig'
+import { usePermissions } from '@/hooks/usePermissions'
 import RatingConfigTypeBadge from '../components/RatingConfigTypeBadge'
 import { Edit, ArrowLeft, Settings, Calendar, User, Play, Code } from 'lucide-react'
 import type { 
@@ -16,6 +17,7 @@ import type {
 const RatingConfigDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const { ratingConfig, isLoading, error, activateConfig } = useRatingConfig(id!)
+  const { hasPermission } = usePermissions()
 
   if (isLoading) {
     return (
@@ -38,6 +40,8 @@ const RatingConfigDetailPage: React.FC = () => {
   }
 
   const handleActivate = async () => {
+    if (!hasPermission('edit rating configs')) return
+    
     if (window.confirm('Are you sure you want to activate this configuration?')) {
       await activateConfig()
     }
@@ -109,6 +113,9 @@ const RatingConfigDetailPage: React.FC = () => {
                 <div key={index} className="flex items-center justify-between p-3 border border-border rounded-lg">
                   <div>
                     <p className="font-medium text-foreground">{field.name}</p>
+                    {field.description && (
+                      <p className="text-sm text-muted-foreground mt-1">{field.description}</p>
+                    )}
                   </div>
                   <Badge variant="outline" className="text-sm">
                     Max: {field.max_value}
@@ -152,18 +159,20 @@ const RatingConfigDetailPage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!ratingConfig.is_active && (
+          {hasPermission('edit rating configs') && !ratingConfig.is_active && (
             <Button variant="outline" size="sm" onClick={handleActivate}>
               <Play className="mr-2 h-4 w-4" />
               Activate
             </Button>
           )}
-          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link to={`/rating-configs/${ratingConfig.id}/edit`}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Link>
-          </Button>
+          {hasPermission('edit rating configs') && (
+            <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Link to={`/rating-configs/${ratingConfig.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 

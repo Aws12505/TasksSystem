@@ -5,14 +5,20 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useUsers } from '../hooks/useUsers'
 import { useFiltersStore } from '../../../stores/filtersStore'
+import { usePermissions } from '@/hooks/usePermissions'
 import UsersList from '../components/UsersList'
 import { Plus, Search, Users } from 'lucide-react'
 
 const UsersPage: React.FC = () => {
   const { users, isLoading, deleteUser } = useUsers()
   const { searchQuery, setSearchQuery } = useFiltersStore()
+  const { hasPermission } = usePermissions()
 
   const handleDelete = async (id: number) => {
+    if (!hasPermission('delete users')) {
+      return
+    }
+    
     if (window.confirm('Are you sure you want to delete this user?')) {
       await deleteUser(id)
     }
@@ -31,12 +37,14 @@ const UsersPage: React.FC = () => {
             <p className="text-muted-foreground">Manage system users and their permissions</p>
           </div>
         </div>
-        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Link to="/users/create">
-            <Plus className="mr-2 h-4 w-4" />
-            Add User
-          </Link>
-        </Button>
+        {hasPermission('create users') && (
+          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link to="/users/create">
+              <Plus className="mr-2 h-4 w-4" />
+              Add User
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Filters */}

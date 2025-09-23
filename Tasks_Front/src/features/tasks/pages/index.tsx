@@ -12,22 +12,30 @@ import {
 } from '@/components/ui/select'
 import { useTasks } from '../hooks/useTasks'
 import { useFiltersStore } from '../../../stores/filtersStore'
+import { usePermissions } from '@/hooks/usePermissions'
 import TasksList from '../components/TasksList'
 import { Plus, Search, CheckSquare } from 'lucide-react'
-import type { TaskStatus } from '../../../types/Task' // Add this import
+import type { TaskStatus } from '../../../types/Task'
 
 const TasksPage: React.FC = () => {
   const { tasks, isLoading, deleteTask, updateTaskStatus } = useTasks()
   const { searchQuery, statusFilter, setSearchQuery, setStatusFilter } = useFiltersStore()
+  const { hasPermission } = usePermissions()
 
   const handleDelete = async (id: number) => {
+    if (!hasPermission('delete tasks')) {
+      return
+    }
+    
     if (window.confirm('Are you sure you want to delete this task?')) {
       await deleteTask(id)
     }
   }
 
-  // Fix: Cast string to TaskStatus
   const handleStatusChange = async (id: number, status: string) => {
+    if (!hasPermission('edit tasks')) {
+      return
+    }
     await updateTaskStatus(id, { status: status as TaskStatus })
   }
 
@@ -54,12 +62,14 @@ const TasksPage: React.FC = () => {
             <p className="text-muted-foreground">Manage your tasks and track progress</p>
           </div>
         </div>
-        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Link to="/tasks/create">
-            <Plus className="mr-2 h-4 w-4" />
-            New Task
-          </Link>
-        </Button>
+        {hasPermission('create tasks') && (
+          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link to="/tasks/create">
+              <Plus className="mr-2 h-4 w-4" />
+              New Task
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Filters */}

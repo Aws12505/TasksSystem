@@ -2,6 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTicketsStore } from '@/features/tickets/stores/ticketsStore'
 import TicketForm from '@/features/tickets/components/TicketForm'
+import { useAuthStore } from '@/features/auth/stores/authStore' // Add this import
 
 /**
  * PublicCreateTicketPage
@@ -14,22 +15,20 @@ const PublicCreateTicketPage: React.FC = () => {
   const navigate = useNavigate()
 
   const {
-    availableUsers,
     isLoading,
     createTicket,
-    fetchAvailableUsers,
     getTypeOptions,
   } = useTicketsStore()
 
-  React.useEffect(() => {
-    fetchAvailableUsers()
-  }, [fetchAvailableUsers])
+  const { isAuthenticated } = useAuthStore() // Add this line
+
+
 
   const handleCreateTicket = async (data: any) => {
     const ticket = await createTicket(data)
     if (ticket) {
-      // keep the same post-create behavior you already use
-      navigate(`/tickets/${ticket.id}`)
+      // Navigate to success page instead
+      navigate('/support-ticket/success')
     }
   }
 
@@ -56,10 +55,10 @@ const PublicCreateTicketPage: React.FC = () => {
         {/* Form surface (no dashboard layout, just a tasteful panel) */}
         <div className="w-full rounded-xl border border-border bg-card/95 p-6 shadow-sm backdrop-blur md:p-8">
           <TicketForm
-            availableUsers={availableUsers}
             typeOptions={getTypeOptions()}
             onSubmit={handleCreateTicket}
             isLoading={isLoading}
+            isAuthenticated={isAuthenticated} // Add this prop
           />
         </div>
 

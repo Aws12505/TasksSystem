@@ -24,11 +24,11 @@ const LoadingSpinner = () => (
   </div>
 )
 
-interface ProtectedRouteProps {
+interface MainProtectedRouteProps {
   children: React.ReactNode
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+const MainProtectedRoute: React.FC<MainProtectedRouteProps> = ({ children }) => {
   const location = useLocation()
   
   return (
@@ -55,7 +55,7 @@ const wrapWithSuspense = (routes: any[]) =>
 const wrapProtectedRoutes = (routes: any[]) => 
   routes.map(route => ({
     ...route,
-    element: <ProtectedRoute>{route.element}</ProtectedRoute>
+    element: <MainProtectedRoute>{route.element}</MainProtectedRoute>
   }))
 
 export const router = createBrowserRouter([
@@ -66,10 +66,11 @@ export const router = createBrowserRouter([
       // Public routes
       ...wrapWithSuspense(authRoutes),
       ...wrapWithSuspense(publicRoutes),
-      // Protected routes (single Suspense wrapping)
+      
+      // Protected routes with permissions
       ...wrapProtectedRoutes(dashboardRoutes),
       ...wrapProtectedRoutes(usersRoutes),
-      ...wrapProtectedRoutes(rolesRoutes), 
+      ...wrapProtectedRoutes(rolesRoutes),
       ...wrapProtectedRoutes(projectsRoutes),
       ...wrapProtectedRoutes(tasksRoutes),
       ...wrapProtectedRoutes(helpRequestsRoutes),

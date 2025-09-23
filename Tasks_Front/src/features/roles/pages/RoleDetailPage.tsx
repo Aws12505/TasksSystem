@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useRole } from '../hooks/useRole'
+import { usePermissions } from '@/hooks/usePermissions'
 import { Edit, ArrowLeft, Shield, Key, Calendar } from 'lucide-react'
 
 const RoleDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const { role, isLoading, error } = useRole(id!)
+  const { hasPermission } = usePermissions()
 
   if (isLoading) {
     return (
@@ -54,12 +56,14 @@ const RoleDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
-        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Link to={`/roles/${role.id}/edit`}>
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Role
-          </Link>
-        </Button>
+        {hasPermission('edit roles') && (
+          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link to={`/roles/${role.id}/edit`}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit Role
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Content Grid */}
@@ -98,32 +102,46 @@ const RoleDetailPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Permissions */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-foreground flex items-center gap-2">
-              <Key className="w-4 h-4" />
-              Permissions ({rolePermissions.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {rolePermissions.length > 0 ? (
-                rolePermissions.map((permission) => (
-                  <div key={permission.id} className="p-2 bg-accent/50 rounded">
-                    <span className="text-sm text-foreground">{permission.name}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground text-sm">No permissions assigned</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Permissions - Only show if user can view permissions */}
+        {hasPermission('view permissions') ? (
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <Key className="w-4 h-4" />
+                Permissions ({rolePermissions.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {rolePermissions.length > 0 ? (
+                  rolePermissions.map((permission) => (
+                    <div key={permission.id} className="p-2 bg-accent/50 rounded">
+                      <span className="text-sm text-foreground">{permission.name}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground text-sm">No permissions assigned</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <Key className="w-4 h-4" />
+                Permissions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-sm">You don't have permission to view role permissions</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {/* All Permissions Grid */}
-      {rolePermissions.length > 0 && (
+      {/* All Permissions Grid - Only show if user can view permissions */}
+      {hasPermission('view permissions') && rolePermissions.length > 0 && (
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-foreground">

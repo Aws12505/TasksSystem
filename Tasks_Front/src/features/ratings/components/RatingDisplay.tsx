@@ -9,6 +9,13 @@ interface RatingDisplayProps {
     id: number
     rating_data: Record<string, number>
     final_rating: number
+    config_snapshot?: {
+      fields?: Array<{
+        name: string
+        max_value: number
+        description?: string
+      }>
+    }
     rater?: { name: string; email: string }
     stakeholder?: { name: string; email: string }
     rated_at: string
@@ -38,18 +45,31 @@ const RatingDisplay: React.FC<RatingDisplayProps> = ({ rating, maxRating = 100 }
       <CardContent className="space-y-4">
         {/* Individual Rating Fields */}
         <div className="space-y-3">
-          {ratingEntries.map(([fieldName, value]) => (
-            <div key={fieldName} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">{fieldName}</span>
-                <span className="text-sm text-muted-foreground">{value}</span>
+          {ratingEntries.map(([fieldName, value]) => {
+            // Try to get field description from config snapshot if available
+            const fieldConfig = rating.config_snapshot?.fields?.find(f => f.name === fieldName);
+            
+            return (
+              <div key={fieldName} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-foreground">{fieldName}</span>
+                    {/* Show description if available in config snapshot */}
+                    {fieldConfig?.description && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {fieldConfig.description}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-sm text-muted-foreground">{value}</span>
+                </div>
+                <Progress 
+                  value={(value / maxRating) * 100} 
+                  className="h-2"
+                />
               </div>
-              <Progress 
-                value={(value / maxRating) * 100} 
-                className="h-2"
-              />
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Overall Rating */}

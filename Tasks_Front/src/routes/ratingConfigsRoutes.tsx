@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router-dom'
 import { lazy } from 'react'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 
 const RatingConfigsPage = lazy(() => import('@/features/rating-configs/pages/index'))
 const RatingConfigDetailPage = lazy(() => import('@/features/rating-configs/pages/RatingConfigDetailPage'))
@@ -11,25 +12,33 @@ export const ratingConfigsRoutes: RouteObject[] = [
   {
     path: '/rating-configs',
     element: (
+            <ProtectedRoute permission="view rating configs">
       <RatingConfigsPage />
+    </ProtectedRoute>
     ),
   },
   {
     path: '/rating-configs/create',
     element: (
+            <ProtectedRoute permission="create rating configs">
       <CreateRatingConfigPage />
+    </ProtectedRoute>
     ),
   },
   {
     path: '/rating-configs/:id',
     element: (
-      <RatingConfigDetailPage />
+      <ProtectedRoute permission="view rating configs">
+        <RatingConfigDetailPage />
+      </ProtectedRoute>
     ),
   },
   {
     path: '/rating-configs/:id/edit',
     element: (
-      <RatingConfigEditPage />
+            <ProtectedRoute permission="edit rating configs">
+        <RatingConfigEditPage />
+      </ProtectedRoute>
     ),
   },
 ]

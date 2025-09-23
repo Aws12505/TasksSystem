@@ -5,14 +5,20 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useRoles } from '../hooks/useRoles'
 import { useFiltersStore } from '../../../stores/filtersStore'
+import { usePermissions } from '@/hooks/usePermissions'
 import RolesList from '../components/RolesList'
 import { Plus, Search, Shield } from 'lucide-react'
 
 const RolesPage: React.FC = () => {
   const { roles, isLoading, deleteRole } = useRoles()
   const { searchQuery, setSearchQuery } = useFiltersStore()
+  const { hasPermission } = usePermissions()
 
   const handleDelete = async (id: number) => {
+    if (!hasPermission('delete roles')) {
+      return
+    }
+    
     if (window.confirm('Are you sure you want to delete this role?')) {
       await deleteRole(id)
     }
@@ -31,12 +37,14 @@ const RolesPage: React.FC = () => {
             <p className="text-muted-foreground">Manage system roles and their permissions</p>
           </div>
         </div>
-        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Link to="/roles/create">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Role
-          </Link>
-        </Button>
+        {hasPermission('create roles') && (
+          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link to="/roles/create">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Role
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Filters */}

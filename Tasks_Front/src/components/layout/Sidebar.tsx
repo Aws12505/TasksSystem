@@ -2,6 +2,7 @@ import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useSidebarStore } from '../../stores/sidebarStore'
+import { usePermissions } from '@/hooks/usePermissions'
 import { 
   LayoutDashboard, 
   BarChart3, 
@@ -17,55 +18,93 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
+import type { PermissionName } from '@/types/User'
 
-const navigationItems = [
+interface NavigationChild {
+  title: string
+  href: string
+  permission?: PermissionName
+  permissions?: PermissionName[]
+  requireAll?: boolean
+}
+
+interface NavigationItem {
+  title: string
+  href?: string
+  icon: any
+  permission?: PermissionName
+  permissions?: PermissionName[]
+  requireAll?: boolean
+  children?: NavigationChild[]
+}
+
+const navigationItems: NavigationItem[] = [
   {
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard
+    // No permission required for dashboard
   },
   {
     title: "Analytics",
     icon: BarChart3,
-    href: "/analytics"
+    href: "/analytics",
+    permission: "view analytics"
   },
   {
     title: "Users",
     href: "/users",
-    icon: Users
+    icon: Users,
+    permission: "view users"
   },
   {
     title: "Projects",
     href: "/projects",
-    icon: FolderOpen
+    icon: FolderOpen,
+    permission: "view projects"
   },
   {
     title: "Tasks",
     href: "/tasks",
-    icon: CheckSquare
+    icon: CheckSquare,
+    permission: "view tasks"
   },
   {
     title: "Help Requests",
     icon: HelpCircle,
-    href: "/help-requests"
+    href: "/help-requests",
+    permission: "view help requests"
   },
   {
     title: "Tickets",
     icon: Ticket,
-    href: "/tickets"
+    href: "/tickets",
+    permission: "view tickets"
   },
   {
     title: "Ratings",
     icon: Star,
+    permissions: ["view rating configs", "create task ratings", "create stakeholder ratings", "view final ratings"],
+    requireAll: false, // Show if user has ANY of these permissions
     children: [
-      { title: "Configurations", href: "/rating-configs" },
-      { title: "Ratings", href: "/ratings" },
+      { 
+        title: "Configurations", 
+        href: "/rating-configs",
+        permission: "view rating configs"
+      },
+      { 
+        title: "Ratings", 
+        href: "/ratings",
+        permissions: ["create task ratings", "create stakeholder ratings", "view final ratings"],
+        requireAll: false
+      },
     ]
   },
   {
     title: "Roles",
     icon: Shield,
-    href: "/roles"
+    href: "/roles",
+    permission: "view roles"
   }
 ]
 
@@ -73,6 +112,7 @@ const Sidebar: React.FC = () => {
   const { isOpen } = useSidebarStore()
   const location = useLocation()
   const [expandedItems, setExpandedItems] = useState<string[]>([])
+  const { hasPermission, hasAnyPermission, hasAllPermissions } = usePermissions()
 
   const toggleExpanded = (title: string) => {
     setExpandedItems(prev => 
@@ -82,19 +122,62 @@ const Sidebar: React.FC = () => {
     )
   }
 
+  const hasAccessToItem = (item: NavigationItem | NavigationChild): boolean => {
+    // If no permissions specified, allow access
+    if (!item.permission && !item.permissions) {
+      return true
+    }
+
+    // Check single permission
+    if (item.permission && !hasPermission(item.permission)) {
+      return false
+    }
+
+    // Check multiple permissions
+    if (item.permissions) {
+      if (item.requireAll && !hasAllPermissions(item.permissions)) {
+        return false
+      } else if (!item.requireAll && !hasAnyPermission(item.permissions)) {
+        return false
+      }
+    }
+
+    return true
+  }
+
+  const getVisibleChildren = (children?: NavigationChild[]): NavigationChild[] => {
+    if (!children) return []
+    return children.filter(child => hasAccessToItem(child))
+  }
+
+  const shouldShowParent = (item: NavigationItem): boolean => {
+    if (!hasAccessToItem(item)) return false
+    
+    // If it has children, check if any children are visible
+    if (item.children) {
+      const visibleChildren = getVisibleChildren(item.children)
+      return visibleChildren.length > 0
+    }
+    
+    return true
+  }
+
+  // Filter navigation items based on permissions
+  const visibleNavigationItems = navigationItems.filter(shouldShowParent)
+
   return (
     <div className={cn(
       "hidden lg:flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 h-full",
-      isOpen ? "w-64" : "w-20"  // Increased from w-16 to w-20 to accommodate larger logo
+      isOpen ? "w-64" : "w-20"
     )}>
       {/* Logo */}
       <div className="flex items-center justify-center px-4 py-4 border-b border-sidebar-border min-h-[64px]">
         {isOpen ? (
-          <div className="flex items-center space-x-3">  {/* Increased space-x */}
+          <div className="flex items-center space-x-3">
             <img 
               src="/logo.svg" 
               alt="Logo" 
-              className="h-10 w-auto"  // Increased from h-8 to h-10
+              className="h-10 w-auto"
             />
             <span className="text-lg font-semibold text-sidebar-foreground font-sans">
               Project Manager
@@ -104,18 +187,19 @@ const Sidebar: React.FC = () => {
           <img 
             src="/logo.svg" 
             alt="Logo" 
-            className="h-10 w-auto"  // Increased from h-8 to h-10
+            className="h-10 w-auto"
           />
         )}
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-        {navigationItems.map((item) => {
+        {visibleNavigationItems.map((item) => {
           const Icon = item.icon
           const isActive = item.href === location.pathname
           const isExpanded = expandedItems.includes(item.title)
-          const hasChildren = item.children && item.children.length > 0
+          const visibleChildren = getVisibleChildren(item.children)
+          const hasChildren = visibleChildren.length > 0
 
           return (
             <div key={item.title}>
@@ -170,7 +254,7 @@ const Sidebar: React.FC = () => {
               {/* Children */}
               {hasChildren && isExpanded && isOpen && (
                 <div className="ml-6 mt-1 space-y-1 border-l border-sidebar-border pl-2">
-                  {item.children!.map((child) => (
+                  {visibleChildren.map((child) => (
                     <Link
                       key={child.href}
                       to={child.href}

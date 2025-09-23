@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTickets } from '../hooks/useTickets'
 import { useFiltersStore } from '../../../stores/filtersStore'
+import { usePermissions } from '@/hooks/usePermissions'
 import TicketsList from '../components/TicketsList'
 import { Plus, Search, Ticket, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
 
@@ -21,26 +22,44 @@ const TicketsPage: React.FC = () => {
     unassignTicket
   } = useTickets()
   const { searchQuery, setSearchQuery } = useFiltersStore()
+  const { hasPermission } = usePermissions()
 
   const handleDelete = async (id: number) => {
+    if (!hasPermission('delete tickets')) {
+      return
+    }
+    
     if (window.confirm('Are you sure you want to delete this ticket?')) {
       await deleteTicket(id)
     }
   }
 
   const handleClaim = async (id: number) => {
+    if (!hasPermission('edit tickets')) {
+      return
+    }
     await claimTicket(id)
   }
 
   const handleAssign = async (id: number, userId: number) => {
+    if (!hasPermission('edit tickets')) {
+      return
+    }
     await assignTicket(id, userId)
   }
 
   const handleComplete = async (id: number) => {
+    if (!hasPermission('edit tickets')) {
+      return
+    }
     await completeTicket(id)
   }
 
   const handleUnassign = async (id: number) => {
+    if (!hasPermission('edit tickets')) {
+      return
+    }
+    
     if (window.confirm('Are you sure you want to unassign this ticket?')) {
       await unassignTicket(id)
     }
@@ -64,6 +83,7 @@ const TicketsPage: React.FC = () => {
             <p className="text-muted-foreground">Manage support tickets and track resolution</p>
           </div>
         </div>
+        {/* Note: Create ticket is publicly available, but we can add permission if needed */}
         <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
           <Link to="/tickets/create">
             <Plus className="mr-2 h-4 w-4" />

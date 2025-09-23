@@ -83,6 +83,7 @@ const MODEL_COLUMNS = {
 const ratingFieldSchema = z.object({
   name: z.string().min(1, 'Field name is required'),
   max_value: z.number().min(1, 'Max value must be at least 1'),
+  description: z.string().optional(),
 })
 
 const formulaVariableSchema = z.object({
@@ -180,13 +181,13 @@ const RatingConfigForm: React.FC<RatingConfigFormProps> = ({
         return {
           type,
           ...baseDefaults,
-          fields: configData.fields || [{ name: '', max_value: 50 }]
+          fields: configData.fields || [{ name: '', max_value: 50, description: '' }]
         }
       }
       return {
         type,
         ...baseDefaults,
-        fields: [{ name: '', max_value: 50 }]
+        fields: [{ name: '', max_value: 50, description: '' }]
       }
     }
   }
@@ -565,7 +566,7 @@ const RatingConfigForm: React.FC<RatingConfigFormProps> = ({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => fieldsArray.append({ name: '', max_value: 50 })}
+                  onClick={() => fieldsArray.append({ name: '', max_value: 50, description: '' })}
                   disabled={isLoading}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -608,6 +609,26 @@ const RatingConfigForm: React.FC<RatingConfigFormProps> = ({
                           </FormItem>
                         )}
                       />
+
+                      <FormField
+    control={form.control}
+    name={`fields.${index}.description` as any}
+    render={({ field }) => (
+      <FormItem>
+        <FormLabel className="text-foreground">Description</FormLabel>
+        <FormControl>
+          <Textarea
+            placeholder="Describe what this field measures..."
+            {...field}
+            disabled={isLoading}
+            className="bg-background border-input text-foreground"
+            rows={2}
+          />
+        </FormControl>
+        <FormMessage className="text-destructive" />
+      </FormItem>
+    )}
+  />
 
                       <FormField
                         control={form.control}

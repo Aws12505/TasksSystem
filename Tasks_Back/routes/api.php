@@ -18,6 +18,7 @@ use App\Http\Controllers\TaskRatingController;
 use App\Http\Controllers\StakeholderRatingController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\KanbanController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -29,143 +30,266 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // Public routes
 Route::post('tickets', [TicketController::class, 'store']);
-Route::get('users', [UserController::class, 'index']);
+
 // Protected routes
-// routes/api.php (Add to existing protected routes)
 Route::middleware(['auth:sanctum'])->group(function () {
     
     // ==================== AUTH ====================
     Route::post('/logout', [AuthController::class, 'logout']);
     
     // ==================== USERS ====================
-    Route::apiResource('users', UserController::class)->except(['index']);
-    Route::get('users/{id}/with-projects', [UserController::class, 'showWithProjects']);
-    Route::get('users/{id}/roles-and-permissions', [UserController::class, 'getRolesAndPermissions']);
-    Route::post('users/{id}/sync-roles', [UserController::class, 'syncRoles']);
-    Route::post('users/{id}/sync-permissions', [UserController::class, 'syncPermissions']);
-    Route::post('users/{id}/sync-roles-and-permissions', [UserController::class, 'syncRolesAndPermissions']);
-    Route::get('users/{id}/projects', [UserController::class, 'getProjects']);
+    Route::middleware(['permission:view users'])->group(function () {
+        Route::get('users', [UserController::class, 'index']);
+        Route::get('users/{id}', [UserController::class, 'show']);
+        Route::get('users/{id}/with-projects', [UserController::class, 'showWithProjects']);
+        Route::get('users/{id}/roles-and-permissions', [UserController::class, 'getRolesAndPermissions']);
+        Route::get('users/{id}/projects', [UserController::class, 'getProjects']);
+        Route::get('users/{id}/task-assignments', [UserController::class, 'getTaskAssignments']);
+    });
+    
+    Route::middleware(['permission:create users'])->group(function () {
+        Route::post('users', [UserController::class, 'store']);
+    });
+    
+    Route::middleware(['permission:edit users'])->group(function () {
+        Route::put('users/{id}', [UserController::class, 'update']);
+        Route::post('users/{id}/sync-roles', [UserController::class, 'syncRoles']);
+        Route::post('users/{id}/sync-permissions', [UserController::class, 'syncPermissions']);
+        Route::post('users/{id}/sync-roles-and-permissions', [UserController::class, 'syncRolesAndPermissions']);
+    });
+    
+    Route::middleware(['permission:delete users'])->group(function () {
+        Route::delete('users/{id}', [UserController::class, 'destroy']);
+    });
     
     // ==================== ROLES ====================
-    Route::apiResource('roles', RoleController::class);
+    Route::middleware(['permission:view roles'])->group(function () {
+        Route::get('roles', [RoleController::class, 'index']);
+        Route::get('roles/{id}', [RoleController::class, 'show']);
+    });
+    
+    Route::middleware(['permission:create roles'])->group(function () {
+        Route::post('roles', [RoleController::class, 'store']);
+    });
+    
+    Route::middleware(['permission:edit roles'])->group(function () {
+        Route::put('roles/{id}', [RoleController::class, 'update']);
+    });
+    
+    Route::middleware(['permission:delete roles'])->group(function () {
+        Route::delete('roles/{id}', [RoleController::class, 'destroy']);
+    });
     
     // ==================== PERMISSIONS ====================
-    Route::get('permissions', [PermissionController::class, 'index']);
-    Route::get('permissions/{id}', [PermissionController::class, 'show']);
+    Route::middleware(['permission:view permissions'])->group(function () {
+        Route::get('permissions', [PermissionController::class, 'index']);
+        Route::get('permissions/{id}', [PermissionController::class, 'show']);
+    });
     
     // ==================== PROJECTS ====================
-    Route::apiResource('projects', ProjectController::class);
-    Route::get('projects/{projectId}/sections', [SectionController::class, 'getByProject']);
+    Route::middleware(['permission:view projects'])->group(function () {
+        Route::get('projects', [ProjectController::class, 'index']);
+        Route::get('projects/{id}', [ProjectController::class, 'show']);
+        Route::get('projects/{projectId}/sections', [SectionController::class, 'getByProject']);
+        Route::get('projects/{projectId}/assignments', [ProjectAssignmentController::class, 'getProjectAssignments']);
+        Route::get('projects/{projectId}/stakeholder-ratings', [StakeholderRatingController::class, 'getByProject']);
+    });
+    
+    Route::middleware(['permission:create projects'])->group(function () {
+        Route::post('projects', [ProjectController::class, 'store']);
+    });
+    
+    Route::middleware(['permission:edit projects'])->group(function () {
+        Route::put('projects/{id}', [ProjectController::class, 'update']);
+    });
+    
+    Route::middleware(['permission:delete projects'])->group(function () {
+        Route::delete('projects/{id}', [ProjectController::class, 'destroy']);
+    });
     
     // ==================== SECTIONS ====================
-    Route::apiResource('sections', SectionController::class);
-    Route::get('sections/{sectionId}/tasks', [TaskController::class, 'getBySection']);
+    Route::middleware(['permission:view sections'])->group(function () {
+        Route::get('sections', [SectionController::class, 'index']);
+        Route::get('sections/{id}', [SectionController::class, 'show']);
+        Route::get('sections/{sectionId}/tasks', [TaskController::class, 'getBySection']);
+        Route::get('sections/{sectionId}/tasks-with-assignments', [ProjectAssignmentController::class, 'getSectionTasksWithAssignments']);
+    });
+    
+    Route::middleware(['permission:create sections'])->group(function () {
+        Route::post('sections', [SectionController::class, 'store']);
+    });
+    
+    Route::middleware(['permission:edit sections'])->group(function () {
+        Route::put('sections/{id}', [SectionController::class, 'update']);
+    });
+    
+    Route::middleware(['permission:delete sections'])->group(function () {
+        Route::delete('sections/{id}', [SectionController::class, 'destroy']);
+    });
     
     // ==================== TASKS ====================
-    Route::apiResource('tasks', TaskController::class);
-    Route::post('tasks/{id}/status', [TaskController::class, 'updateStatus']);
-    Route::get('tasks/{taskId}/subtasks', [SubtaskController::class, 'getByTask']);
+    Route::middleware(['permission:view tasks'])->group(function () {
+        Route::get('tasks', [TaskController::class, 'index']);
+        Route::get('tasks/{id}', [TaskController::class, 'show']);
+        Route::get('tasks/{id}/with-assignments', [TaskController::class, 'showWithAssignments']);
+        Route::get('tasks/{taskId}/subtasks', [SubtaskController::class, 'getByTask']);
+        Route::get('tasks/{taskId}/help-requests', [HelpRequestController::class, 'getByTask']);
+        Route::get('tasks/{taskId}/ratings', [TaskRatingController::class, 'getByTask']);
+    });
+    
+    Route::middleware(['permission:create tasks'])->group(function () {
+        Route::post('tasks/comprehensive', [TaskController::class, 'storeComprehensive']);
+        Route::post('tasks', [TaskController::class, 'store']);
+    });
+    
+    Route::middleware(['permission:edit tasks'])->group(function () {
+        Route::put('tasks/{id}', [TaskController::class, 'update']);
+        Route::post('tasks/{id}/status', [TaskController::class, 'updateStatus']);
+        Route::post('tasks/{id}/assign-users', [TaskController::class, 'assignUsers']);
+        Route::post('tasks/{id}/add-user', [TaskController::class, 'addUser']);
+        Route::put('tasks/{id}/users/{userId}/assignment', [TaskController::class, 'updateUserAssignment']);
+        Route::delete('tasks/{id}/users/{userId}', [TaskController::class, 'removeUser']);
+    });
+    
+    Route::middleware(['permission:delete tasks'])->group(function () {
+        Route::delete('tasks/{id}', [TaskController::class, 'destroy']);
+    });
     
     // ==================== SUBTASKS ====================
-    Route::apiResource('subtasks', SubtaskController::class);
-    Route::post('subtasks/{id}/toggle', [SubtaskController::class, 'toggleCompletion']);
-
-    // Task assignment management
-    Route::get('tasks/{id}/with-assignments', [TaskController::class, 'showWithAssignments']);
-    Route::post('tasks/{id}/assign-users', [TaskController::class, 'assignUsers']);
-    Route::post('tasks/{id}/add-user', [TaskController::class, 'addUser']);
-    Route::put('tasks/{id}/users/{userId}/assignment', [TaskController::class, 'updateUserAssignment']);
-    Route::delete('tasks/{id}/users/{userId}', [TaskController::class, 'removeUser']);
+    Route::middleware(['permission:view subtasks'])->group(function () {
+        Route::get('subtasks', [SubtaskController::class, 'index']);
+        Route::get('subtasks/{id}', [SubtaskController::class, 'show']);
+    });
     
-    // User task assignments
-    Route::get('users/{id}/task-assignments', [UserController::class, 'getTaskAssignments']);
+    Route::middleware(['permission:create subtasks'])->group(function () {
+        Route::post('subtasks', [SubtaskController::class, 'store']);
+    });
     
-    // Project assignments
-    Route::get('projects/{projectId}/assignments', [ProjectAssignmentController::class, 'getProjectAssignments']);
+    Route::middleware(['permission:edit subtasks'])->group(function () {
+        Route::put('subtasks/{id}', [SubtaskController::class, 'update']);
+        Route::post('subtasks/{id}/toggle', [SubtaskController::class, 'toggleCompletion']);
+    });
     
-    // Section tasks with assignments
-    Route::get('sections/{sectionId}/tasks-with-assignments', [ProjectAssignmentController::class, 'getSectionTasksWithAssignments']);
-
+    Route::middleware(['permission:delete subtasks'])->group(function () {
+        Route::delete('subtasks/{id}', [SubtaskController::class, 'destroy']);
+    });
+    
     // ==================== HELP REQUESTS ====================
-    Route::get('help-requests/available', [HelpRequestController::class, 'available']);
-    Route::apiResource('help-requests', HelpRequestController::class);
+    Route::middleware(['permission:view help requests'])->group(function () {
+        Route::get('help-requests/available', [HelpRequestController::class, 'available']);
+        Route::get('help-requests', [HelpRequestController::class, 'index']);
+        Route::get('help-requests/{id}', [HelpRequestController::class, 'show']);
+        Route::get('users/{userId}/help-requests/requested', [HelpRequestController::class, 'getByRequester']);
+        Route::get('users/{userId}/help-requests/helping', [HelpRequestController::class, 'getByHelper']);
+    });
     
-    // Help request specific actions
-    Route::post('help-requests/{id}/claim', [HelpRequestController::class, 'claim']);
-    Route::post('help-requests/{id}/assign/{userId}', [HelpRequestController::class, 'assign']);
-    Route::post('help-requests/{id}/complete', [HelpRequestController::class, 'complete']);
-    Route::post('help-requests/{id}/unclaim', [HelpRequestController::class, 'unclaim']);
+    Route::middleware(['permission:create help requests'])->group(function () {
+        Route::post('help-requests', [HelpRequestController::class, 'store']);
+    });
     
-    // Task help requests
-    Route::get('tasks/{taskId}/help-requests', [HelpRequestController::class, 'getByTask']);
+    Route::middleware(['permission:edit help requests'])->group(function () {
+        Route::put('help-requests/{id}', [HelpRequestController::class, 'update']);
+        Route::post('help-requests/{id}/claim', [HelpRequestController::class, 'claim']);
+        Route::post('help-requests/{id}/assign/{userId}', [HelpRequestController::class, 'assign']);
+        Route::post('help-requests/{id}/complete', [HelpRequestController::class, 'complete']);
+        Route::post('help-requests/{id}/unclaim', [HelpRequestController::class, 'unclaim']);
+    });
     
-    // User help requests
-    Route::get('users/{userId}/help-requests/requested', [HelpRequestController::class, 'getByRequester']);
-    Route::get('users/{userId}/help-requests/helping', [HelpRequestController::class, 'getByHelper']);
-
-        // ==================== TICKETS ====================
-    Route::get('tickets/available', [TicketController::class, 'available']);
-    Route::apiResource('tickets', TicketController::class)->except(['store']);
+    Route::middleware(['permission:delete help requests'])->group(function () {
+        Route::delete('help-requests/{id}', [HelpRequestController::class, 'destroy']);
+    });
     
-    // Ticket specific actions
-    Route::get('tickets/status/{status}', [TicketController::class, 'getByStatus']);
-    Route::get('tickets/type/{type}', [TicketController::class, 'getByType']);
-    Route::post('tickets/{id}/claim', [TicketController::class, 'claim']);
-    Route::post('tickets/{id}/assign/{userId}', [TicketController::class, 'assign']);
-    Route::post('tickets/{id}/complete', [TicketController::class, 'complete']);
-    Route::post('tickets/{id}/unassign', [TicketController::class, 'unassign']);
-    Route::post('tickets/{id}/status', [TicketController::class, 'updateStatus']);
+    // ==================== TICKETS ====================
+    Route::middleware(['permission:view tickets'])->group(function () {
+        Route::get('tickets/available', [TicketController::class, 'available']);
+        Route::get('tickets', [TicketController::class, 'index']);
+        Route::get('tickets/{id}', [TicketController::class, 'show']);
+        Route::get('tickets/status/{status}', [TicketController::class, 'getByStatus']);
+        Route::get('tickets/type/{type}', [TicketController::class, 'getByType']);
+        Route::get('users/{userId}/tickets/requested', [TicketController::class, 'getByRequester']);
+        Route::get('users/{userId}/tickets/assigned', [TicketController::class, 'getByAssignee']);
+    });
     
-    // User tickets
-    Route::get('users/{userId}/tickets/requested', [TicketController::class, 'getByRequester']);
-    Route::get('users/{userId}/tickets/assigned', [TicketController::class, 'getByAssignee']);
-
-// ==================== RATING CONFIGS ====================
-    Route::apiResource('rating-configs', RatingConfigController::class);
-    Route::get('rating-configs/type/{type}', [RatingConfigController::class, 'getByType']);
-    Route::post('rating-configs/{id}/activate', [RatingConfigController::class, 'activate']);
-    Route::get('rating-configs/type/{type}/active', [RatingConfigController::class, 'getActiveByType']);
+    Route::middleware(['permission:edit tickets'])->group(function () {
+        Route::put('tickets/{id}', [TicketController::class, 'update']);
+        Route::post('tickets/{id}/claim', [TicketController::class, 'claim']);
+        Route::post('tickets/{id}/assign/{userId}', [TicketController::class, 'assign']);
+        Route::post('tickets/{id}/complete', [TicketController::class, 'complete']);
+        Route::post('tickets/{id}/unassign', [TicketController::class, 'unassign']);
+        Route::post('tickets/{id}/status', [TicketController::class, 'updateStatus']);
+    });
+    
+    Route::middleware(['permission:delete tickets'])->group(function () {
+        Route::delete('tickets/{id}', [TicketController::class, 'destroy']);
+    });
+    
+    // ==================== RATING CONFIGS ====================
+    Route::middleware(['permission:view rating configs'])->group(function () {
+        Route::get('rating-configs', [RatingConfigController::class, 'index']);
+        Route::get('rating-configs/{id}', [RatingConfigController::class, 'show']);
+        Route::get('rating-configs/type/{type}', [RatingConfigController::class, 'getByType']);
+        Route::get('rating-configs/type/{type}/active', [RatingConfigController::class, 'getActiveByType']);
+    });
+    
+    Route::middleware(['permission:create rating configs'])->group(function () {
+        Route::post('rating-configs', [RatingConfigController::class, 'store']);
+    });
+    
+    Route::middleware(['permission:edit rating configs'])->group(function () {
+        Route::put('rating-configs/{id}', [RatingConfigController::class, 'update']);
+        Route::post('rating-configs/{id}/activate', [RatingConfigController::class, 'activate']);
+    });
+    
+    Route::middleware(['permission:delete rating configs'])->group(function () {
+        Route::delete('rating-configs/{id}', [RatingConfigController::class, 'destroy']);
+    });
+    
     // ==================== TASK RATINGS ====================
-    Route::post('task-ratings', [TaskRatingController::class, 'store']);
-    Route::put('task-ratings/{id}', [TaskRatingController::class, 'update']);
-    Route::get('tasks/{taskId}/ratings', [TaskRatingController::class, 'getByTask']);
+    Route::middleware(['permission:create task ratings'])->group(function () {
+        Route::post('task-ratings', [TaskRatingController::class, 'store']);
+    });
+    
+    Route::middleware(['permission:edit task ratings'])->group(function () {
+        Route::put('task-ratings/{id}', [TaskRatingController::class, 'update']);
+    });
     
     // ==================== STAKEHOLDER RATINGS ====================
-    Route::post('stakeholder-ratings', [StakeholderRatingController::class, 'store']);
-    Route::put('stakeholder-ratings/{id}', [StakeholderRatingController::class, 'update']);
-    Route::get('projects/{projectId}/stakeholder-ratings', [StakeholderRatingController::class, 'getByProject']);
+    Route::middleware(['permission:create stakeholder ratings'])->group(function () {
+        Route::post('stakeholder-ratings', [StakeholderRatingController::class, 'store']);
+    });
+    
+    Route::middleware(['permission:edit stakeholder ratings'])->group(function () {
+        Route::put('stakeholder-ratings/{id}', [StakeholderRatingController::class, 'update']);
+    });
     
     // ==================== FINAL RATINGS ====================
-    Route::get('final-ratings', [FinalRatingController::class, 'index']);
-    Route::post('users/{userId}/calculate-final-rating', [FinalRatingController::class, 'calculateForUser']);
-    Route::get('users/{userId}/final-rating/{periodStart}/{periodEnd}', [FinalRatingController::class, 'getUserRating']);
-
+    Route::middleware(['permission:view final ratings'])->group(function () {
+        Route::get('final-ratings', [FinalRatingController::class, 'index']);
+        Route::get('users/{userId}/final-rating/{periodStart}/{periodEnd}', [FinalRatingController::class, 'getUserRating']);
+    });
+    
+    Route::middleware(['permission:calculate final ratings'])->group(function () {
+        Route::post('users/{userId}/calculate-final-rating', [FinalRatingController::class, 'calculateForUser']);
+    });
+    
     // ==================== ANALYTICS ====================
-    Route::prefix('analytics')->group(function () {
-        // Dashboard and overview
+    Route::prefix('analytics')->middleware(['permission:view analytics'])->group(function () {
         Route::get('/dashboard', [AnalyticsController::class, 'dashboard']);
         Route::get('/report', [AnalyticsController::class, 'report']);
         Route::get('/export', [AnalyticsController::class, 'exportReport']);
-        
-        // User analytics
         Route::get('/users/{userId}', [AnalyticsController::class, 'userAnalytics']);
         Route::get('/top-performers', [AnalyticsController::class, 'topPerformers']);
-        
-        // Project analytics
         Route::get('/projects/{projectId}', [AnalyticsController::class, 'projectAnalytics']);
-        
-        // System analytics
         Route::get('/system', [AnalyticsController::class, 'systemStats']);
     });
-
-    // Kanban routes
-Route::prefix('projects/{project}')->group(function () {
-    Route::get('kanban', [KanbanController::class, 'getProjectKanban']);
-});
-
-Route::prefix('tasks/{task}')->group(function () {
-    Route::post('move-section', [KanbanController::class, 'moveTaskToSection']);
-    Route::post('move-status', [KanbanController::class, 'moveTaskStatus']);
-});
-
+    
+    // ==================== KANBAN ====================
+    Route::middleware(['permission:view projects'])->group(function () {
+        Route::get('projects/{project}/kanban', [KanbanController::class, 'getProjectKanban']);
+    });
+    
+    Route::middleware(['permission:edit tasks'])->group(function () {
+        Route::post('tasks/{task}/move-section', [KanbanController::class, 'moveTaskToSection']);
+        Route::post('tasks/{task}/move-status', [KanbanController::class, 'moveTaskStatus']);
+    });
 });

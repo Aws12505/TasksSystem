@@ -104,7 +104,14 @@ const TaskRatingForm: React.FC<TaskRatingFormProps> = ({
                     render={({ field: controllerField, fieldState }) => (
                       <FormItem>
                         <div className="flex items-center justify-between mb-2">
+                                        <div className="flex-1">
                           <FormLabel className="text-foreground">{field.name}</FormLabel>
+                          {field.description && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {field.description}
+                  </p>
+                )}
+              </div>
                           <span className="text-sm text-muted-foreground">
                             {Number.isFinite(controllerField.value as number) ? controllerField.value : 0} / {field.max_value}
                           </span>

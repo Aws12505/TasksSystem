@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useHelpRequests } from '../hooks/useHelpRequests'
 import { useFiltersStore } from '../../../stores/filtersStore'
+import { usePermissions } from '@/hooks/usePermissions'
 import HelpRequestsList from '../components/HelpRequestsList'
 import { Plus, Search, HelpCircle, Clock, CheckCircle, Users } from 'lucide-react'
 
@@ -19,18 +20,30 @@ const HelpRequestsPage: React.FC = () => {
     unclaimHelpRequest 
   } = useHelpRequests()
   const { searchQuery, setSearchQuery } = useFiltersStore()
+  const { hasPermission } = usePermissions()
 
   const handleDelete = async (id: number) => {
+    if (!hasPermission('delete help requests')) {
+      return
+    }
+    
     if (window.confirm('Are you sure you want to delete this help request?')) {
       await deleteHelpRequest(id)
     }
   }
 
   const handleClaim = async (id: number) => {
+    // if (!hasPermission('claim help requests')) {
+    //   return
+    // }
     await claimHelpRequest(id)
   }
 
   const handleUnclaim = async (id: number) => {
+    // if (!hasPermission('claim help requests')) {
+    //   return
+    // }
+    
     if (window.confirm('Are you sure you want to unclaim this help request?')) {
       await unclaimHelpRequest(id)
     }
@@ -53,12 +66,14 @@ const HelpRequestsPage: React.FC = () => {
             <p className="text-muted-foreground">Manage support requests and provide assistance</p>
           </div>
         </div>
-        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Link to="/help-requests/create">
-            <Plus className="mr-2 h-4 w-4" />
-            Request Help
-          </Link>
-        </Button>
+        {hasPermission('create help requests') && (
+          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link to="/help-requests/create">
+              <Plus className="mr-2 h-4 w-4" />
+              Request Help
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Search */}

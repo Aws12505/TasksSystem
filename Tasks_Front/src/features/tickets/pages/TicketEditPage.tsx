@@ -7,6 +7,7 @@ import { useTickets } from '../hooks/useTickets'
 import { useTicketsStore } from '../stores/ticketsStore'
 import TicketForm from '../components/TicketForm'
 import { ArrowLeft, Ticket } from 'lucide-react'
+import { useAuthStore } from '@/features/auth/stores/authStore' // Add this import
 
 const TicketEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -14,6 +15,7 @@ const TicketEditPage: React.FC = () => {
   const { ticket, availableUsers, isLoading, error } = useTicket(id!)
   const { updateTicket } = useTickets()
   const { getTypeOptions } = useTicketsStore()
+  const { isAuthenticated } = useAuthStore() // Add this line
 
   const handleUpdateTicket = async (data: any) => {
     if (!ticket) return
@@ -74,6 +76,7 @@ const TicketEditPage: React.FC = () => {
               typeOptions={getTypeOptions()}
               onSubmit={handleUpdateTicket}
               isLoading={false}
+              isAuthenticated={isAuthenticated} // Add this prop
             />
           </CardContent>
         </Card>

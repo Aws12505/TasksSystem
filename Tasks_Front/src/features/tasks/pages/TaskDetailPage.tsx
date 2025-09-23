@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useTask } from '../hooks/useTask'
 import { useSubtasks } from '../../subtasks/hooks/useSubtasks'
+import { usePermissions } from '@/hooks/usePermissions'
 import TaskStatusBadge from '../components/TaskStatusBadge'
 import TaskPriorityBadge from '../components/TaskPriorityBadge'
 import TaskAssignments from '../components/TaskAssignments'
 import SubtasksList from '../../subtasks/components/SubtasksList'
 import { Edit, ArrowLeft, CheckSquare, Calendar, Weight, Star } from 'lucide-react'
-import type { TaskStatus } from '../../../types/Task' // Add this import
+import type { TaskStatus } from '../../../types/Task'
 
 const TaskDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -26,6 +27,7 @@ const TaskDetailPage: React.FC = () => {
   } = useTask(id!)
   
   const { updateTaskStatus } = useSubtasks()
+  const { hasPermission, hasAnyPermission } = usePermissions()
 
   if (isLoading) {
     return (
@@ -47,8 +49,8 @@ const TaskDetailPage: React.FC = () => {
     )
   }
 
-  // Fix: Cast string to TaskStatus
   const handleStatusUpdate = async (status: string) => {
+    if (!hasPermission('edit tasks')) return
     await updateTaskStatus(task.id, { status: status as TaskStatus })
   }
 
@@ -77,34 +79,42 @@ const TaskDetailPage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleStatusUpdate('in_progress')}
-            disabled={task.status === 'in_progress'}
-          >
-            Mark In Progress
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleStatusUpdate('done')}
-            disabled={task.status === 'done'}
-          >
-            Mark Complete
-          </Button>
-          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link to={`/tasks/${task.id}/edit`}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit Task
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-  <Link to={`/ratings/tasks/${task.id}`}>
-    <Star className="mr-2 h-4 w-4" />
-    Rate Task
-  </Link>
-</Button>
+          {hasPermission('edit tasks') && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleStatusUpdate('in_progress')}
+                disabled={task.status === 'in_progress'}
+              >
+                Mark In Progress
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleStatusUpdate('done')}
+                disabled={task.status === 'done'}
+              >
+                Mark Complete
+              </Button>
+            </>
+          )}
+          {hasPermission('edit tasks') && (
+            <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Link to={`/tasks/${task.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Task
+              </Link>
+            </Button>
+          )}
+          {hasAnyPermission(['create task ratings', 'edit task ratings']) && (
+            <Button asChild variant="outline">
+              <Link to={`/ratings/tasks/${task.id}`}>
+                <Star className="mr-2 h-4 w-4" />
+                Rate Task
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -164,20 +174,30 @@ const TaskDetailPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Task Assignments */}
-          <TaskAssignments
-            taskWithAssignments={taskWithAssignments}
-            availableUsers={availableUsers}
-            onAddUser={addUser}
-            onUpdateAssignment={updateAssignment}
-            onRemoveUser={removeUser}
-            isLoading={isLoading}
-          />
+          {/* Task Assignments - Only show if user can edit tasks */}
+          {hasPermission('edit tasks') && (
+            <TaskAssignments
+              taskWithAssignments={taskWithAssignments}
+              availableUsers={availableUsers}
+              onAddUser={addUser}
+              onUpdateAssignment={updateAssignment}
+              onRemoveUser={removeUser}
+              isLoading={isLoading}
+            />
+          )}
         </div>
 
         {/* Subtasks */}
         <div className="lg:col-span-2">
-          <SubtasksList taskId={task.id} />
+          {hasPermission('view subtasks') ? (
+            <SubtasksList taskId={task.id} />
+          ) : (
+            <Card className="bg-card border-border">
+              <CardContent className="p-6 text-center">
+                <p className="text-muted-foreground">You don't have permission to view subtasks</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

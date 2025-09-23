@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 class Task extends Model
 {
     use HasFactory;
@@ -109,5 +110,21 @@ public function activeHelpRequests(): HasMany
     return $this->helpRequests()->where('is_completed', false);
 }
 
+protected static function booted()
+    {
+        static::addGlobalScope('user_scope', function (Builder $builder) {
+            $user = Auth::user();
 
+            if ($user && (!isset($user->role) || $user->role !== 'admin')) {
+                $builder->where(function ($query) use ($user) {
+                    $query->whereHas('assignedUsers', function ($assignedQuery) use ($user) {
+                        $assignedQuery->where('users.id', $user->id);
+                    })
+                    ->orWhereHas('section.project', function ($projectQuery) use ($user) {
+                        $projectQuery->where('stakeholder_id', $user->id);
+                    });
+                });
+            }
+        });
+    }
 }

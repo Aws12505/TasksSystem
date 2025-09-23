@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-
+use Illuminate\Support\Facades\Auth;
 class Project extends Model
 {
       use HasFactory;
@@ -120,5 +120,20 @@ public function getUsersWithTaskAssignments()
     return $users;
 }
 
+protected static function booted()
+    {
+        static::addGlobalScope('user_scope', function (Builder $builder) {
+            $user = Auth::user();
+
+            if ($user && (!isset($user->role) || $user->role !== 'admin')) {
+                $builder->where(function ($query) use ($user) {
+                    $query->where('stakeholder_id', $user->id)
+                          ->orWhereHas('sections.tasks.assignedUsers', function ($taskQuery) use ($user) {
+                              $taskQuery->where('users.id', $user->id);
+                          });
+                });
+            }
+        });
+    }
 
 }

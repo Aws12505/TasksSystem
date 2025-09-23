@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { useProject } from '../hooks/useProject'
+import { usePermissions } from '@/hooks/usePermissions'
 import { useSectionsStore } from '../../sections/stores/sectionsStore'
 import ProjectStatusBadge from '../components/ProjectStatusBadge'
 import SectionsList from '../components/SectionsList'
@@ -15,17 +16,21 @@ const ProjectDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const { project, sections, isLoading, error } = useProject(id!)
   const { createSection, updateSection, deleteSection } = useSectionsStore()
+  const { hasPermission, hasAnyPermission } = usePermissions()
 
   // Wrapper functions to match expected Promise<void> return type
   const handleCreateSection = async (data: CreateSectionRequest): Promise<void> => {
+    if (!hasPermission('create sections')) return
     await createSection(data)
   }
 
   const handleUpdateSection = async (id: number, data: UpdateSectionRequest): Promise<void> => {
+    if (!hasPermission('edit sections')) return
     await updateSection(id, data)
   }
 
   const handleDeleteSection = async (id: number): Promise<void> => {
+    if (!hasPermission('delete sections')) return
     await deleteSection(id)
   }
 
@@ -48,6 +53,8 @@ const ProjectDetailPage: React.FC = () => {
       </div>
     )
   }
+
+  const canRateStakeholders = hasAnyPermission(['create stakeholder ratings', 'edit stakeholder ratings'])
 
   return (
     <div className="space-y-6">
@@ -76,7 +83,7 @@ const ProjectDetailPage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {project.stakeholder_will_rate && (
+          {canRateStakeholders && project.stakeholder_will_rate && (
             <Button asChild variant="outline">
               <Link to={`/ratings/projects/${project.id}/stakeholder`}>
                 <Users className="mr-2 h-4 w-4" />
@@ -84,24 +91,30 @@ const ProjectDetailPage: React.FC = () => {
               </Link>
             </Button>
           )}
-          <Button asChild variant="outline">
-    <Link to={`/analytics/projects/${project.id}`}>
-      <BarChart3 className="mr-2 h-4 w-4" />
-      Project Analytics
-    </Link>
-  </Button>
-  <Button variant="outline" asChild>
-  <Link to={`/projects/${project.id}/kanban`}>
-    <Kanban className="mr-2 h-4 w-4" />
-    Kanban View
-  </Link>
-</Button>
-          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link to={`/projects/${project.id}/edit`}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit Project
-            </Link>
-          </Button>
+          {hasPermission('view analytics') && (
+            <Button asChild variant="outline">
+              <Link to={`/analytics/projects/${project.id}`}>
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Project Analytics
+              </Link>
+            </Button>
+          )}
+          {hasPermission('view projects') && (
+            <Button variant="outline" asChild>
+              <Link to={`/projects/${project.id}/kanban`}>
+                <Kanban className="mr-2 h-4 w-4" />
+                Kanban View
+              </Link>
+            </Button>
+          )}
+          {hasPermission('edit projects') && (
+            <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Link to={`/projects/${project.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Project
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -174,14 +187,22 @@ const ProjectDetailPage: React.FC = () => {
 
         {/* Sections */}
         <div className="lg:col-span-2">
-          <SectionsList
-            sections={sections ?? []}
-            projectId={project.id}
-            onCreateSection={handleCreateSection}
-            onUpdateSection={handleUpdateSection}
-            onDeleteSection={handleDeleteSection}
-            isLoading={false}
-          />
+          {hasPermission('view sections') ? (
+            <SectionsList
+              sections={sections ?? []}
+              projectId={project.id}
+              onCreateSection={handleCreateSection}
+              onUpdateSection={handleUpdateSection}
+              onDeleteSection={handleDeleteSection}
+              isLoading={false}
+            />
+          ) : (
+            <Card className="bg-card border-border">
+              <CardContent className="p-6 text-center">
+                <p className="text-muted-foreground">You don't have permission to view sections</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useRatingConfigs } from '../hooks/useRatingConfigs'
 import { useFiltersStore } from '../../../stores/filtersStore'
+import { usePermissions } from '@/hooks/usePermissions'
 import RatingConfigsList from '../components/RatingConfigsList'
 import { Plus, Search, Settings, CheckCircle2, Clock, Database } from 'lucide-react'
 
@@ -18,14 +19,22 @@ const RatingConfigsPage: React.FC = () => {
     fetchRatingConfigsByType
   } = useRatingConfigs()
   const { searchQuery, setSearchQuery } = useFiltersStore()
+  const { hasPermission } = usePermissions()
 
   const handleDelete = async (id: number) => {
+    if (!hasPermission('delete rating configs')) {
+      return
+    }
+    
     if (window.confirm('Are you sure you want to delete this rating configuration?')) {
       await deleteRatingConfig(id)
     }
   }
 
   const handleActivate = async (id: number) => {
+    if (!hasPermission('edit rating configs')) {
+      return
+    }
     await activateRatingConfig(id)
   }
 
@@ -56,12 +65,14 @@ const RatingConfigsPage: React.FC = () => {
             <p className="text-muted-foreground">Manage rating system configurations</p>
           </div>
         </div>
-        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Link to="/rating-configs/create">
-            <Plus className="mr-2 h-4 w-4" />
-            New Configuration
-          </Link>
-        </Button>
+        {hasPermission('create rating configs') && (
+          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link to="/rating-configs/create">
+              <Plus className="mr-2 h-4 w-4" />
+              New Configuration
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Search */}

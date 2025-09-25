@@ -14,10 +14,12 @@ const App: React.FC = () => {
   
   return (
     <>
+    <div className="overflow-hidden">
       <TaskDialogProvider>
       <Outlet />
       <Toaster position="bottom-right" richColors closeButton />
       </TaskDialogProvider>
+    </div>
     </>
   )
 }

@@ -60,8 +60,8 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
       weight: 10,
       due_date: '',
       priority: 'medium',
-      project_id: 0,
-      section_id: sectionId || 0,
+      project_id: undefined,
+      section_id: sectionId || undefined,
       subtasks: [],
       assignments: []
     }

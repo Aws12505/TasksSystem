@@ -15,7 +15,7 @@ class AuthController extends Controller
     {
         $credentials = $request->validated();
 
-        $user = User::with(['roles', 'permissions'])
+        $user = User::with(['roles.permissions', 'permissions'])
             ->where('email', $credentials['email'])
             ->first();
 

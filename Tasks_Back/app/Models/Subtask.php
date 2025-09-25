@@ -48,23 +48,23 @@ class Subtask extends Model
         });
     }
 
-    protected static function booted()
-    {
-        static::addGlobalScope('user_scope', function (Builder $builder) {
-            $user = Auth::user();
+protected static function booted()
+{
+    static::addGlobalScope('user_scope', function (Builder $builder) {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        if (!$user) return;
 
-            if ($user && (!isset($user->role) || $user->role !== 'admin')) {
-                $builder->whereHas('task', function ($taskQuery) use ($user) {
-                    $taskQuery->where(function ($query) use ($user) {
-                        $query->whereHas('assignedUsers', function ($assignedQuery) use ($user) {
-                            $assignedQuery->where('users.id', $user->id);
-                        })
-                        ->orWhereHas('section.project', function ($projectQuery) use ($user) {
-                            $projectQuery->where('stakeholder_id', $user->id);
-                        });
-                    });
-                });
-            }
+        if ($user->hasRole('admin', 'sanctum')) {
+            return;
+        }
+
+        $builder->whereHas('task', function ($tq) use ($user) {
+            $tq->whereRelation('assignedUsers', 'users.id', $user->id)
+               ->orWhereRelation('section.project', 'stakeholder_id', $user->id);
         });
-    }
+    });
+}
+
+
 }

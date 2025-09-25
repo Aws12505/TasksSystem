@@ -11,6 +11,7 @@ export class AuthService {
     return apiClient.post<null>('/logout');
   }
 
+  
   // Helper methods for token management
   setToken(token: string): void {
     localStorage.setItem('auth_token', token);

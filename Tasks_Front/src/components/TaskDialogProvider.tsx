@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState,type ReactNode } from 'react'
+import React, { createContext, useContext, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Dialog,
@@ -85,7 +85,7 @@ export const TaskDialogProvider: React.FC<TaskDialogProviderProps> = ({ children
   )
 }
 
-// Separate portal dialog component
+// ✅ FIXED: Separate portal dialog component
 interface TaskDialogPortalProps {
   dialogState: TaskDialogState
   onClose: () => void
@@ -93,12 +93,30 @@ interface TaskDialogPortalProps {
 
 const TaskDialogPortal: React.FC<TaskDialogPortalProps> = ({ dialogState, onClose }) => {
   const { section, projectId, task, isOpen } = dialogState
-  const { createTask, updateTask } = useTasks(section?.id || 0)
+
+  // ✅ FIXED: Don't render anything if dialog is not open or missing data
+  if (!isOpen || !section || !projectId) {
+    return null
+  }
+
+  // ✅ FIXED: Only render the actual dialog content when open
+  return <TaskDialogContent section={section} projectId={projectId} task={task} onClose={onClose} />
+}
+
+// ✅ NEW: Separate component that only renders when dialog is actually open
+interface TaskDialogContentProps {
+  section: Section
+  projectId: number
+  task: Task | null
+  onClose: () => void
+}
+
+const TaskDialogContent: React.FC<TaskDialogContentProps> = ({ section, projectId, task, onClose }) => {
+  // ✅ FIXED: useTasks is only called when dialog is actually open and has valid section
+  const { createTask, updateTask } = useTasks(section.id)
 
   const handleSubmit = async (data: any) => {
     try {
-      if (!section) return
-      
       if (task) {
         await updateTask(task.id, data)
       } else {
@@ -110,10 +128,8 @@ const TaskDialogPortal: React.FC<TaskDialogPortalProps> = ({ dialogState, onClos
     }
   }
 
-  if (!section || !projectId) return null
-
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

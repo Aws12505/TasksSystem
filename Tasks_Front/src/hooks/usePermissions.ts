@@ -3,13 +3,13 @@ import { useAuthStore } from '../features/auth/stores/authStore'
 import type { PermissionName } from '../types/User'
 
 export const usePermissions = () => {
-  const { user } = useAuthStore()
+  const { user, allPermissions } = useAuthStore()
   
   const hasPermission = (permission: PermissionName): boolean => {
-    if (!user || !user.permissions) return false
+    if (!user || !allPermissions) return false
     
-    // Check if user has the permission directly or through roles
-    return user.permissions.some(p => p.name === permission)
+    // Check combined permissions (direct + role permissions)
+    return allPermissions.some(p => p.name === permission)
   }
   
   const hasRole = (roleName: string): boolean => {
@@ -30,6 +30,7 @@ export const usePermissions = () => {
     hasRole,
     hasAnyPermission,
     hasAllPermissions,
-    userPermissions: user?.permissions?.map(p => p.name) || []
+    userPermissions: allPermissions?.map(p => p.name) || [],
+    allPermissions: allPermissions || []
   }
 }

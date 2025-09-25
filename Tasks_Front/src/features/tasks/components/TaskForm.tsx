@@ -91,8 +91,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
       due_date: task?.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '',
       priority: (task?.priority || 'medium') as Priority,
       ...(isEditing && { status: task?.status || 'pending' as TaskStatus }),
-      project_id: preSelectedProjectId || task?.section?.project?.id || 0,
-      section_id: preSelectedSectionId || task?.section_id || 0,
+      project_id: preSelectedProjectId || task?.section?.project?.id || undefined,
+      section_id: preSelectedSectionId || task?.section_id || undefined,
     },
   })
 

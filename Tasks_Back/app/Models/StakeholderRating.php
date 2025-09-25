@@ -37,23 +37,24 @@ class StakeholderRating extends Model
         return $this->belongsTo(User::class, 'stakeholder_id');
     }
 
-    protected static function booted()
-    {
-        static::addGlobalScope('user_scope', function (Builder $builder) {
-            $user = Auth::user();
+protected static function booted()
+{
+    static::addGlobalScope('user_scope', function (Builder $builder) {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        if (!$user) return;
 
-            if ($user && (!isset($user->role) || $user->role !== 'admin')) {
-                // Scope based on the project this rating is for
-                // User can see stakeholder ratings if they can see the project itself
-                $builder->whereHas('project', function ($projectQuery) use ($user) {
-                    $projectQuery->where(function ($query) use ($user) {
-                        $query->where('stakeholder_id', $user->id)
-                              ->orWhereHas('sections.tasks.assignedUsers', function ($taskQuery) use ($user) {
-                                  $taskQuery->where('users.id', $user->id);
-                              });
-                    });
-                });
-            }
+        if ($user->hasRole('admin', 'sanctum')) {
+            return;
+        }
+
+        // mirror project visibility
+        $builder->whereHas('project', function ($pq) use ($user) {
+            $pq->where('stakeholder_id', $user->id)
+               ->orWhereRelation('sections.tasks.assignedUsers', 'users.id', $user->id);
         });
-    }
+    });
+}
+
+
 }

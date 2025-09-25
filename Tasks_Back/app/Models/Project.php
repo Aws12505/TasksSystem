@@ -30,50 +30,45 @@ class Project extends Model
         'updated_at' => 'datetime',
     ];
 
-    public function updateProjectStatusAndProgress(): void
+public function updateProjectStatusAndProgress(): void
 {
     $tasks = $this->sections()->with('tasks')->get()->flatMap->tasks;
-    
+
     if ($tasks->isEmpty()) {
         $this->update([
             'status' => 'pending',
-            'progress_percentage' => 0.00
+            'progress_percentage' => 0.00,
         ]);
         return;
     }
 
-    // Calculate status
-    $taskStatuses = $tasks->pluck('status');
-    $pendingCount = $taskStatuses->where('status', 'pending')->count();
-    $inProgressCount = $taskStatuses->where('status', 'in_progress')->count();
-    $doneCount = $taskStatuses->where('status', 'done')->count();
-    $ratedCount = $taskStatuses->where('status', 'rated')->count();
-    $totalTasks = $tasks->count();
+    // $pendingCount    = $tasks->where('status', 'pending')->count();
+    $inProgressCount = $tasks->where('status', 'in_progress')->count();
+    $doneCount       = $tasks->where('status', 'done')->count();
+    $ratedCount      = $tasks->where('status', 'rated')->count();
+    $totalTasks      = $tasks->count();
 
-    if ($ratedCount === $totalTasks) {
-        $status = 'rated';
-    } elseif ($doneCount + $ratedCount === $totalTasks) {
-        $status = 'done';
-    } elseif ($inProgressCount > 0 || $doneCount > 0 || $ratedCount > 0) {
-        $status = 'in_progress';
-    } else {
-        $status = 'pending';
-    }
+    $status = match (true) {
+        $ratedCount === $totalTasks                        => 'rated',
+        ($doneCount + $ratedCount) === $totalTasks         => 'done',
+        ($inProgressCount || $doneCount || $ratedCount)    => 'in_progress',
+        default                                            => 'pending',
+    };
 
-    // Calculate progress percentage based on task weights
-    $totalWeight = $tasks->sum('weight');
-    $completedWeight = $tasks->whereIn('status', ['done', 'rated'])->sum('weight');
-    $inProgressWeight = $tasks->where('status', 'in_progress')->sum('weight') * 0.5; // 50% for in progress
-    
-    $progressPercentage = $totalWeight > 0 
-        ? (($completedWeight + $inProgressWeight) / $totalWeight) * 100 
+    $totalWeight       = (float) $tasks->sum('weight');
+    $completedWeight   = (float) $tasks->whereIn('status', ['done', 'rated'])->sum('weight');
+    $inProgressWeight  = (float) $tasks->where('status', 'in_progress')->sum('weight') * 0.5;
+
+    $progressPercentage = $totalWeight > 0
+        ? (($completedWeight + $inProgressWeight) / $totalWeight) * 100
         : 0;
 
     $this->update([
         'status' => $status,
-        'progress_percentage' => round($progressPercentage, 2)
+        'progress_percentage' => round($progressPercentage, 2),
     ]);
 }
+
 
 // Update the sections relationship to include tasks for calculations
 public function sections(): HasMany
@@ -121,19 +116,22 @@ public function getUsersWithTaskAssignments()
 }
 
 protected static function booted()
-    {
-        static::addGlobalScope('user_scope', function (Builder $builder) {
-            $user = Auth::user();
+{
+    static::addGlobalScope('user_scope', function (Builder $builder) {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        if (!$user) return;
 
-            if ($user && (!isset($user->role) || $user->role !== 'admin')) {
-                $builder->where(function ($query) use ($user) {
-                    $query->where('stakeholder_id', $user->id)
-                          ->orWhereHas('sections.tasks.assignedUsers', function ($taskQuery) use ($user) {
-                              $taskQuery->where('users.id', $user->id);
-                          });
-                });
-            }
+        if ($user->hasRole('admin', 'sanctum')) {
+            return;
+        }
+
+        $builder->where(function ($q) use ($user) {
+            $q->where('stakeholder_id', $user->id)
+              ->orWhereRelation('sections.tasks.assignedUsers', 'users.id', $user->id);
         });
-    }
+    });
+}
+
 
 }

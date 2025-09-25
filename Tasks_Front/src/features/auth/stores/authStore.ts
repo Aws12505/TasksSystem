@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { authService } from '../../../services/authService'
 import type { User } from '../../../types/User'
+import type { Permission } from '../../../types/Permission'
 import type { LoginRequest } from '../../../types/Auth'
 import { toast } from 'sonner'
 
@@ -10,18 +11,54 @@ interface AuthState {
   token: string | null
   isAuthenticated: boolean
   isLoading: boolean
+  allPermissions: Permission[] // Combined permissions from roles and direct
   login: (credentials: LoginRequest) => Promise<void>
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
 }
 
+// Helper function to combine and deduplicate permissions
+const combinePermissions = (user: User | null): Permission[] => {
+  if (!user) return []
+  
+  const allPermissions: Permission[] = []
+  const permissionNames = new Set<string>()
+  
+  // Add direct permissions
+  if (user.permissions) {
+    user.permissions.forEach(permission => {
+      if (!permissionNames.has(permission.name)) {
+        allPermissions.push(permission)
+        permissionNames.add(permission.name)
+      }
+    })
+  }
+  
+  // Add permissions from roles
+  if (user.roles) {
+    user.roles.forEach(role => {
+      if (role.permissions) {
+        role.permissions.forEach(permission => {
+          if (!permissionNames.has(permission.name)) {
+            allPermissions.push(permission)
+            permissionNames.add(permission.name)
+          }
+        })
+      }
+    })
+  }
+  
+  return allPermissions
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
       isLoading: false,
+      allPermissions: [],
 
       login: async (credentials: LoginRequest) => {
         set({ isLoading: true })
@@ -30,13 +67,15 @@ export const useAuthStore = create<AuthState>()(
           
           if (response.success) {
             const { user, token } = response.data
+            const allPermissions = combinePermissions(user)
             
             authService.setToken(token)
             set({
               user,
               token,
               isAuthenticated: true,
-              isLoading: false
+              isLoading: false,
+              allPermissions
             })
             
             toast.success('Login successful')
@@ -62,7 +101,8 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             token: null,
             isAuthenticated: false,
-            isLoading: false
+            isLoading: false,
+            allPermissions: []
           })
           toast.success('Logged out successfully')
         }
@@ -71,15 +111,19 @@ export const useAuthStore = create<AuthState>()(
       checkAuth: async () => {
         const token = authService.getToken()
         if (token) {
+          const { user } = get()
+          const allPermissions = combinePermissions(user)
           set({
             token,
-            isAuthenticated: true
+            isAuthenticated: true,
+            allPermissions
           })
         } else {
           set({
             user: null,
             token: null,
-            isAuthenticated: false
+            isAuthenticated: false,
+            allPermissions: []
           })
         }
       }
@@ -89,7 +133,8 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         token: state.token,
-        isAuthenticated: state.isAuthenticated
+        isAuthenticated: state.isAuthenticated,
+        allPermissions: state.allPermissions
       })
     }
   )

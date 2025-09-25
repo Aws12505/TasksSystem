@@ -110,21 +110,28 @@ public function activeHelpRequests(): HasMany
     return $this->helpRequests()->where('is_completed', false);
 }
 
-protected static function booted()
-    {
-        static::addGlobalScope('user_scope', function (Builder $builder) {
-            $user = Auth::user();
 
-            if ($user && (!isset($user->role) || $user->role !== 'admin')) {
-                $builder->where(function ($query) use ($user) {
-                    $query->whereHas('assignedUsers', function ($assignedQuery) use ($user) {
-                        $assignedQuery->where('users.id', $user->id);
-                    })
-                    ->orWhereHas('section.project', function ($projectQuery) use ($user) {
-                        $projectQuery->where('stakeholder_id', $user->id);
-                    });
-                });
-            }
+protected static function booted()
+{
+    static::addGlobalScope('user_scope', function (Builder $builder) {
+        $user = Auth::user();
+        /** @var \App\Models\User|null $user */
+        // No user => skip
+        if (!$user) {
+            return;
+        }
+
+        // Use Spatie's hasRole and make it guard-aware
+        if ($user->hasRole('admin', 'sanctum')) {
+            return; // Admins see everything
+        }
+
+        // Limit tasks to ones assigned to the user OR where they are the stakeholder via section->project
+        // Prefer whereRelation (Laravel 9/10). If you're on 8, keep the whereHas version you had.
+        $builder->where(function ($q) use ($user) {
+            $q->whereRelation('assignedUsers', 'users.id', $user->id)
+              ->orWhereRelation('section.project', 'stakeholder_id', $user->id);
         });
-    }
+    });
+}
 }

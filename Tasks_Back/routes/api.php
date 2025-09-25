@@ -131,6 +131,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::middleware(['permission:view tasks'])->group(function () {
         Route::get('tasks', [TaskController::class, 'index']);
         Route::get('tasks/{id}', [TaskController::class, 'show']);
+        Route::post('tasks/{id}/status', [TaskController::class, 'updateStatus']);
         Route::get('tasks/{id}/with-assignments', [TaskController::class, 'showWithAssignments']);
         Route::get('tasks/{taskId}/subtasks', [SubtaskController::class, 'getByTask']);
         Route::get('tasks/{taskId}/help-requests', [HelpRequestController::class, 'getByTask']);
@@ -144,7 +145,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     Route::middleware(['permission:edit tasks'])->group(function () {
         Route::put('tasks/{id}', [TaskController::class, 'update']);
-        Route::post('tasks/{id}/status', [TaskController::class, 'updateStatus']);
         Route::post('tasks/{id}/assign-users', [TaskController::class, 'assignUsers']);
         Route::post('tasks/{id}/add-user', [TaskController::class, 'addUser']);
         Route::put('tasks/{id}/users/{userId}/assignment', [TaskController::class, 'updateUserAssignment']);
@@ -159,6 +159,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::middleware(['permission:view subtasks'])->group(function () {
         Route::get('subtasks', [SubtaskController::class, 'index']);
         Route::get('subtasks/{id}', [SubtaskController::class, 'show']);
+        Route::post('subtasks/{id}/toggle', [SubtaskController::class, 'toggleCompletion']);
     });
     
     Route::middleware(['permission:create subtasks'])->group(function () {
@@ -167,7 +168,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     Route::middleware(['permission:edit subtasks'])->group(function () {
         Route::put('subtasks/{id}', [SubtaskController::class, 'update']);
-        Route::post('subtasks/{id}/toggle', [SubtaskController::class, 'toggleCompletion']);
     });
     
     Route::middleware(['permission:delete subtasks'])->group(function () {

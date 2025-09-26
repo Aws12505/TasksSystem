@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -47,7 +47,6 @@ const updateTaskSchema = z.object({
   section_id: z.number().min(1, 'Section is required')
 })
 
-// Define the form data type based on whether we're editing or creating
 type CreateFormData = z.infer<typeof createTaskSchema>
 type UpdateFormData = z.infer<typeof updateTaskSchema>
 
@@ -69,7 +68,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
 }) => {
   const isEditing = !!task
   
-  // Get projects and sections data
   const { 
     projects, 
     fetchProjects, 
@@ -82,6 +80,18 @@ const TaskForm: React.FC<TaskFormProps> = ({
     isLoading: sectionsLoading 
   } = useSectionsStore()
 
+  // Prefer the appended task.project_id from backend ($appends) if present
+  const initialProjectId =
+    preSelectedProjectId ??
+    (task?.project_id as number | undefined) ??
+    (task?.section?.project?.id as number | undefined) ??
+    0
+
+  const initialSectionId =
+    preSelectedSectionId ??
+    (task?.section_id as number | undefined) ??
+    0
+
   const form = useForm<CreateFormData | UpdateFormData>({
     resolver: zodResolver(isEditing ? updateTaskSchema : createTaskSchema),
     defaultValues: {
@@ -90,33 +100,75 @@ const TaskForm: React.FC<TaskFormProps> = ({
       weight: task?.weight || 10,
       due_date: task?.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '',
       priority: (task?.priority || 'medium') as Priority,
-      ...(isEditing && { status: task?.status || 'pending' as TaskStatus }),
-      project_id: preSelectedProjectId || task?.section?.project?.id || undefined,
-      section_id: preSelectedSectionId || task?.section_id || undefined,
+      ...(isEditing && { status: task?.status || ('pending' as TaskStatus) }),
+      project_id: initialProjectId || undefined,
+      section_id: initialSectionId || undefined,
     },
   })
 
-  // Watch project selection to load sections
   const selectedProjectId = form.watch('project_id')
+
+  // Track initial project and whether we've set the section once
+  const initialProjectIdRef = useRef<number>(initialProjectId)
+  const sectionInitializedRef = useRef<boolean>(false)
+  const prevProjectIdRef = useRef<number | null>(null)
 
   // Load projects on mount
   useEffect(() => {
     fetchProjects()
   }, [fetchProjects])
 
-  // Load sections when project changes
+  // Load sections for the initial project on first render (edit/preselected)
   useEffect(() => {
-    if (selectedProjectId && selectedProjectId > 0) {
-      fetchSectionsByProject(selectedProjectId)
-      // Reset section selection if project changes (except on initial load)
-      if (!isEditing && !preSelectedSectionId) {
-        form.setValue('section_id', 0)
-      }
+    if (initialProjectId && initialProjectId > 0) {
+      fetchSectionsByProject(initialProjectId)
     }
-  }, [selectedProjectId, fetchSectionsByProject, form, isEditing, preSelectedSectionId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProjectId, fetchSectionsByProject])
+
+  // Load sections when the project actually CHANGES (user action)
+  useEffect(() => {
+    if (!selectedProjectId || selectedProjectId === 0) {
+      form.setValue('section_id', 0)
+      prevProjectIdRef.current = selectedProjectId ?? 0
+      return
+    }
+
+    // If this is the very first run with the initial value, don't reset section.
+    if (prevProjectIdRef.current === null) {
+      prevProjectIdRef.current = selectedProjectId
+      fetchSectionsByProject(selectedProjectId)
+      return
+    }
+
+    // If project changed from previous value, fetch and reset section.
+    if (prevProjectIdRef.current !== selectedProjectId) {
+      fetchSectionsByProject(selectedProjectId)
+      form.setValue('section_id', 0)
+      sectionInitializedRef.current = false // allow re-initialization for new project
+      prevProjectIdRef.current = selectedProjectId
+    }
+  }, [selectedProjectId, fetchSectionsByProject, form])
+
+  // Once sections load, if we're editing and haven't initialized the section yet,
+  // set it to the initialSectionId (if that section exists in the loaded list).
+  useEffect(() => {
+    if (sectionInitializedRef.current) return
+    if (!isEditing) return
+    if (!initialSectionId || initialSectionId === 0) return
+    if (!selectedProjectId || selectedProjectId === 0) return
+    // Only auto-select for the original project of the task
+    if (selectedProjectId !== initialProjectIdRef.current) return
+
+    const exists = sections.some((s: Section) => s.id === initialSectionId)
+    if (exists) {
+      form.setValue('section_id', initialSectionId)
+      sectionInitializedRef.current = true
+    }
+  }, [sections, isEditing, initialSectionId, selectedProjectId, form])
 
   const handleSubmit = async (data: CreateFormData | UpdateFormData) => {
-    // Remove project_id from submission data as it's not needed by the API
+    // Remove project_id; backend derives from section_id
     const { project_id, ...submitData } = data
     
     const finalData = {
@@ -128,7 +180,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     await onSubmit(finalData)
   }
 
-  // Get available sections for selected project
+  // Sections filtered by current (watched) project
   const availableSections = sections.filter((section: Section) => 
     section.project_id === selectedProjectId
   )
@@ -308,25 +360,25 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   <SelectContent>
                     <SelectItem value="low">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                        <div className="w-2 h-2 rounded-full" />
                         Low
                       </div>
                     </SelectItem>
                     <SelectItem value="medium">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                        <div className="w-2 h-2 rounded-full" />
                         Medium
                       </div>
                     </SelectItem>
                     <SelectItem value="high">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-orange-500" />
+                        <div className="w-2 h-2 rounded-full" />
                         High
                       </div>
                     </SelectItem>
                     <SelectItem value="critical">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-red-500" />
+                        <div className="w-2 h-2 rounded-full" />
                         Critical
                       </div>
                     </SelectItem>
@@ -357,25 +409,25 @@ const TaskForm: React.FC<TaskFormProps> = ({
                     <SelectContent>
                       <SelectItem value="pending">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-gray-500" />
+                          <div className="w-2 h-2 rounded-full" />
                           Pending
                         </div>
                       </SelectItem>
                       <SelectItem value="in_progress">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-blue-500" />
+                          <div className="w-2 h-2 rounded-full" />
                           In Progress
                         </div>
                       </SelectItem>
                       <SelectItem value="done">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <div className="w-2 h-2 rounded-full" />
                           Done
                         </div>
                       </SelectItem>
                       <SelectItem value="rated">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-purple-500" />
+                          <div className="w-2 h-2 rounded-full" />
                           Rated
                         </div>
                       </SelectItem>

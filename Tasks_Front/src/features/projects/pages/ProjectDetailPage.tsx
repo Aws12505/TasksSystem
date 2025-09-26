@@ -11,27 +11,38 @@ import ProjectStatusBadge from '../components/ProjectStatusBadge'
 import SectionsList from '../components/SectionsList'
 import type { CreateSectionRequest, UpdateSectionRequest } from '../../../types/Section'
 import { Edit, ArrowLeft, FolderOpen, Calendar, CheckSquare, Users, BarChart3, Kanban } from 'lucide-react'
+import { useProjectsStore } from '../../projects/stores/projectsStore'
 
 const ProjectDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const { project, sections, isLoading, error } = useProject(id!)
   const { createSection, updateSection, deleteSection } = useSectionsStore()
   const { hasPermission, hasAnyPermission } = usePermissions()
+  const { fetchProjectSections } = useProjectsStore()
 
   // Wrapper functions to match expected Promise<void> return type
   const handleCreateSection = async (data: CreateSectionRequest): Promise<void> => {
     if (!hasPermission('create sections')) return
-    await createSection(data)
+    const created = await createSection(data)
+    if (created && !!project) {
+      await fetchProjectSections(project.id) // <- refresh the list you actually render
+    }
   }
 
   const handleUpdateSection = async (id: number, data: UpdateSectionRequest): Promise<void> => {
     if (!hasPermission('edit sections')) return
-    await updateSection(id, data)
+    const updated = await updateSection(id, data)
+    if (updated && !!project) {
+      await fetchProjectSections(project.id) // <- refresh the list you actually render
+    }
   }
 
   const handleDeleteSection = async (id: number): Promise<void> => {
     if (!hasPermission('delete sections')) return
-    await deleteSection(id)
+    const deleted = await deleteSection(id)
+    if (deleted && !!project) {
+      await fetchProjectSections(project.id) // <- refresh the list you actually render
+    }
   }
 
   if (isLoading) {

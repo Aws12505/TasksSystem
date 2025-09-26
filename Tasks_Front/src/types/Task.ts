@@ -14,6 +14,7 @@ export interface Task {
   priority: Priority;
   status: TaskStatus;
   section_id: number;
+  project_id: number;
   section: Section;
   subtasks: Subtask[];
   created_at: string;

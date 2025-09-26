@@ -29,6 +29,8 @@ class Task extends Model
         'updated_at' => 'datetime',
     ];
 
+    protected $appends = ['project_id'];
+
     public function section(): BelongsTo
     {
         return $this->belongsTo(Section::class);
@@ -133,5 +135,10 @@ protected static function booted()
               ->orWhereRelation('section.project', 'stakeholder_id', $user->id);
         });
     });
+}
+
+public function getProjectIdAttribute(): ?int
+{
+    return $this->section?->project_id;
 }
 }

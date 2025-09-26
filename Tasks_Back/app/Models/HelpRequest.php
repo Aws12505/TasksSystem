@@ -71,7 +71,7 @@ class HelpRequest extends Model
     }
 
     // Complete the help request with rating
-    public function complete(HelpRequestRating $rating): void
+    public function complete(string $rating): void
     {
         $this->update([
             'rating' => $rating,

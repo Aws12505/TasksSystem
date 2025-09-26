@@ -118,7 +118,7 @@ class HelpRequestService
     }
 
     // Complete help request with rating
-    public function completeHelpRequest(int $id, HelpRequestRating|String $rating): ?HelpRequest
+    public function completeHelpRequest(int $id, string $rating): ?HelpRequest
     {
         $helpRequest = HelpRequest::find($id);
         

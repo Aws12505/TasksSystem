@@ -79,11 +79,11 @@ const TasksList: React.FC<TasksListProps> = ({ tasks, isLoading, onDelete, onSta
                 <TableCell>
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-foreground">{task.name}</p>
-                    {task.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2">
+                    {/* {task.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 ">
                         {task.description}
                       </p>
-                    )}
+                    )} */}
                   </div>
                 </TableCell>
                 <TableCell>

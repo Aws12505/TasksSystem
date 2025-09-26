@@ -16,9 +16,7 @@ class AnalyticsService
 
     public function getDashboardSummary(?int $userId = null, ?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
-        $cacheKey = "dashboard_summary_{$userId}_" . ($startDate?->format('Y-m-d') ?? 'all') . "_" . ($endDate?->format('Y-m-d') ?? 'all');
         
-        return Cache::remember($cacheKey, 300, function() use ($userId, $startDate, $endDate) {
             return [
                 'user_metrics' => $userId ? $this->userAnalytics->getUserPerformanceOverview($userId, $startDate, $endDate) : null,
                 'system_metrics' => $this->systemAnalytics->getSystemOverview($startDate, $endDate),
@@ -27,7 +25,6 @@ class AnalyticsService
                 'recent_activities' => $this->getRecentActivities($startDate, $endDate, 10),
                 'trends' => $this->getTrendData($startDate, $endDate),
             ];
-        });
     }
 
     public function getComprehensiveReport(array $filters = []): array

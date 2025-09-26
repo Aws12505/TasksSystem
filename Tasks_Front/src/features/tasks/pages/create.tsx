@@ -42,10 +42,10 @@ const CreateTaskPage: React.FC = () => {
       {/* Form */}
       <div className="max-w-4xl">
         <ComprehensiveTaskForm
-          sectionId={sectionId ? parseInt(sectionId) : undefined}
-          onSubmit={handleCreateTask}
-          isLoading={isLoading}
-        />
+  sectionId={sectionId ? parseInt(sectionId) : undefined}
+  onSubmit={handleCreateTask}
+  isLoading={isLoading}
+/>
       </div>
     </div>
   );

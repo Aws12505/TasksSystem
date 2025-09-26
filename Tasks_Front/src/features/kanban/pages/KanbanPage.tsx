@@ -102,7 +102,6 @@ const ProjectKanbanPage: React.FC = () => {
     if (!canEditTasks) return // Don't allow drag and drop if user can't edit tasks
 
     const { active, over } = event
-    
     if (!over || active.id === over.id) return
 
     const taskId = parseInt(active.id as string)
@@ -110,7 +109,6 @@ const ProjectKanbanPage: React.FC = () => {
     
     const { items } = transformToSectionKanbanData()
     const draggedItem = items.find(item => item.id === active.id)
-    
     if (!draggedItem) return
 
     const currentSectionId = draggedItem.sectionId
@@ -118,12 +116,11 @@ const ProjectKanbanPage: React.FC = () => {
     const newSectionId = parseInt(targetSectionId)
     const newStatus = targetStatus as TaskStatus
 
-    // Check if we need to move to a different section
+    // Move section if needed
     if (currentSectionId !== newSectionId) {
       await moveTaskToSection(taskId, newSectionId)
     }
-    
-    // Check if we need to change status
+    // Change status if needed
     if (currentStatus !== newStatus) {
       await moveTaskStatus(taskId, newStatus)
     }
@@ -131,13 +128,11 @@ const ProjectKanbanPage: React.FC = () => {
 
   const handleEditTask = (task: Task) => {
     if (!canEditTasks) return
-    // You might want to open a task edit dialog here
     window.open(`/tasks/${task.id}/edit`, '_blank')
   }
 
   const handleDeleteTask = async (taskId: number) => {
     if (!canDeleteTasks) return
-    
     if (window.confirm('Are you sure you want to delete this task?')) {
       await deleteTask(taskId)
     }
@@ -417,29 +412,66 @@ const TaskCard: React.FC<TaskCardProps> = ({
       {/* Task Header */}
       <div className="flex items-start justify-between">
         <h4 className="font-medium text-foreground text-sm line-clamp-2">{task.name}</h4>
+
         {hasAnyAction ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => e.stopPropagation()}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation() // ensure no drag starts
+                }}
+              >
                 <MoreHorizontal className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover border-border">
+
+            <DropdownMenuContent
+              align="end"
+              className="bg-popover border-border"
+              onClick={(e) => {
+                // defensive: stop bubbling from any click inside menu
+                e.stopPropagation()
+              }}
+            >
               {canEdit && (
-                <DropdownMenuItem onClick={onEdit} className="hover:bg-accent hover:text-accent-foreground">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onEdit()
+                  }}
+                  className="hover:bg-accent hover:text-accent-foreground"
+                >
                   <Edit className="mr-2 h-3 w-3" />
                   Edit Task
                 </DropdownMenuItem>
               )}
+
               {canRate && (
-                <DropdownMenuItem onClick={onRate} className="hover:bg-accent hover:text-accent-foreground">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onRate()
+                  }}
+                  className="hover:bg-accent hover:text-accent-foreground"
+                >
                   <Star className="mr-2 h-3 w-3" />
                   Rate Task
                 </DropdownMenuItem>
               )}
+
               {canDelete && (
                 <DropdownMenuItem
-                  onClick={onDelete}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onDelete()
+                  }}
                   className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 >
                   <Trash2 className="mr-2 h-3 w-3" />

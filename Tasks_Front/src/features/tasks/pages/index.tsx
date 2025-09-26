@@ -1,14 +1,10 @@
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { useTasks } from '../hooks/useTasks'
 import { useFiltersStore } from '../../../stores/filtersStore'
@@ -16,38 +12,79 @@ import { usePermissions } from '@/hooks/usePermissions'
 import TasksList from '../components/TasksList'
 import { Plus, Search, CheckSquare } from 'lucide-react'
 import type { TaskStatus } from '../../../types/Task'
+import { taskAssignmentService } from '../../../services/taskAssignmentService'
+import type { TaskWithAssignments } from '../../../types/TaskAssignment'
+
+type AssigneeLite = { id: number; name: string; percentage: number }
+type AssigneesMap = Record<number, AssigneeLite[]>
 
 const TasksPage: React.FC = () => {
   const { tasks, isLoading, deleteTask, updateTaskStatus } = useTasks()
   const { searchQuery, statusFilter, setSearchQuery, setStatusFilter } = useFiltersStore()
   const { hasPermission } = usePermissions()
 
+  const [assigneesMap, setAssigneesMap] = useState<AssigneesMap>({})
+
   const handleDelete = async (id: number) => {
-    if (!hasPermission('delete tasks')) {
-      return
-    }
-    
+    if (!hasPermission('delete tasks')) return
     if (window.confirm('Are you sure you want to delete this task?')) {
       await deleteTask(id)
     }
   }
 
   const handleStatusChange = async (id: number, status: string) => {
-    if (!hasPermission('edit tasks')) {
-      return
-    }
+    if (!hasPermission('edit tasks')) return
     await updateTaskStatus(id, { status: status as TaskStatus })
   }
 
-  // Filter tasks based on search and status
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    
-    const matchesStatus = statusFilter === 'all' || task.status === statusFilter
-    
-    return matchesSearch && matchesStatus
-  })
+  // Filters
+  const filteredTasks = useMemo(() => {
+    const q = searchQuery.toLowerCase()
+    return tasks.filter(task => {
+      const matchesSearch =
+        task.name.toLowerCase().includes(q) ||
+        task.description?.toLowerCase().includes(q)
+
+      const matchesStatus = statusFilter === 'all' || task.status === statusFilter
+      return matchesSearch && matchesStatus
+    })
+  }, [tasks, searchQuery, statusFilter])
+
+  // 👇 Fetch assignees for the tasks currently in view (grouped by section)
+  useEffect(() => {
+    const run = async () => {
+      if (!filteredTasks.length) {
+        setAssigneesMap({})
+        return
+      }
+
+      // unique section ids
+      const sectionIds = Array.from(new Set(filteredTasks.map(t => t.section_id)))
+
+      const results = await Promise.allSettled(
+        sectionIds.map(id => taskAssignmentService.getSectionTasksWithAssignments(id))
+      )
+
+      // build map
+      const next: AssigneesMap = {}
+      results.forEach(res => {
+        if (res.status !== 'fulfilled') return
+        const payload = res.value
+        if (!payload?.success || !Array.isArray(payload.data)) return
+        ;(payload.data as TaskWithAssignments[]).forEach(twa => {
+          next[twa.id] = (twa.assigned_users || []).map(u => ({
+            id: u.id,
+            name: u.name ?? u.email ?? `User #${u.id}`,
+            percentage: u.pivot?.percentage ?? 0,
+          }))
+        })
+      })
+
+      setAssigneesMap(next)
+    }
+
+    run()
+  }, [filteredTasks])
 
   return (
     <div className="space-y-6">
@@ -101,13 +138,11 @@ const TasksPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Stats Cards */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Tasks
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Tasks</CardTitle>
             <CheckSquare className="w-4 h-4 text-chart-1" />
           </CardHeader>
           <CardContent>
@@ -116,9 +151,7 @@ const TasksPage: React.FC = () => {
         </Card>
         <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              In Progress
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">In Progress</CardTitle>
             <CheckSquare className="w-4 h-4 text-chart-2" />
           </CardHeader>
           <CardContent>
@@ -129,9 +162,7 @@ const TasksPage: React.FC = () => {
         </Card>
         <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Completed
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
             <CheckSquare className="w-4 h-4 text-chart-3" />
           </CardHeader>
           <CardContent>
@@ -142,9 +173,7 @@ const TasksPage: React.FC = () => {
         </Card>
         <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              High Priority
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">High Priority</CardTitle>
             <CheckSquare className="w-4 h-4 text-chart-4" />
           </CardHeader>
           <CardContent>
@@ -155,12 +184,13 @@ const TasksPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Tasks List */}
-      <TasksList 
-        tasks={filteredTasks} 
-        isLoading={isLoading} 
+      {/* List */}
+      <TasksList
+        tasks={filteredTasks}
+        isLoading={isLoading}
         onDelete={handleDelete}
         onStatusChange={handleStatusChange}
+        assigneesMap={assigneesMap} // 👈 NEW
       />
     </div>
   )

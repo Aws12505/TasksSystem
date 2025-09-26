@@ -84,11 +84,11 @@ const RatingConfigsList: React.FC<RatingConfigsListProps> = ({
                 <TableCell>
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-foreground">{config.name}</p>
-                    {config.description && (
+                    {/* {config.description && (
                       <p className="text-xs text-muted-foreground line-clamp-2">
                         {config.description}
                       </p>
-                    )}
+                    )} */}
                   </div>
                 </TableCell>
                 <TableCell>

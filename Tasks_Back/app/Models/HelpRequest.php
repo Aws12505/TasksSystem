@@ -27,6 +27,14 @@ class HelpRequest extends Model
         'completed_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+            'is_claimed'   => 'bool',
+        'is_available' => 'bool',
+    ];
+
+    // Make sure these show up in JSON responses
+    protected $appends = [
+        'is_claimed',
+        'is_available',
     ];
 
     public function task(): BelongsTo
@@ -70,5 +78,19 @@ class HelpRequest extends Model
             'is_completed' => true,
             'completed_at' => now(),
         ]);
+    }
+
+     public function getIsClaimedAttribute(): bool
+    {
+        // Use your existing logic here
+        // Example: return !is_null($this->helper_id) && !$this->is_completed;
+        return (bool) ($this->isClaimed());
+    }
+
+    public function getIsAvailableAttribute(): bool
+    {
+        // Use your existing logic here
+        // Example: return is_null($this->helper_id) && !$this->is_completed;
+        return (bool) ($this->isAvailable());
     }
 }

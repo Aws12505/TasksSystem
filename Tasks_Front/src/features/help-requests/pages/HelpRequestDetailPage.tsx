@@ -9,7 +9,7 @@ import HelpRequestStatusBadge from '../components/HelpRequestStatusBadge'
 import HelpRequestRatingBadge from '../components/HelpRequestRatingBadge'
 import CompleteHelpRequestModal from '../components/CompleteHelpRequestModal'
 import { Edit, ArrowLeft, HelpCircle, Calendar, User, CheckSquare, UserCheck, UserX } from 'lucide-react'
-
+import { useAuthStore } from '@/features/auth/stores/authStore'
 const HelpRequestDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const { 
@@ -22,6 +22,13 @@ const HelpRequestDetailPage: React.FC = () => {
     unclaimRequest
   } = useHelpRequest(id!)
   // const { hasPermission } = usePermissions()
+
+  const { user: currentUser } = useAuthStore()
+
+  const isHelper = !!currentUser && !!helpRequest && currentUser.id === helpRequest.helper_id
+  const canUnclaim  = !!helpRequest && helpRequest.is_claimed && !helpRequest.is_completed && isHelper
+  const canComplete = !!helpRequest && helpRequest.is_claimed && !helpRequest.is_completed && isHelper
+  const canClaim    = !!helpRequest && helpRequest.is_available
 
   if (isLoading) {
     return (
@@ -45,20 +52,21 @@ const HelpRequestDetailPage: React.FC = () => {
 
   const handleClaim = async () => {
     // if (!hasPermission('claim help requests')) return
-    await claimRequest()
+    if(canClaim){
+    await claimRequest()}
   }
 
   const handleUnclaim = async () => {
     // if (!hasPermission('claim help requests')) return
-    
-    if (window.confirm('Are you sure you want to unclaim this help request?')) {
+    if (window.confirm('Are you sure you want to unclaim this help request?')&& canUnclaim) {
       await unclaimRequest()
     }
   }
 
   const handleComplete = async (data: { rating: any }) => {
     // if (!hasPermission('complete help requests')) return
-    await completeRequest(data)
+    if(canComplete){
+    await completeRequest(data)}
   }
 
   return (
@@ -83,19 +91,19 @@ const HelpRequestDetailPage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          { helpRequest.is_available && (
+          { canClaim && (
             <Button variant="outline" size="sm" onClick={handleClaim}>
               <UserCheck className="mr-2 h-4 w-4" />
               Claim Request
             </Button>
           )}
-          { helpRequest.is_claimed && !helpRequest.is_completed && (
+          { canUnclaim && (
             <Button variant="outline" size="sm" onClick={handleUnclaim}>
               <UserX className="mr-2 h-4 w-4" />
               Unclaim
             </Button>
           )}
-          { helpRequest.is_claimed && !helpRequest.is_completed && (
+          { canComplete && (
             <CompleteHelpRequestModal
               ratingOptions={ratingOptions}
               onComplete={handleComplete}

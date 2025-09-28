@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 class Section extends Model
 {
     use HasFactory;
@@ -33,23 +34,34 @@ class Section extends Model
     return $this->hasMany(Task::class);
 }
 
-protected static function booted()
-{
-    static::addGlobalScope('user_scope', function (Builder $builder) {
-        /** @var \App\Models\User|null $user */
-        $user = Auth::user();
-        if (!$user) return;
+protected static function booted(): void
+    {
+        static::addGlobalScope('user_scope', function (Builder $q) {
+            $user = Auth::user();
+            if (!$user) return;
+            if ($user->hasRole('admin', 'sanctum')) return;
 
-        if ($user->hasRole('admin', 'sanctum')) {
-            return;
-        }
+            $uid = $user->id;
 
-        $builder->whereHas('project', function ($pq) use ($user) {
-            $pq->where('stakeholder_id', $user->id)
-               ->orWhereRelation('sections.tasks.assignedUsers', 'users.id', $user->id);
+            // Section is visible if user is the project stakeholder
+            // OR has any task in this section/project assigned to them
+            $q->where(function ($q) use ($uid) {
+                $q->whereExists(function ($sub) use ($uid) {
+                    $sub->select(DB::raw(1))
+                        ->from('projects')
+                        ->whereColumn('projects.id', 'sections.project_id')
+                        ->where('projects.stakeholder_id', $uid);
+                })
+                ->orWhereExists(function ($sub) use ($uid) {
+                    $sub->select(DB::raw(1))
+                        ->from('tasks')
+                        ->join('task_user', 'task_user.task_id', '=', 'tasks.id')
+                        ->whereColumn('tasks.section_id', 'sections.id')
+                        ->where('task_user.user_id', $uid);
+                });
+            });
         });
-    });
-}
+    }
 
 
 }

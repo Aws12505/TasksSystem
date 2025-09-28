@@ -22,7 +22,6 @@ class TaskController extends Controller
 
     public function index(): JsonResponse
     {
-        
         $tasks = $this->taskService->getAllTasks();
 
         return response()->json([

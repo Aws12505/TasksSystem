@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 class Subtask extends Model
 {
     use HasFactory;
@@ -48,23 +49,37 @@ class Subtask extends Model
         });
     }
 
-protected static function booted()
-{
-    static::addGlobalScope('user_scope', function (Builder $builder) {
-        /** @var \App\Models\User|null $user */
-        $user = Auth::user();
-        if (!$user) return;
+ protected static function booted(): void
+    {
+        static::addGlobalScope('user_scope', function (Builder $q) {
+            $user = Auth::user();
+            if (!$user) return;
+            if ($user->hasRole('admin', 'sanctum')) return;
 
-        if ($user->hasRole('admin', 'sanctum')) {
-            return;
-        }
+            $uid = $user->id;
 
-        $builder->whereHas('task', function ($tq) use ($user) {
-            $tq->whereRelation('assignedUsers', 'users.id', $user->id)
-               ->orWhereRelation('section.project', 'stakeholder_id', $user->id);
+            // Subtask is visible if its parent task is assigned to the user
+            // OR if the user is stakeholder of the parent task's project
+            $q->whereExists(function ($sub) use ($uid) {
+                $sub->select(DB::raw(1))
+                    ->from('tasks')
+                    ->whereColumn('tasks.id', 'subtasks.task_id')
+                    ->where(function ($inner) use ($uid) {
+                        $inner->whereExists(function ($x) use ($uid) {
+                            $x->select(DB::raw(1))
+                              ->from('task_user')
+                              ->whereColumn('task_user.task_id', 'tasks.id')
+                              ->where('task_user.user_id', $uid);
+                        })
+                        ->orWhereExists(function ($x) use ($uid) {
+                            $x->select(DB::raw(1))
+                              ->from('sections')
+                              ->join('projects', 'projects.id', '=', 'sections.project_id')
+                              ->whereColumn('sections.id', 'tasks.section_id')
+                              ->where('projects.stakeholder_id', $uid);
+                        });
+                    });
+            });
         });
-    });
-}
-
-
+    }
 }

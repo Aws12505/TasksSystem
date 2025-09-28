@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 class Project extends Model
 {
       use HasFactory;
@@ -115,23 +116,30 @@ public function getUsersWithTaskAssignments()
     return $users;
 }
 
-protected static function booted()
-{
-    static::addGlobalScope('user_scope', function (Builder $builder) {
-        /** @var \App\Models\User|null $user */
-        $user = Auth::user();
-        if (!$user) return;
+protected static function booted(): void
+    {
+        static::addGlobalScope('user_scope', function (Builder $q) {
+            $user = Auth::user();
+            if (!$user) return;
+            if ($user->hasRole('admin', 'sanctum')) return;
 
-        if ($user->hasRole('admin', 'sanctum')) {
-            return;
-        }
+            $uid = $user->id;
 
-        $builder->where(function ($q) use ($user) {
-            $q->where('stakeholder_id', $user->id)
-              ->orWhereRelation('sections.tasks.assignedUsers', 'users.id', $user->id);
+            $q->where(function ($q) use ($uid) {
+                // Stakeholder of the project
+                $q->where('projects.stakeholder_id', $uid)
+                  // OR has any task assigned in this project
+                  ->orWhereExists(function ($sub) use ($uid) {
+                      $sub->select(DB::raw(1))
+                          ->from('sections')
+                          ->join('tasks', 'tasks.section_id', '=', 'sections.id')
+                          ->join('task_user', 'task_user.task_id', '=', 'tasks.id')
+                          ->whereColumn('sections.project_id', 'projects.id')
+                          ->where('task_user.user_id', $uid);
+                  });
+            });
         });
-    });
-}
+    }
 
 
 }

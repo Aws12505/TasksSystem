@@ -37,19 +37,16 @@ class FinalRating extends Model
         return $this->belongsTo(User::class);
     }
 
-protected static function booted()
-{
-    static::addGlobalScope('user_scope', function (Builder $builder) {
-        /** @var \App\Models\User|null $user */
-        $user = Auth::user();
-        if (!$user) return;
+protected static function booted(): void
+    {
+        static::addGlobalScope('user_scope', function (Builder $q) {
+            /** @var \App\Models\User|null $user */
+            $user = Auth::user();
+            if (!$user) return;
+            if ($user->hasRole('admin', 'sanctum')) return;
 
-        if ($user->hasRole('admin', 'sanctum')) {
-            return; // admins see everything
-        }
-
-        $builder->where('user_id', $user->id);
-    });
-}
+            $q->where('user_id', $user->id);
+        });
+    }
 
 }

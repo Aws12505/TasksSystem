@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 class Task extends Model
 {
     use HasFactory;
@@ -113,29 +114,35 @@ public function activeHelpRequests(): HasMany
 }
 
 
-protected static function booted()
-{
-    static::addGlobalScope('user_scope', function (Builder $builder) {
-        $user = Auth::user();
-        /** @var \App\Models\User|null $user */
-        // No user => skip
-        if (!$user) {
-            return;
-        }
+ protected static function booted(): void
+    {
+        static::addGlobalScope('user_scope', function (Builder $q) {
+            $user = Auth::user();
+            if (!$user) return;
+            if ($user->hasRole('admin', 'sanctum')) return;
 
-        // Use Spatie's hasRole and make it guard-aware
-        if ($user->hasRole('admin', 'sanctum')) {
-            return; // Admins see everything
-        }
+            $uid = $user->id;
 
-        // Limit tasks to ones assigned to the user OR where they are the stakeholder via section->project
-        // Prefer whereRelation (Laravel 9/10). If you're on 8, keep the whereHas version you had.
-        $builder->where(function ($q) use ($user) {
-            $q->whereRelation('assignedUsers', 'users.id', $user->id)
-              ->orWhereRelation('section.project', 'stakeholder_id', $user->id);
+            // Task is visible if assigned to the user OR user is stakeholder of the task's project
+            $q->where(function ($q) use ($uid) {
+                // assigned
+                $q->whereExists(function ($sub) use ($uid) {
+                    $sub->select(DB::raw(1))
+                        ->from('task_user')
+                        ->whereColumn('task_user.task_id', 'tasks.id')
+                        ->where('task_user.user_id', $uid);
+                })
+                // stakeholder
+                ->orWhereExists(function ($sub) use ($uid) {
+                    $sub->select(DB::raw(1))
+                        ->from('sections')
+                        ->join('projects', 'projects.id', '=', 'sections.project_id')
+                        ->whereColumn('sections.id', 'tasks.section_id')
+                        ->where('projects.stakeholder_id', $uid);
+                });
+            });
         });
-    });
-}
+    }
 
 public function getProjectIdAttribute(): ?int
 {

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 class StakeholderRating extends Model
 {
     use HasFactory;
@@ -37,24 +38,34 @@ class StakeholderRating extends Model
         return $this->belongsTo(User::class, 'stakeholder_id');
     }
 
-protected static function booted()
-{
-    static::addGlobalScope('user_scope', function (Builder $builder) {
-        /** @var \App\Models\User|null $user */
-        $user = Auth::user();
-        if (!$user) return;
+    protected static function booted(): void
+    {
+        static::addGlobalScope('user_scope', function (Builder $q) {
+            $user = Auth::user();
+            if (!$user) return;
+            if ($user->hasRole('admin', 'sanctum')) return;
 
-        if ($user->hasRole('admin', 'sanctum')) {
-            return;
-        }
+            $uid = $user->id;
 
-        // mirror project visibility
-        $builder->whereHas('project', function ($pq) use ($user) {
-            $pq->where('stakeholder_id', $user->id)
-               ->orWhereRelation('sections.tasks.assignedUsers', 'users.id', $user->id);
+            // Mirror project visibility
+            $q->where(function ($q) use ($uid) {
+                $q->whereExists(function ($sub) use ($uid) {
+                    $sub->select(DB::raw(1))
+                        ->from('projects')
+                        ->whereColumn('projects.id', 'stakeholder_ratings.project_id')
+                        ->where('projects.stakeholder_id', $uid);
+                })
+                ->orWhereExists(function ($sub) use ($uid) {
+                    $sub->select(DB::raw(1))
+                        ->from('sections')
+                        ->join('tasks', 'tasks.section_id', '=', 'sections.id')
+                        ->join('task_user', 'task_user.task_id', '=', 'tasks.id')
+                        ->whereColumn('sections.project_id', 'stakeholder_ratings.project_id')
+                        ->where('task_user.user_id', $uid);
+                });
+            });
         });
-    });
-}
+    }
 
 
 }

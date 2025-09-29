@@ -1,8 +1,18 @@
+// pages/UsersPage.tsx
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { useUsers } from '../hooks/useUsers'
 import { useFiltersStore } from '../../../stores/filtersStore'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -10,7 +20,15 @@ import UsersList from '../components/UsersList'
 import { Plus, Search, Users } from 'lucide-react'
 
 const UsersPage: React.FC = () => {
-  const { users, isLoading, deleteUser } = useUsers()
+  const { 
+    users, 
+    pagination,
+    isLoading, 
+    deleteUser,
+    goToPage,
+    nextPage,
+    prevPage
+  } = useUsers()
   const { searchQuery, setSearchQuery } = useFiltersStore()
   const { hasPermission } = usePermissions()
 
@@ -22,6 +40,34 @@ const UsersPage: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       await deleteUser(id)
     }
+  }
+
+  // Generate pagination items
+  const generatePaginationItems = () => {
+    if (!pagination) return []
+
+    const items = []
+    const { current_page, last_page } = pagination
+    
+    if (current_page > 3) {
+      items.push(1)
+      if (current_page > 4) {
+        items.push('ellipsis-start')
+      }
+    }
+
+    for (let i = Math.max(1, current_page - 2); i <= Math.min(last_page, current_page + 2); i++) {
+      items.push(i)
+    }
+
+    if (current_page < last_page - 2) {
+      if (current_page < last_page - 3) {
+        items.push('ellipsis-end')
+      }
+      items.push(last_page)
+    }
+
+    return items
   }
 
   return (
@@ -74,7 +120,9 @@ const UsersPage: React.FC = () => {
             <Users className="w-4 h-4 text-chart-1" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{users.length}</div>
+            <div className="text-2xl font-bold text-foreground">
+              {pagination?.total || users.length}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -85,6 +133,52 @@ const UsersPage: React.FC = () => {
         isLoading={isLoading} 
         onDelete={handleDelete}
       />
+
+      {/* Pagination */}
+      {pagination && pagination.last_page > 1 && (
+        <Card className="bg-card border-border">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {pagination.from || 0} to {pagination.to || 0} of {pagination.total} results
+              </div>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={prevPage}
+                      className={pagination.current_page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  
+                  {generatePaginationItems().map((item, index) => (
+                    <PaginationItem key={index}>
+                      {item === 'ellipsis-start' || item === 'ellipsis-end' ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          onClick={() => goToPage(item as number)}
+                          isActive={pagination.current_page === item}
+                          className="cursor-pointer"
+                        >
+                          {item}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={nextPage}
+                      className={pagination.current_page === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

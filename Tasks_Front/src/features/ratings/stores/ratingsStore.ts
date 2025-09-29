@@ -1,3 +1,4 @@
+// stores/ratingsStore.ts
 import { create } from 'zustand'
 import { ratingService } from '../../../services/ratingService'
 import { ratingConfigService } from '../../../services/ratingConfigService'
@@ -20,6 +21,15 @@ import type { Project } from '../../../types/Project'
 import type { User } from '../../../types/User'
 import { toast } from 'sonner'
 
+interface PaginationInfo {
+  current_page: number
+  total: number
+  per_page: number
+  last_page: number
+  from: number | null
+  to: number | null
+}
+
 interface RatingsState {
   // Data
   taskRatings: TaskRating[]
@@ -36,25 +46,10 @@ interface RatingsState {
   availableProjects: Project[]
   availableUsers: User[]
   
-  // Pagination
-  taskRatingsPagination: {
-    current_page: number
-    total: number
-    per_page: number
-    last_page: number
-  } | null
-  stakeholderRatingsPagination: {
-    current_page: number
-    total: number
-    per_page: number
-    last_page: number
-  } | null
-  finalRatingsPagination: {
-    current_page: number
-    total: number
-    per_page: number
-    last_page: number
-  } | null
+  // Pagination with proper interface
+  taskRatingsPagination: PaginationInfo | null
+  stakeholderRatingsPagination: PaginationInfo | null
+  finalRatingsPagination: PaginationInfo | null
   
   // State
   isLoading: boolean
@@ -110,7 +105,14 @@ export const useRatingsStore = create<RatingsState>((set, get) => ({
       if (response.success) {
         set({
           taskRatings: response.data,
-          taskRatingsPagination: response.pagination,
+          taskRatingsPagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {
@@ -132,7 +134,14 @@ export const useRatingsStore = create<RatingsState>((set, get) => ({
       if (response.success) {
         set({
           stakeholderRatings: response.data,
-          stakeholderRatingsPagination: response.pagination,
+          stakeholderRatingsPagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {
@@ -154,7 +163,14 @@ export const useRatingsStore = create<RatingsState>((set, get) => ({
       if (response.success) {
         set({
           finalRatings: response.data,
-          finalRatingsPagination: response.pagination,
+          finalRatingsPagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {

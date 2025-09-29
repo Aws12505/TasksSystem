@@ -56,6 +56,26 @@ export const useTasks = (sectionId?: number) => {
     }
   }, [sectionId, tasks.length, allTasks.length, fetchTasksBySection, fetchAllTasks, isAuthenticated, user])
 
+  const goToPage = (page: number) => {
+    if (sectionId !== undefined) {
+      fetchTasksBySection(sectionId, page)
+    } else {
+      fetchAllTasks(page)
+    }
+  }
+
+  const nextPage = () => {
+    if (currentPagination && currentPagination.current_page < currentPagination.last_page) {
+      goToPage(currentPagination.current_page + 1)
+    }
+  }
+
+  const prevPage = () => {
+    if (currentPagination && currentPagination.current_page > 1) {
+      goToPage(currentPagination.current_page - 1)
+    }
+  }
+
   return {
     tasks,
     pagination: currentPagination,
@@ -66,6 +86,9 @@ export const useTasks = (sectionId?: number) => {
     updateTask,
     updateTaskStatus,
     deleteTask,
-    createTaskComprehensive
+    createTaskComprehensive,
+    goToPage,
+    nextPage,
+    prevPage
   }
 }

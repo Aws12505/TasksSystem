@@ -1,3 +1,4 @@
+// hooks/useSubtasks.ts
 import { useEffect } from 'react'
 import { useSubtasksStore } from '../stores/subtasksStore'
 
@@ -5,6 +6,8 @@ export const useSubtasks = (taskId?: number) => {
   const {
     subtasks,
     pagination,
+    taskPagination,
+    currentTaskId,
     isLoading,
     error,
     fetchSubtasksByTask,
@@ -16,14 +19,36 @@ export const useSubtasks = (taskId?: number) => {
   } = useSubtasksStore()
 
   useEffect(() => {
-    if (taskId) {
-      fetchSubtasksByTask(taskId)
+    if (taskId && currentTaskId !== taskId) {
+      fetchSubtasksByTask(taskId, 1)
     }
-  }, [taskId, fetchSubtasksByTask])
+  }, [taskId, currentTaskId, fetchSubtasksByTask])
+
+  // Get current pagination for this task
+  const currentPagination = taskId ? (taskPagination[taskId] || null) : pagination
+
+  // Pagination functions
+  const goToPage = (page: number) => {
+    if (taskId) {
+      fetchSubtasksByTask(taskId, page)
+    }
+  }
+
+  const nextPage = () => {
+    if (currentPagination && currentPagination.current_page < currentPagination.last_page) {
+      goToPage(currentPagination.current_page + 1)
+    }
+  }
+
+  const prevPage = () => {
+    if (currentPagination && currentPagination.current_page > 1) {
+      goToPage(currentPagination.current_page - 1)
+    }
+  }
 
   return {
     subtasks,
-    pagination,
+    pagination: currentPagination,
     isLoading,
     error,
     fetchSubtasks: (taskId: number) => fetchSubtasksByTask(taskId),
@@ -31,6 +56,10 @@ export const useSubtasks = (taskId?: number) => {
     updateSubtask,
     updateTaskStatus,
     deleteSubtask,
-    toggleCompletion: toggleSubtaskCompletion
+    toggleCompletion: toggleSubtaskCompletion,
+    // Pagination methods
+    goToPage,
+    nextPage,
+    prevPage
   }
 }

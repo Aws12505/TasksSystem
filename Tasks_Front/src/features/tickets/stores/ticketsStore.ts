@@ -1,3 +1,4 @@
+// stores/ticketsStore.ts
 import { create } from 'zustand'
 import { ticketService, TicketService } from '../../../services/ticketService'
 import { userService } from '../../../services/userService'
@@ -12,6 +13,15 @@ import type {
 import type { User } from '../../../types/User'
 import { toast } from 'sonner'
 
+interface PaginationInfo {
+  current_page: number
+  total: number
+  per_page: number
+  last_page: number
+  from: number | null
+  to: number | null
+}
+
 interface TicketsState {
   tickets: Ticket[]
   availableTickets: Ticket[]
@@ -19,12 +29,8 @@ interface TicketsState {
   availableUsers: User[]
   statusOptions: TicketStatusOption[]
   typeOptions: TicketTypeOption[]
-  pagination: {
-    current_page: number
-    total: number
-    per_page: number
-    last_page: number
-  } | null
+  pagination: PaginationInfo | null
+  availablePagination: PaginationInfo | null
   isLoading: boolean
   error: string | null
   
@@ -58,6 +64,7 @@ export const useTicketsStore = create<TicketsState>((set, get) => ({
   statusOptions: TicketService.getTicketStatusOptions(),
   typeOptions: TicketService.getTicketTypeOptions(),
   pagination: null,
+  availablePagination: null,
   isLoading: false,
   error: null,
 
@@ -68,7 +75,14 @@ export const useTicketsStore = create<TicketsState>((set, get) => ({
       if (response.success) {
         set({
           tickets: response.data,
-          pagination: response.pagination,
+          pagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {
@@ -89,7 +103,14 @@ export const useTicketsStore = create<TicketsState>((set, get) => ({
       if (response.success) {
         set({
           availableTickets: response.data,
-          pagination: response.pagination,
+          availablePagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {
@@ -127,7 +148,14 @@ export const useTicketsStore = create<TicketsState>((set, get) => ({
       if (response.success) {
         set({
           tickets: response.data,
-          pagination: response.pagination,
+          pagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {
@@ -148,7 +176,14 @@ export const useTicketsStore = create<TicketsState>((set, get) => ({
       if (response.success) {
         set({
           tickets: response.data,
-          pagination: response.pagination,
+          pagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {
@@ -169,7 +204,14 @@ export const useTicketsStore = create<TicketsState>((set, get) => ({
       if (response.success) {
         set({
           tickets: response.data,
-          pagination: response.pagination,
+          pagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {
@@ -190,7 +232,14 @@ export const useTicketsStore = create<TicketsState>((set, get) => ({
       if (response.success) {
         set({
           tickets: response.data,
-          pagination: response.pagination,
+          pagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {
@@ -405,5 +454,8 @@ export const useTicketsStore = create<TicketsState>((set, get) => ({
     return TicketService.getTicketTypeOptions()
   },
 
-  clearCurrentTicket: () => set({ currentTicket: null, error: null })
+  clearCurrentTicket: () => set({ 
+    currentTicket: null, 
+    error: null 
+  })
 }))

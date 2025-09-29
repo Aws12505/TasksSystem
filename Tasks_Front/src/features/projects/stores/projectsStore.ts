@@ -1,3 +1,4 @@
+// stores/projectsStore.ts
 import { create } from 'zustand'
 import { projectService } from '../../../services/projectService'
 import { sectionService } from '../../../services/sectionService'
@@ -7,17 +8,21 @@ import type { Section } from '../../../types/Section'
 import type { User } from '../../../types/User'
 import { toast } from 'sonner'
 
+interface PaginationInfo {
+  current_page: number
+  total: number
+  per_page: number
+  last_page: number
+  from: number | null
+  to: number | null
+}
+
 interface ProjectsState {
   projects: Project[]
   currentProject: Project | null
   projectSections: Section[]
   availableUsers: User[]
-  pagination: {
-    current_page: number
-    total: number
-    per_page: number
-    last_page: number
-  } | null
+  pagination: PaginationInfo | null
   isLoading: boolean
   error: string | null
   
@@ -48,7 +53,14 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       if (response.success) {
         set({
           projects: response.data,
-          pagination: response.pagination,
+          pagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {
@@ -172,5 +184,9 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     }
   },
 
-  clearCurrentProject: () => set({ currentProject: null, projectSections: [], error: null })
+  clearCurrentProject: () => set({ 
+    currentProject: null, 
+    projectSections: [], 
+    error: null 
+  })
 }))

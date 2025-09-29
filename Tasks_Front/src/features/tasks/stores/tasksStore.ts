@@ -7,6 +7,15 @@ import type { Task, CreateTaskRequest, UpdateTaskRequest, UpdateTaskStatusReques
 import type { TaskWithAssignments } from '../../../types/TaskAssignment'
 import type { User } from '../../../types/User'
 
+interface PaginationInfo {
+  current_page: number
+  total: number
+  per_page: number
+  last_page: number
+  from: number | null
+  to: number | null
+}
+
 interface TasksState {
   // Section-based tasks
   tasksBySection: Record<number, Task[]>
@@ -15,18 +24,8 @@ interface TasksState {
   currentTask: Task | null
   currentTaskWithAssignments: TaskWithAssignments | null
   availableUsers: User[]
-  pagination: Record<number, {
-    current_page: number
-    total: number
-    per_page: number
-    last_page: number
-  }>
-  globalPagination: {
-    current_page: number
-    total: number
-    per_page: number
-    last_page: number
-  } | null
+  pagination: Record<number, PaginationInfo>
+  globalPagination: PaginationInfo | null
   isLoading: boolean
   error: string | null
 

@@ -1,3 +1,4 @@
+// pages/ProjectsPage.tsx
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { useProjects } from '../hooks/useProjects'
 import { useFiltersStore } from '../../../stores/filtersStore'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -17,7 +27,15 @@ import ProjectsList from '../components/ProjectsList'
 import { Plus, Search, FolderOpen } from 'lucide-react'
 
 const ProjectsPage: React.FC = () => {
-  const { projects, isLoading, deleteProject } = useProjects()
+  const { 
+    projects, 
+    pagination,
+    isLoading, 
+    deleteProject,
+    goToPage,
+    nextPage,
+    prevPage
+  } = useProjects()
   const { searchQuery, statusFilter, setSearchQuery, setStatusFilter } = useFiltersStore()
   const { hasPermission } = usePermissions()
 
@@ -29,6 +47,37 @@ const ProjectsPage: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this project?')) {
       await deleteProject(id)
     }
+  }
+
+  // Generate pagination items
+  const generatePaginationItems = () => {
+    if (!pagination) return []
+
+    const items = []
+    const { current_page, last_page } = pagination
+    
+    // Always show first page
+    if (current_page > 3) {
+      items.push(1)
+      if (current_page > 4) {
+        items.push('ellipsis-start')
+      }
+    }
+
+    // Show pages around current page
+    for (let i = Math.max(1, current_page - 2); i <= Math.min(last_page, current_page + 2); i++) {
+      items.push(i)
+    }
+
+    // Always show last page
+    if (current_page < last_page - 2) {
+      if (current_page < last_page - 3) {
+        items.push('ellipsis-end')
+      }
+      items.push(last_page)
+    }
+
+    return items
   }
 
   return (
@@ -93,7 +142,9 @@ const ProjectsPage: React.FC = () => {
             <FolderOpen className="w-4 h-4 text-chart-1" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{projects.length}</div>
+            <div className="text-2xl font-bold text-foreground">
+              {pagination?.total || projects.length}
+            </div>
           </CardContent>
         </Card>
         <Card className="bg-card border-border">
@@ -145,6 +196,52 @@ const ProjectsPage: React.FC = () => {
         isLoading={isLoading} 
         onDelete={handleDelete}
       />
+
+      {/* Pagination */}
+      {pagination && pagination.last_page > 1 && (
+        <Card className="bg-card border-border">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {pagination.from || 0} to {pagination.to || 0} of {pagination.total} results
+              </div>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={prevPage}
+                      className={pagination.current_page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  
+                  {generatePaginationItems().map((item, index) => (
+                    <PaginationItem key={index}>
+                      {item === 'ellipsis-start' || item === 'ellipsis-end' ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          onClick={() => goToPage(item as number)}
+                          isActive={pagination.current_page === item}
+                          className="cursor-pointer"
+                        >
+                          {item}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={nextPage}
+                      className={pagination.current_page === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

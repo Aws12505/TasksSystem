@@ -1,3 +1,4 @@
+// stores/helpRequestsStore.ts
 import { create } from 'zustand'
 import { helpRequestService, HelpRequestService } from '../../../services/helpRequestService'
 import { taskService } from '../../../services/taskService'
@@ -13,6 +14,15 @@ import type { Task } from '../../../types/Task'
 import type { User } from '../../../types/User'
 import { toast } from 'sonner'
 
+interface PaginationInfo {
+  current_page: number
+  total: number
+  per_page: number
+  last_page: number
+  from: number | null
+  to: number | null
+}
+
 interface HelpRequestsState {
   helpRequests: HelpRequest[]
   availableHelpRequests: HelpRequest[]
@@ -20,12 +30,11 @@ interface HelpRequestsState {
   availableTasks: Task[]
   availableUsers: User[]
   ratingOptions: HelpRequestRatingOption[]
-  pagination: {
-    current_page: number
-    total: number
-    per_page: number
-    last_page: number
-  } | null
+  pagination: PaginationInfo | null
+  availablePagination: PaginationInfo | null
+  taskPagination: Record<number, PaginationInfo>
+  requesterPagination: Record<number, PaginationInfo>  
+  helperPagination: Record<number, PaginationInfo>
   isLoading: boolean
   error: string | null
   
@@ -57,6 +66,10 @@ export const useHelpRequestsStore = create<HelpRequestsState>((set, get) => ({
   availableUsers: [],
   ratingOptions: HelpRequestService.getHelpRequestRatingOptions(),
   pagination: null,
+  availablePagination: null,
+  taskPagination: {},
+  requesterPagination: {},
+  helperPagination: {},
   isLoading: false,
   error: null,
 
@@ -67,7 +80,14 @@ export const useHelpRequestsStore = create<HelpRequestsState>((set, get) => ({
       if (response.success) {
         set({
           helpRequests: response.data,
-          pagination: response.pagination,
+          pagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {
@@ -88,7 +108,14 @@ export const useHelpRequestsStore = create<HelpRequestsState>((set, get) => ({
       if (response.success) {
         set({
           availableHelpRequests: response.data,
-          pagination: response.pagination,
+          availablePagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {
@@ -124,11 +151,21 @@ export const useHelpRequestsStore = create<HelpRequestsState>((set, get) => ({
     try {
       const response = await helpRequestService.getHelpRequestsByTask(taskId, page)
       if (response.success) {
-        set({
+        set(state => ({
           helpRequests: response.data,
-          pagination: response.pagination,
+          taskPagination: {
+            ...state.taskPagination,
+            [taskId]: response.pagination || {
+              current_page: 1,
+              total: response.data.length,
+              per_page: 15,
+              last_page: 1,
+              from: response.data.length > 0 ? 1 : null,
+              to: response.data.length
+            }
+          },
           isLoading: false
-        })
+        }))
       } else {
         set({ error: response.message, isLoading: false })
         toast.error(response.message)
@@ -145,11 +182,21 @@ export const useHelpRequestsStore = create<HelpRequestsState>((set, get) => ({
     try {
       const response = await helpRequestService.getHelpRequestsByRequester(userId, page)
       if (response.success) {
-        set({
+        set(state => ({
           helpRequests: response.data,
-          pagination: response.pagination,
+          requesterPagination: {
+            ...state.requesterPagination,
+            [userId]: response.pagination || {
+              current_page: 1,
+              total: response.data.length,
+              per_page: 15,
+              last_page: 1,
+              from: response.data.length > 0 ? 1 : null,
+              to: response.data.length
+            }
+          },
           isLoading: false
-        })
+        }))
       } else {
         set({ error: response.message, isLoading: false })
         toast.error(response.message)
@@ -166,11 +213,21 @@ export const useHelpRequestsStore = create<HelpRequestsState>((set, get) => ({
     try {
       const response = await helpRequestService.getHelpRequestsByHelper(userId, page)
       if (response.success) {
-        set({
+        set(state => ({
           helpRequests: response.data,
-          pagination: response.pagination,
+          helperPagination: {
+            ...state.helperPagination,
+            [userId]: response.pagination || {
+              current_page: 1,
+              total: response.data.length,
+              per_page: 15,
+              last_page: 1,
+              from: response.data.length > 0 ? 1 : null,
+              to: response.data.length
+            }
+          },
           isLoading: false
-        })
+        }))
       } else {
         set({ error: response.message, isLoading: false })
         toast.error(response.message)
@@ -368,5 +425,8 @@ export const useHelpRequestsStore = create<HelpRequestsState>((set, get) => ({
     return HelpRequestService.getHelpRequestRatingOptions()
   },
 
-  clearCurrentHelpRequest: () => set({ currentHelpRequest: null, error: null })
+  clearCurrentHelpRequest: () => set({ 
+    currentHelpRequest: null, 
+    error: null 
+  })
 }))

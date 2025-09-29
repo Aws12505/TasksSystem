@@ -1,3 +1,4 @@
+// stores/subtasksStore.ts
 import { create } from 'zustand'
 import { subtaskService } from '../../../services/subtaskService'
 import { taskService } from '../../../services/taskService'
@@ -5,15 +6,21 @@ import type { Subtask, CreateSubtaskRequest, UpdateSubtaskRequest } from '../../
 import type { UpdateTaskStatusRequest } from '../../../types/Task'
 import { toast } from 'sonner'
 
+interface PaginationInfo {
+  current_page: number
+  total: number
+  per_page: number
+  last_page: number
+  from: number | null
+  to: number | null
+}
+
 interface SubtasksState {
   subtasks: Subtask[]
   currentSubtask: Subtask | null
-  pagination: {
-    current_page: number
-    total: number
-    per_page: number
-    last_page: number
-  } | null
+  pagination: PaginationInfo | null
+  taskPagination: Record<number, PaginationInfo>
+  currentTaskId: number | null
   isLoading: boolean
   error: string | null
   
@@ -32,19 +39,39 @@ export const useSubtasksStore = create<SubtasksState>((set, get) => ({
   subtasks: [],
   currentSubtask: null,
   pagination: null,
+  taskPagination: {},
+  currentTaskId: null,
   isLoading: false,
   error: null,
 
   fetchSubtasksByTask: async (taskId: number, page = 1) => {
-    set({ isLoading: true, error: null })
+    set({ isLoading: true, error: null, currentTaskId: taskId })
     try {
       const response = await subtaskService.getSubtasksByTask(taskId, page)
       if (response.success) {
-        set({
+        set(state => ({
           subtasks: response.data,
-          pagination: response.pagination,
+          taskPagination: {
+            ...state.taskPagination,
+            [taskId]: response.pagination || {
+              current_page: 1,
+              total: response.data.length,
+              per_page: 15,
+              last_page: 1,
+              from: response.data.length > 0 ? 1 : null,
+              to: response.data.length
+            }
+          },
+          pagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
-        })
+        }))
       } else {
         set({ error: response.message, isLoading: false })
         toast.error(response.message)
@@ -180,5 +207,8 @@ export const useSubtasksStore = create<SubtasksState>((set, get) => ({
     }
   },
 
-  clearCurrentSubtask: () => set({ currentSubtask: null, error: null })
+  clearCurrentSubtask: () => set({ 
+    currentSubtask: null, 
+    error: null 
+  })
 }))

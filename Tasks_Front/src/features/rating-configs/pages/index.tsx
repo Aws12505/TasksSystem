@@ -1,9 +1,19 @@
+// pages/RatingConfigsPage.tsx
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { useRatingConfigs } from '../hooks/useRatingConfigs'
 import { useFiltersStore } from '../../../stores/filtersStore'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -13,10 +23,15 @@ import { Plus, Search, Settings, CheckCircle2, Clock, Database } from 'lucide-re
 const RatingConfigsPage: React.FC = () => {
   const { 
     ratingConfigs, 
+    pagination,
     isLoading, 
     deleteRatingConfig, 
     activateRatingConfig,
-    fetchRatingConfigsByType
+    fetchRatingConfigs,
+    fetchRatingConfigsByType,
+    goToPage,
+    nextPage,
+    prevPage
   } = useRatingConfigs()
   const { searchQuery, setSearchQuery } = useFiltersStore()
   const { hasPermission } = usePermissions()
@@ -40,17 +55,45 @@ const RatingConfigsPage: React.FC = () => {
 
   const handleTabChange = async (value: string) => {
     if (value === 'all') {
-      // Fetch all configs logic is handled by the hook
+      await fetchRatingConfigs(1)
     } else {
-      await fetchRatingConfigsByType(value)
+      await fetchRatingConfigsByType(value, 1)
     }
   }
 
-  // Calculate stats
+  // Calculate stats from current page data
   const activeConfigs = ratingConfigs.filter(c => c.is_active).length
   const taskRatingConfigs = ratingConfigs.filter(c => c.type === 'task_rating').length
   const stakeholderRatingConfigs = ratingConfigs.filter(c => c.type === 'stakeholder_rating').length
   const finalRatingConfigs = ratingConfigs.filter(c => c.type === 'final_rating').length
+
+  // Generate pagination items
+  const generatePaginationItems = () => {
+    if (!pagination) return []
+
+    const items = []
+    const { current_page, last_page } = pagination
+    
+    if (current_page > 3) {
+      items.push(1)
+      if (current_page > 4) {
+        items.push('ellipsis-start')
+      }
+    }
+
+    for (let i = Math.max(1, current_page - 2); i <= Math.min(last_page, current_page + 2); i++) {
+      items.push(i)
+    }
+
+    if (current_page < last_page - 2) {
+      if (current_page < last_page - 3) {
+        items.push('ellipsis-end')
+      }
+      items.push(last_page)
+    }
+
+    return items
+  }
 
   return (
     <div className="space-y-6">
@@ -100,7 +143,9 @@ const RatingConfigsPage: React.FC = () => {
             <Database className="w-4 h-4 text-chart-1" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{ratingConfigs.length}</div>
+            <div className="text-2xl font-bold text-foreground">
+              {pagination?.total || ratingConfigs.length}
+            </div>
           </CardContent>
         </Card>
         <Card className="bg-card border-border">
@@ -141,46 +186,230 @@ const RatingConfigsPage: React.FC = () => {
       {/* Tabs */}
       <Tabs defaultValue="all" className="space-y-4" onValueChange={handleTabChange}>
         <TabsList className="bg-muted">
-          <TabsTrigger value="all">All ({ratingConfigs.length})</TabsTrigger>
+          <TabsTrigger value="all">All ({pagination?.total || ratingConfigs.length})</TabsTrigger>
           <TabsTrigger value="task_rating">Task Rating ({taskRatingConfigs})</TabsTrigger>
           <TabsTrigger value="stakeholder_rating">Stakeholder ({stakeholderRatingConfigs})</TabsTrigger>
           <TabsTrigger value="final_rating">Final Rating ({finalRatingConfigs})</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="all">
+        <TabsContent value="all" className="space-y-4">
           <RatingConfigsList 
             ratingConfigs={ratingConfigs} 
             isLoading={isLoading} 
             onDelete={handleDelete}
             onActivate={handleActivate}
           />
+          
+          {/* Pagination for All tab */}
+          {pagination && pagination.last_page > 1 && (
+            <Card className="bg-card border-border">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {pagination.from || 0} to {pagination.to || 0} of {pagination.total} results
+                  </div>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={prevPage}
+                          className={pagination.current_page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                      
+                      {generatePaginationItems().map((item, index) => (
+                        <PaginationItem key={index}>
+                          {item === 'ellipsis-start' || item === 'ellipsis-end' ? (
+                            <PaginationEllipsis />
+                          ) : (
+                            <PaginationLink
+                              onClick={() => goToPage(item as number)}
+                              isActive={pagination.current_page === item}
+                              className="cursor-pointer"
+                            >
+                              {item}
+                            </PaginationLink>
+                          )}
+                        </PaginationItem>
+                      ))}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={nextPage}
+                          className={pagination.current_page === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
         
-        <TabsContent value="task_rating">
+        <TabsContent value="task_rating" className="space-y-4">
           <RatingConfigsList 
             ratingConfigs={ratingConfigs.filter(c => c.type === 'task_rating')} 
             isLoading={isLoading} 
             onDelete={handleDelete}
             onActivate={handleActivate}
           />
+          
+          {/* Pagination for Task Rating tab */}
+          {pagination && pagination.last_page > 1 && (
+            <Card className="bg-card border-border">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {pagination.from || 0} to {pagination.to || 0} of {pagination.total} results
+                  </div>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={prevPage}
+                          className={pagination.current_page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                      
+                      {generatePaginationItems().map((item, index) => (
+                        <PaginationItem key={index}>
+                          {item === 'ellipsis-start' || item === 'ellipsis-end' ? (
+                            <PaginationEllipsis />
+                          ) : (
+                            <PaginationLink
+                              onClick={() => goToPage(item as number)}
+                              isActive={pagination.current_page === item}
+                              className="cursor-pointer"
+                            >
+                              {item}
+                            </PaginationLink>
+                          )}
+                        </PaginationItem>
+                      ))}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={nextPage}
+                          className={pagination.current_page === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
         
-        <TabsContent value="stakeholder_rating">
+        <TabsContent value="stakeholder_rating" className="space-y-4">
           <RatingConfigsList 
             ratingConfigs={ratingConfigs.filter(c => c.type === 'stakeholder_rating')} 
             isLoading={isLoading} 
             onDelete={handleDelete}
             onActivate={handleActivate}
           />
+          
+          {/* Pagination for Stakeholder Rating tab */}
+          {pagination && pagination.last_page > 1 && (
+            <Card className="bg-card border-border">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {pagination.from || 0} to {pagination.to || 0} of {pagination.total} results
+                  </div>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={prevPage}
+                          className={pagination.current_page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                      
+                      {generatePaginationItems().map((item, index) => (
+                        <PaginationItem key={index}>
+                          {item === 'ellipsis-start' || item === 'ellipsis-end' ? (
+                            <PaginationEllipsis />
+                          ) : (
+                            <PaginationLink
+                              onClick={() => goToPage(item as number)}
+                              isActive={pagination.current_page === item}
+                              className="cursor-pointer"
+                            >
+                              {item}
+                            </PaginationLink>
+                          )}
+                        </PaginationItem>
+                      ))}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={nextPage}
+                          className={pagination.current_page === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
         
-        <TabsContent value="final_rating">
+        <TabsContent value="final_rating" className="space-y-4">
           <RatingConfigsList 
             ratingConfigs={ratingConfigs.filter(c => c.type === 'final_rating')} 
             isLoading={isLoading} 
             onDelete={handleDelete}
             onActivate={handleActivate}
           />
+          
+          {/* Pagination for Final Rating tab */}
+          {pagination && pagination.last_page > 1 && (
+            <Card className="bg-card border-border">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {pagination.from || 0} to {pagination.to || 0} of {pagination.total} results
+                  </div>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={prevPage}
+                          className={pagination.current_page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                      
+                      {generatePaginationItems().map((item, index) => (
+                        <PaginationItem key={index}>
+                          {item === 'ellipsis-start' || item === 'ellipsis-end' ? (
+                            <PaginationEllipsis />
+                          ) : (
+                            <PaginationLink
+                              onClick={() => goToPage(item as number)}
+                              isActive={pagination.current_page === item}
+                              className="cursor-pointer"
+                            >
+                              {item}
+                            </PaginationLink>
+                          )}
+                        </PaginationItem>
+                      ))}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={nextPage}
+                          className={pagination.current_page === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

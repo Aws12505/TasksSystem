@@ -1,3 +1,4 @@
+// stores/ratingConfigsStore.ts
 import { create } from 'zustand'
 import { ratingConfigService } from '../../../services/ratingConfigService'
 import type { 
@@ -6,15 +7,21 @@ import type {
 } from '../../../types/RatingConfig'
 import { toast } from 'sonner'
 
+interface PaginationInfo {
+  current_page: number
+  total: number
+  per_page: number
+  last_page: number
+  from: number | null
+  to: number | null
+}
+
 interface RatingConfigsState {
   ratingConfigs: RatingConfig[]
   currentRatingConfig: RatingConfig | null
-  pagination: {
-    current_page: number
-    total: number
-    per_page: number
-    last_page: number
-  } | null
+  pagination: PaginationInfo | null
+  typePagination: Record<string, PaginationInfo>
+  currentType: string | null
   isLoading: boolean
   error: string | null
 
@@ -34,17 +41,26 @@ export const useRatingConfigsStore = create<RatingConfigsState>((set, get) => ({
   ratingConfigs: [],
   currentRatingConfig: null,
   pagination: null,
+  typePagination: {},
+  currentType: null,
   isLoading: false,
   error: null,
 
   fetchRatingConfigs: async (page = 1) => {
-    set({ isLoading: true, error: null })
+    set({ isLoading: true, error: null, currentType: null })
     try {
       const response = await ratingConfigService.getRatingConfigs(page)
       if (response.success) {
         set({
           ratingConfigs: response.data,
-          pagination: response.pagination,
+          pagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {
@@ -82,8 +98,13 @@ export const useRatingConfigsStore = create<RatingConfigsState>((set, get) => ({
       if (response.success) {
         set({ isLoading: false })
         toast.success('Rating config created successfully')
-        // Refresh list
-        get().fetchRatingConfigs()
+        // Refresh appropriate list
+        const currentType = get().currentType
+        if (currentType) {
+          get().fetchRatingConfigsByType(currentType)
+        } else {
+          get().fetchRatingConfigs()
+        }
         return response.data
       } else {
         set({ error: response.message, isLoading: false })
@@ -105,8 +126,13 @@ export const useRatingConfigsStore = create<RatingConfigsState>((set, get) => ({
       if (response.success) {
         set({ currentRatingConfig: response.data, isLoading: false })
         toast.success('Rating config updated successfully')
-        // Refresh list
-        get().fetchRatingConfigs()
+        // Refresh appropriate list
+        const currentType = get().currentType
+        if (currentType) {
+          get().fetchRatingConfigsByType(currentType)
+        } else {
+          get().fetchRatingConfigs()
+        }
         return response.data
       } else {
         set({ error: response.message, isLoading: false })
@@ -128,8 +154,13 @@ export const useRatingConfigsStore = create<RatingConfigsState>((set, get) => ({
       if (response.success) {
         set({ isLoading: false })
         toast.success('Rating config deleted successfully')
-        // Refresh list
-        get().fetchRatingConfigs()
+        // Refresh appropriate list
+        const currentType = get().currentType
+        if (currentType) {
+          get().fetchRatingConfigsByType(currentType)
+        } else {
+          get().fetchRatingConfigs()
+        }
         return true
       } else {
         set({ error: response.message, isLoading: false })
@@ -145,15 +176,25 @@ export const useRatingConfigsStore = create<RatingConfigsState>((set, get) => ({
   },
 
   fetchRatingConfigsByType: async (type: string, page = 1) => {
-    set({ isLoading: true, error: null })
+    set({ isLoading: true, error: null, currentType: type })
     try {
       const response = await ratingConfigService.getRatingConfigsByType(type, page)
       if (response.success) {
-        set({
+        set(state => ({
           ratingConfigs: response.data,
-          pagination: response.pagination,
+          typePagination: {
+            ...state.typePagination,
+            [type]: response.pagination || {
+              current_page: 1,
+              total: response.data.length,
+              per_page: 15,
+              last_page: 1,
+              from: response.data.length > 0 ? 1 : null,
+              to: response.data.length
+            }
+          },
           isLoading: false
-        })
+        }))
       } else {
         set({ error: response.message, isLoading: false })
         toast.error(response.message)
@@ -174,8 +215,13 @@ export const useRatingConfigsStore = create<RatingConfigsState>((set, get) => ({
         if (get().currentRatingConfig?.id === id) {
           set({ currentRatingConfig: response.data })
         }
-        // Refresh list
-        get().fetchRatingConfigs()
+        // Refresh appropriate list
+        const currentType = get().currentType
+        if (currentType) {
+          get().fetchRatingConfigsByType(currentType)
+        } else {
+          get().fetchRatingConfigs()
+        }
         return response.data
       } else {
         toast.error(response.message)
@@ -188,27 +234,28 @@ export const useRatingConfigsStore = create<RatingConfigsState>((set, get) => ({
   },
 
   fetchActiveRatingConfigsByType: async (type: string) => {
-  set({ isLoading: true, error: null })
-  try {
-    const response = await ratingConfigService.getActiveRatingConfigsByType(type)
-    if (response.success) {
-      set({
-        ratingConfigs: response.data, // array of active configs
-        isLoading: false
-      })
-      // optional: toast.success('Active rating configs loaded')
-    } else {
-      set({ error: response.message, isLoading: false })
-      toast.error(response.message)
+    set({ isLoading: true, error: null })
+    try {
+      const response = await ratingConfigService.getActiveRatingConfigsByType(type)
+      if (response.success) {
+        set({
+          ratingConfigs: response.data,
+          isLoading: false
+        })
+      } else {
+        set({ error: response.message, isLoading: false })
+        toast.error(response.message)
+      }
+    } catch (error: any) {
+      const apiMsg = error?.response?.data?.message
+      const errorMessage = apiMsg || error.message || 'Failed to fetch active rating configs by type'
+      set({ error: errorMessage, isLoading: false })
+      toast.error(errorMessage)
     }
-  } catch (error: any) {
-    // handle 400/404 rejections as well
-    const apiMsg = error?.response?.data?.message
-    const errorMessage = apiMsg || error.message || 'Failed to fetch active rating configs by type'
-    set({ error: errorMessage, isLoading: false })
-    toast.error(errorMessage)
-  }
-},
+  },
 
-  clearCurrentRatingConfig: () => set({ currentRatingConfig: null, error: null })
+  clearCurrentRatingConfig: () => set({ 
+    currentRatingConfig: null, 
+    error: null 
+  })
 }))

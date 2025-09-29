@@ -1,3 +1,4 @@
+// hooks/useRoles.ts
 import { useEffect } from 'react'
 import { useRolesStore } from '../stores/rolesStore'
 import { useFiltersStore } from '../../../stores/filtersStore'
@@ -17,8 +18,10 @@ export const useRoles = () => {
   const { searchQuery } = useFiltersStore()
 
   useEffect(() => {
-    fetchRoles()
-  }, [fetchRoles])
+    if (!roles.length) {
+      fetchRoles(1)
+    }
+  }, [fetchRoles, roles.length])
 
   const handleCreateRole = async (data: any) => {
     const role = await createRole(data)
@@ -34,10 +37,27 @@ export const useRoles = () => {
     return await deleteRole(id)
   }
 
-  // Filter roles based on search query
+  // Filter roles based on search query - apply to current page only
   const filteredRoles = roles.filter(role => 
     role.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  // Pagination functions
+  const goToPage = (page: number) => {
+    fetchRoles(page)
+  }
+
+  const nextPage = () => {
+    if (pagination && pagination.current_page < pagination.last_page) {
+      goToPage(pagination.current_page + 1)
+    }
+  }
+
+  const prevPage = () => {
+    if (pagination && pagination.current_page > 1) {
+      goToPage(pagination.current_page - 1)
+    }
+  }
 
   return {
     roles: filteredRoles,
@@ -47,6 +67,10 @@ export const useRoles = () => {
     fetchRoles,
     createRole: handleCreateRole,
     updateRole: handleUpdateRole,
-    deleteRole: handleDeleteRole
+    deleteRole: handleDeleteRole,
+    // Pagination methods
+    goToPage,
+    nextPage,
+    prevPage
   }
 }

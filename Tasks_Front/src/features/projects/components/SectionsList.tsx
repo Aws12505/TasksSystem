@@ -1,9 +1,20 @@
+// components/SectionsList.tsx
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { usePermissions } from '@/hooks/usePermissions'
+import { useSectionsStore } from '@/features/sections/stores/sectionsStore'
 import { 
   MoreHorizontal, 
   Edit, 
@@ -50,6 +61,10 @@ const SectionsList: React.FC<SectionsListProps> = ({
   const { hasPermission } = usePermissions()
   
   const { openTaskDialog } = useTaskDialog()
+  const { projectPagination, fetchSectionsByProject } = useSectionsStore()
+
+  // Get pagination for this project
+  const pagination = projectPagination[projectId] || null
 
   const handleCreateSection = async (data: any) => {
     await onCreateSection({ ...data, project_id: projectId })
@@ -79,76 +94,169 @@ const SectionsList: React.FC<SectionsListProps> = ({
     setExpandedSections(newExpanded)
   }
 
-  return (
-    <Card className="bg-card border-border">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <List className="w-5 h-5" />
-            Sections & Tasks ({sections.length})
-          </CardTitle>
-          {hasPermission('create sections') && (
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => setShowCreateForm(true)}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Section
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Create Section Form */}
-        {showCreateForm && hasPermission('create sections') && (
-          <div className="p-4 border border-border rounded-lg bg-accent/20">
-            <h4 className="text-sm font-medium text-foreground mb-3">Create New Section</h4>
-            <SectionForm
-              onSubmit={handleCreateSection}
-              onCancel={() => setShowCreateForm(false)}
-              isLoading={isLoading}
-            />
-          </div>
-        )}
+  // Pagination functions
+  const goToPage = (page: number) => {
+    fetchSectionsByProject(projectId, page)
+  }
 
-        {/* Sections List */}
-        {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />
-            ))}
+  const nextPage = () => {
+    if (pagination && pagination.current_page < pagination.last_page) {
+      goToPage(pagination.current_page + 1)
+    }
+  }
+
+  const prevPage = () => {
+    if (pagination && pagination.current_page > 1) {
+      goToPage(pagination.current_page - 1)
+    }
+  }
+
+  // Generate pagination items
+  const generatePaginationItems = () => {
+    if (!pagination) return []
+
+    const items = []
+    const { current_page, last_page } = pagination
+    
+    if (current_page > 3) {
+      items.push(1)
+      if (current_page > 4) {
+        items.push('ellipsis-start')
+      }
+    }
+
+    for (let i = Math.max(1, current_page - 2); i <= Math.min(last_page, current_page + 2); i++) {
+      items.push(i)
+    }
+
+    if (current_page < last_page - 2) {
+      if (current_page < last_page - 3) {
+        items.push('ellipsis-end')
+      }
+      items.push(last_page)
+    }
+
+    return items
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <List className="w-5 h-5" />
+              Sections & Tasks ({pagination?.total || sections.length})
+            </CardTitle>
+            {hasPermission('create sections') && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setShowCreateForm(true)}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Section
+              </Button>
+            )}
           </div>
-        ) : sections.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">
-            No sections yet. {hasPermission('create sections') ? 'Create your first section to get started.' : 'No sections available.'}
-          </p>
-        ) : (
-          sections.map((section) => (
-            <SectionWithTasks
-              key={section.id}
-              section={section}
-              projectId={projectId}
-              isExpanded={expandedSections.has(section.id)}
-              onToggle={() => toggleSection(section.id)}
-              onEdit={() => setEditingSection(section)}
-              onDelete={() => handleDeleteSection(section.id)}
-              isEditing={editingSection?.id === section.id}
-              editingSection={editingSection}
-              onUpdateSection={handleUpdateSection}
-              onCancelEdit={() => setEditingSection(null)}
-              openTaskDialog={openTaskDialog}
-              isLoading={isLoading}
-            />
-          ))
-        )}
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Create Section Form */}
+          {showCreateForm && hasPermission('create sections') && (
+            <div className="p-4 border border-border rounded-lg bg-accent/20">
+              <h4 className="text-sm font-medium text-foreground mb-3">Create New Section</h4>
+              <SectionForm
+                onSubmit={handleCreateSection}
+                onCancel={() => setShowCreateForm(false)}
+                isLoading={isLoading}
+              />
+            </div>
+          )}
+
+          {/* Sections List */}
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />
+              ))}
+            </div>
+          ) : sections.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              No sections yet. {hasPermission('create sections') ? 'Create your first section to get started.' : 'No sections available.'}
+            </p>
+          ) : (
+            sections.map((section) => (
+              <SectionWithTasks
+                key={section.id}
+                section={section}
+                projectId={projectId}
+                isExpanded={expandedSections.has(section.id)}
+                onToggle={() => toggleSection(section.id)}
+                onEdit={() => setEditingSection(section)}
+                onDelete={() => handleDeleteSection(section.id)}
+                isEditing={editingSection?.id === section.id}
+                editingSection={editingSection}
+                onUpdateSection={handleUpdateSection}
+                onCancelEdit={() => setEditingSection(null)}
+                openTaskDialog={openTaskDialog}
+                isLoading={isLoading}
+              />
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pagination */}
+      {pagination && pagination.last_page > 1 && (
+        <Card className="bg-card border-border">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {pagination.from || 0} to {pagination.to || 0} of {pagination.total} results
+              </div>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={prevPage}
+                      className={pagination.current_page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  
+                  {generatePaginationItems().map((item, index) => (
+                    <PaginationItem key={index}>
+                      {item === 'ellipsis-start' || item === 'ellipsis-end' ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          onClick={() => goToPage(item as number)}
+                          isActive={pagination.current_page === item}
+                          className="cursor-pointer"
+                        >
+                          {item}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={nextPage}
+                      className={pagination.current_page === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }
 
-// Updated SectionWithTasks component with permissions
+// Keep all existing SectionWithTasks and TaskItem components exactly the same...
 const SectionWithTasks: React.FC<any> = ({
   section,
   projectId,
@@ -322,7 +430,6 @@ const SectionWithTasks: React.FC<any> = ({
   )
 }
 
-// Updated TaskItem component with permissions
 const TaskItem: React.FC<any> = ({ task, onEdit, onDelete }) => {
   const { hasPermission, hasAnyPermission } = usePermissions()
 

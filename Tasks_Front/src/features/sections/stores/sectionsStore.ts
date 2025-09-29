@@ -1,11 +1,23 @@
+// stores/sectionsStore.ts
 import { create } from 'zustand'
 import { sectionService } from '../../../services/sectionService'
 import type { Section, CreateSectionRequest, UpdateSectionRequest } from '../../../types/Section'
 import { toast } from 'sonner'
 
+interface PaginationInfo {
+  current_page: number
+  total: number
+  per_page: number
+  last_page: number
+  from: number | null
+  to: number | null
+}
+
 interface SectionsState {
   // Data
   sections: Section[]
+  pagination: PaginationInfo | null
+  projectPagination: Record<number, PaginationInfo>
   
   // Loading states
   isLoading: boolean
@@ -17,23 +29,39 @@ interface SectionsState {
   deleteSection: (id: number) => Promise<boolean>
   
   // Fetch Actions
-  fetchSectionsByProject: (projectId: number) => Promise<void>
+  fetchSectionsByProject: (projectId: number, page?: number) => Promise<void>
   clearSections: () => void
 }
 
 export const useSectionsStore = create<SectionsState>((set, get) => ({
   // Initial state
   sections: [],
+  pagination: null,
+  projectPagination: {},
   isLoading: false,
   error: null,
 
   // Fetch sections by project
-  fetchSectionsByProject: async (projectId: number) => {
+  fetchSectionsByProject: async (projectId: number, page = 1) => {
     set({ isLoading: true, error: null })
     try {
-      const response = await sectionService.getSectionsByProject(projectId)
+      const response = await sectionService.getSectionsByProject(projectId, page)
       if (response.success) {
-        set({ sections: response.data, isLoading: false })
+        set(state => ({
+          sections: response.data,
+          projectPagination: {
+            ...state.projectPagination,
+            [projectId]: response.pagination || {
+              current_page: 1,
+              total: response.data.length,
+              per_page: 15,
+              last_page: 1,
+              from: response.data.length > 0 ? 1 : null,
+              to: response.data.length
+            }
+          },
+          isLoading: false
+        }))
       } else {
         set({ error: response.message, isLoading: false })
         toast.error(response.message)
@@ -47,7 +75,7 @@ export const useSectionsStore = create<SectionsState>((set, get) => ({
 
   // Clear sections
   clearSections: () => {
-    set({ sections: [], error: null })
+    set({ sections: [], projectPagination: {}, error: null })
   },
 
   // Create section

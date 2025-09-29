@@ -1,6 +1,16 @@
+// pages/TaskRatingsPage.tsx
 import React, { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { useTaskRating } from '../hooks/useTaskRating'
 import TaskRatingForm from '../components/TaskRatingForm'
 import RatingDisplay from '../components/RatingDisplay'
@@ -19,8 +29,12 @@ const TaskRatingsPage: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>()
   const { 
     taskRatings, 
+    pagination,
     isLoading: isRatingsLoading, 
-    createRating 
+    createRating,
+    goToPage,
+    nextPage,
+    prevPage
   } = useTaskRating(taskId!)
 
   // ── NEW: pull active "task_rating" configs from the store via the hook
@@ -63,6 +77,34 @@ const TaskRatingsPage: React.FC = () => {
 
   const handleCreateRating = async (data: any) => {
     await createRating(data)
+  }
+
+  // Generate pagination items
+  const generatePaginationItems = () => {
+    if (!pagination) return []
+
+    const items = []
+    const { current_page, last_page } = pagination
+    
+    if (current_page > 3) {
+      items.push(1)
+      if (current_page > 4) {
+        items.push('ellipsis-start')
+      }
+    }
+
+    for (let i = Math.max(1, current_page - 2); i <= Math.min(last_page, current_page + 2); i++) {
+      items.push(i)
+    }
+
+    if (current_page < last_page - 2) {
+      if (current_page < last_page - 3) {
+        items.push('ellipsis-end')
+      }
+      items.push(last_page)
+    }
+
+    return items
   }
 
   if (!taskId) {
@@ -166,11 +208,59 @@ const TaskRatingsPage: React.FC = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
-              {taskRatings.map((rating) => (
-                <RatingDisplay key={rating.id} rating={rating} />
-              ))}
-            </div>
+            <>
+              <div className="space-y-4">
+                {taskRatings.map((rating) => (
+                  <RatingDisplay key={rating.id} rating={rating} />
+                ))}
+              </div>
+
+              {/* Task Ratings Pagination */}
+              {pagination && pagination.last_page > 1 && (
+                <Card className="bg-card border-border">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        Showing {pagination.from || 0} to {pagination.to || 0} of {pagination.total} results
+                      </div>
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious 
+                              onClick={prevPage}
+                              className={pagination.current_page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                          </PaginationItem>
+                          
+                          {generatePaginationItems().map((item, index) => (
+                            <PaginationItem key={index}>
+                              {item === 'ellipsis-start' || item === 'ellipsis-end' ? (
+                                <PaginationEllipsis />
+                              ) : (
+                                <PaginationLink
+                                  onClick={() => goToPage(item as number)}
+                                  isActive={pagination.current_page === item}
+                                  className="cursor-pointer"
+                                >
+                                  {item}
+                                </PaginationLink>
+                              )}
+                            </PaginationItem>
+                          ))}
+                          
+                          <PaginationItem>
+                            <PaginationNext 
+                              onClick={nextPage}
+                              className={pagination.current_page === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -1,3 +1,4 @@
+// stores/rolesStore.ts
 import { create } from 'zustand'
 import { roleService } from '../../../services/roleService'
 import { permissionService } from '../../../services/permissionService'
@@ -5,16 +6,20 @@ import type { Role, CreateRoleRequest, UpdateRoleRequest } from '../../../types/
 import type { Permission } from '../../../types/Permission'
 import { toast } from 'sonner'
 
+interface PaginationInfo {
+  current_page: number
+  total: number
+  per_page: number
+  last_page: number
+  from: number | null
+  to: number | null
+}
+
 interface RolesState {
   roles: Role[]
   currentRole: Role | null
   availablePermissions: Permission[]
-  pagination: {
-    current_page: number
-    total: number
-    per_page: number
-    last_page: number
-  } | null
+  pagination: PaginationInfo | null
   isLoading: boolean
   error: string | null
   
@@ -43,7 +48,14 @@ export const useRolesStore = create<RolesState>((set, get) => ({
       if (response.success) {
         set({
           roles: response.data,
-          pagination: response.pagination,
+          pagination: response.pagination || {
+            current_page: 1,
+            total: response.data.length,
+            per_page: 15,
+            last_page: 1,
+            from: response.data.length > 0 ? 1 : null,
+            to: response.data.length
+          },
           isLoading: false
         })
       } else {
@@ -154,5 +166,8 @@ export const useRolesStore = create<RolesState>((set, get) => ({
     }
   },
 
-  clearCurrentRole: () => set({ currentRole: null, error: null })
+  clearCurrentRole: () => set({ 
+    currentRole: null, 
+    error: null 
+  })
 }))

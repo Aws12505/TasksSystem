@@ -1,8 +1,18 @@
+// pages/TasksPage.tsx
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -19,7 +29,7 @@ type AssigneeLite = { id: number; name: string; percentage: number }
 type AssigneesMap = Record<number, AssigneeLite[]>
 
 const TasksPage: React.FC = () => {
-  const { tasks, isLoading, deleteTask, updateTaskStatus } = useTasks()
+  const { tasks, isLoading, deleteTask, updateTaskStatus, pagination, goToPage, nextPage, prevPage } = useTasks()
   const { searchQuery, statusFilter, setSearchQuery, setStatusFilter } = useFiltersStore()
   const { hasPermission } = usePermissions()
 
@@ -37,7 +47,7 @@ const TasksPage: React.FC = () => {
     await updateTaskStatus(id, { status: status as TaskStatus })
   }
 
-  // Filters
+  // Filters - apply to current page tasks only
   const filteredTasks = useMemo(() => {
     const q = searchQuery.toLowerCase()
     return tasks.filter(task => {
@@ -50,7 +60,7 @@ const TasksPage: React.FC = () => {
     })
   }, [tasks, searchQuery, statusFilter])
 
-  // 👇 Fetch assignees for the tasks currently in view (grouped by section)
+  // Fetch assignees for the tasks currently in view
   useEffect(() => {
     const run = async () => {
       if (!filteredTasks.length) {
@@ -85,6 +95,37 @@ const TasksPage: React.FC = () => {
 
     run()
   }, [filteredTasks])
+
+  // Generate pagination items
+  const generatePaginationItems = () => {
+    if (!pagination) return []
+
+    const items = []
+    const { current_page, last_page } = pagination
+    
+    // Always show first page
+    if (current_page > 3) {
+      items.push(1)
+      if (current_page > 4) {
+        items.push('ellipsis-start')
+      }
+    }
+
+    // Show pages around current page
+    for (let i = Math.max(1, current_page - 2); i <= Math.min(last_page, current_page + 2); i++) {
+      items.push(i)
+    }
+
+    // Always show last page
+    if (current_page < last_page - 2) {
+      if (current_page < last_page - 3) {
+        items.push('ellipsis-end')
+      }
+      items.push(last_page)
+    }
+
+    return items
+  }
 
   return (
     <div className="space-y-6">
@@ -146,7 +187,9 @@ const TasksPage: React.FC = () => {
             <CheckSquare className="w-4 h-4 text-chart-1" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{filteredTasks.length}</div>
+            <div className="text-2xl font-bold text-foreground">
+              {pagination?.total || filteredTasks.length}
+            </div>
           </CardContent>
         </Card>
         <Card className="bg-card border-border">
@@ -190,8 +233,54 @@ const TasksPage: React.FC = () => {
         isLoading={isLoading}
         onDelete={handleDelete}
         onStatusChange={handleStatusChange}
-        assigneesMap={assigneesMap} // 👈 NEW
+        assigneesMap={assigneesMap}
       />
+
+      {/* Pagination */}
+      {pagination && pagination.last_page > 1 && (
+        <Card className="bg-card border-border">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {pagination.from || 0} to {pagination.to || 0} of {pagination.total} results
+              </div>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={prevPage}
+                      className={pagination.current_page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  
+                  {generatePaginationItems().map((item, index) => (
+                    <PaginationItem key={index}>
+                      {item === 'ellipsis-start' || item === 'ellipsis-end' ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          onClick={() => goToPage(item as number)}
+                          isActive={pagination.current_page === item}
+                          className="cursor-pointer"
+                        >
+                          {item}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={nextPage}
+                      className={pagination.current_page === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

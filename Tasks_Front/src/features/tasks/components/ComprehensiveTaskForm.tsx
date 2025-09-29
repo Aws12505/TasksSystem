@@ -14,24 +14,24 @@ import { useSectionsStore } from '../../sections/stores/sectionsStore'
 import { userService } from '../../../services/userService'
 import type { User } from '../../../types/User'
 
-// 👇 allow optional id on subtasks for edit mode
+// Fixed schema - make everything properly optional/required
 const subtaskItemSchema = z.object({
   id: z.number().optional(),
   name: z.string().min(1, 'Subtask name is required'),
-  description: z.string().optional(),
+  description: z.string().optional().or(z.literal('')), // Allow empty string
   due_date: z.string().min(1, 'Due date is required'),
   priority: z.enum(['low', 'medium', 'high', 'critical'])
 })
 
 const assignmentItemSchema = z.object({
   user_id: z.number().min(1, 'User is required'),
-  percentage: z.number().min(0.01).max(100),
+  percentage: z.number().min(0.01, 'Percentage must be greater than 0').max(100),
 })
 
 const comprehensiveTaskSchema = z.object({
   name: z.string().min(1, 'Task name is required').max(255),
-  description: z.string().optional(),
-  weight: z.number().min(1).max(100),
+  description: z.string().optional().or(z.literal('')), // Allow empty string
+  weight: z.number().min(1, 'Weight must be at least 1').max(100, 'Weight cannot exceed 100'),
   due_date: z.string().min(1, 'Due date is required'),
   priority: z.enum(['low', 'medium', 'high', 'critical']),
   project_id: z.number().min(1, 'Project is required'),
@@ -45,7 +45,6 @@ export type FormData = z.infer<typeof comprehensiveTaskSchema>
 interface ComprehensiveTaskFormProps {
   mode?: 'create' | 'edit'
   sectionId?: number
-  // 👇 initial values used in edit mode
   initialValues?: Partial<FormData>
   onSubmit: (data: FormData) => Promise<void>
   onCancel?: () => void
@@ -67,15 +66,15 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
   const form = useForm<FormData>({
     resolver: zodResolver(comprehensiveTaskSchema),
     defaultValues: {
-      name: '',
-      description: '',
-      weight: 10,
-      due_date: '',
-      priority: 'medium',
-      project_id: initialValues?.project_id, // may be undefined at first
-      section_id: sectionId ?? initialValues?.section_id,
-      subtasks: initialValues?.subtasks ?? [],
-      assignments: initialValues?.assignments ?? [],
+      name: initialValues?.name || '',
+      description: initialValues?.description || '',
+      weight: initialValues?.weight || 10,
+      due_date: initialValues?.due_date || '',
+      priority: initialValues?.priority || 'medium',
+      project_id: initialValues?.project_id || (projects.length > 0 ? projects[0].id : undefined),
+      section_id: sectionId || initialValues?.section_id || undefined,
+      subtasks: initialValues?.subtasks || [],
+      assignments: initialValues?.assignments || [],
     }
   })
 
@@ -83,19 +82,18 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
   useEffect(() => {
     if (initialValues) {
       form.reset({
-        name: initialValues.name ?? '',
-        description: initialValues.description ?? '',
-        weight: initialValues.weight ?? 10,
-        due_date: initialValues.due_date ?? '',
-        priority: initialValues.priority ?? 'medium',
+        name: initialValues.name || '',
+        description: initialValues.description || '',
+        weight: initialValues.weight || 10,
+        due_date: initialValues.due_date || '',
+        priority: initialValues.priority || 'medium',
         project_id: initialValues.project_id,
-        section_id: sectionId ?? initialValues.section_id,
-        subtasks: initialValues.subtasks ?? [],
-        assignments: initialValues.assignments ?? [],
+        section_id: sectionId || initialValues.section_id,
+        subtasks: initialValues.subtasks || [],
+        assignments: initialValues.assignments || [],
       })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialValues, sectionId])
+  }, [initialValues, sectionId, form])
 
   const { fields: subtaskFields, append: appendSubtask, remove: removeSubtask } = useFieldArray({
     control: form.control,
@@ -110,25 +108,37 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
   const selectedProjectId = form.watch('project_id')
   const assignments = form.watch('assignments') || []
 
+  // Fetch initial data
   useEffect(() => {
-    fetchProjects()
-    fetchUsers()
-    // if in edit mode and we already have a project_id, load sections
-    if (initialValues?.project_id) {
-      fetchSectionsByProject(initialValues.project_id)
+    const initializeData = async () => {
+      await fetchProjects()
+      await fetchUsers()
+      
+      // If we have initial project ID or sectionId, fetch sections
+      if (initialValues?.project_id) {
+        await fetchSectionsByProject(initialValues.project_id)
+      } else if (sectionId) {
+        const section = sections.find(s => s.id === sectionId)
+        if (section?.project_id) {
+          await fetchSectionsByProject(section.project_id)
+          form.setValue('project_id', section.project_id)
+        }
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
+    initializeData()
   }, [])
 
+  // Handle project selection change
   useEffect(() => {
     if (selectedProjectId && selectedProjectId > 0) {
       fetchSectionsByProject(selectedProjectId)
+      // Clear section selection when project changes (unless we have a preset sectionId)
       if (!sectionId && mode === 'create') {
-        form.setValue('section_id', 0)
+        form.setValue('section_id', undefined as any)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProjectId])
+  }, [selectedProjectId, fetchSectionsByProject, sectionId, mode, form])
 
   const fetchUsers = async () => {
     try {
@@ -142,27 +152,58 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
   }
 
   const handleSubmit = async (data: FormData) => {
-    // strip project_id before sending to backend (create uses section_id only)
-    const { project_id, ...submitData } = data
-    await onSubmit({
-      ...submitData,
-      weight: Number(submitData.weight),
-      section_id: Number(submitData.section_id),
-      subtasks: submitData.subtasks?.map(s => ({
-        ...s,
-        due_date: s.due_date,
-      })) ?? [],
-      assignments: submitData.assignments.map(a => ({
-        user_id: Number(a.user_id),
-        percentage: Number(a.percentage),
+    console.log('Raw form data:', data)
+    
+    // Additional client-side validation
+    if (!data.section_id || data.section_id <= 0) {
+      form.setError('section_id', { message: 'Please select a section' })
+      return
+    }
+
+    if (!data.assignments || data.assignments.length === 0) {
+      form.setError('assignments', { message: 'At least one user assignment is required' })
+      return
+    }
+
+    // Check total percentage
+    const totalPercentage = data.assignments.reduce((sum, a) => sum + Number(a.percentage), 0)
+    if (totalPercentage > 100) {
+      form.setError('assignments', { message: 'Total assignment percentage cannot exceed 100%' })
+      return
+    }
+
+    // Format data for API
+    const formattedData: FormData = {
+      name: data.name.trim(),
+      description: data.description?.trim() || '',
+      weight: Number(data.weight),
+      due_date: data.due_date,
+      priority: data.priority,
+      project_id: Number(data.project_id),
+      section_id: Number(data.section_id),
+      subtasks: (data.subtasks || []).map(subtask => ({
+        ...subtask,
+        name: subtask.name.trim(),
+        description: subtask.description?.trim() || '',
+        due_date: subtask.due_date,
       })),
-      // still keep project_id in the form state, not sent to /tasks/comprehensive
-      project_id: project_id!,
-    } as FormData)
+      assignments: data.assignments.map(assignment => ({
+        user_id: Number(assignment.user_id),
+        percentage: Number(assignment.percentage),
+      })),
+    }
+
+    console.log('Formatted data for API:', formattedData)
+
+    try {
+      await onSubmit(formattedData)
+    } catch (error) {
+      console.error('Form submission error:', error)
+    }
   }
 
   const availableSections = sections.filter(s => s.project_id === selectedProjectId)
-  const assignedUserIds = assignments.map(a => a.user_id)
+  const assignedUserIds = assignments.map(a => Number(a.user_id)).filter(id => id > 0)
   const unassignedUsers = availableUsers.filter(u => !assignedUserIds.includes(u.id))
   const totalAssignedPercentage = assignments.reduce((sum, a) => sum + (Number(a.percentage) || 0), 0)
 
@@ -178,32 +219,61 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Task Name *</label>
-                <Input {...form.register('name')} placeholder="Enter task name" disabled={isLoading} />
+                <Input 
+                  {...form.register('name')} 
+                  placeholder="Enter task name" 
+                  disabled={isLoading} 
+                />
                 {form.formState.errors.name && (
-                  <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
+                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
                 )}
               </div>
 
               <div>
                 <label className="text-sm font-medium">Weight *</label>
-                <Input type="number" {...form.register('weight', { valueAsNumber: true })} min="1" max="100" disabled={isLoading} />
+                <Input 
+                  type="number" 
+                  {...form.register('weight', { valueAsNumber: true })} 
+                  min="1" 
+                  max="100" 
+                  disabled={isLoading} 
+                />
+                {form.formState.errors.weight && (
+                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.weight.message}</p>
+                )}
               </div>
             </div>
 
             <div>
               <label className="text-sm font-medium">Description</label>
-              <Textarea {...form.register('description')} placeholder="Enter task description" disabled={isLoading} rows={3} />
+              <Textarea 
+                {...form.register('description')} 
+                placeholder="Enter task description" 
+                disabled={isLoading} 
+                rows={3} 
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium">Due Date *</label>
-                <Input type="date" {...form.register('due_date')} disabled={isLoading} />
+                <Input 
+                  type="date" 
+                  {...form.register('due_date')} 
+                  disabled={isLoading} 
+                />
+                {form.formState.errors.due_date && (
+                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.due_date.message}</p>
+                )}
               </div>
 
               <div>
                 <label className="text-sm font-medium">Priority *</label>
-                <Select value={form.watch('priority')} onValueChange={(v) => form.setValue('priority', v as any)} disabled={isLoading}>
+                <Select 
+                  value={form.watch('priority')} 
+                  onValueChange={(v) => form.setValue('priority', v as any)} 
+                  disabled={isLoading}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">Low</SelectItem>
@@ -228,6 +298,9 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
                     ))}
                   </SelectContent>
                 </Select>
+                {form.formState.errors.project_id && (
+                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.project_id.message}</p>
+                )}
               </div>
             </div>
 
@@ -236,7 +309,7 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
               <Select
                 value={form.watch('section_id')?.toString() || ''}
                 onValueChange={(v) => form.setValue('section_id', Number(v))}
-                disabled={isLoading || sectionsLoading || !selectedProjectId}
+                disabled={isLoading || sectionsLoading || !selectedProjectId || availableSections.length === 0}
               >
                 <SelectTrigger><SelectValue placeholder="Select section" /></SelectTrigger>
                 <SelectContent>
@@ -245,6 +318,12 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
                   ))}
                 </SelectContent>
               </Select>
+              {form.formState.errors.section_id && (
+                <p className="text-sm text-red-500 mt-1">{form.formState.errors.section_id.message}</p>
+              )}
+              {selectedProjectId && availableSections.length === 0 && !sectionsLoading && (
+                <p className="text-sm text-amber-600 mt-1">No sections available for this project</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -260,7 +339,12 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => appendSubtask({ name: '', description: '', due_date: '', priority: 'medium' })}
+              onClick={() => appendSubtask({ 
+                name: '', 
+                description: '', 
+                due_date: '', 
+                priority: 'medium' 
+              })}
               disabled={isLoading}
             >
               <Plus className="w-4 h-4 mr-2" /> Add Subtask
@@ -269,26 +353,55 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
           <CardContent className="space-y-4">
             {subtaskFields.map((field, index) => (
               <div key={field.id} className="p-4 border rounded-lg space-y-3">
-                {/* keep hidden id when editing */}
-                {('id' in field) && (
-                  <input type="hidden" {...form.register(`subtasks.${index}.id` as const)} />
-                )}
                 <div className="flex justify-between items-center">
                   <h4 className="font-medium">Subtask {index + 1}</h4>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => removeSubtask(index)} disabled={isLoading}>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => removeSubtask(index)} 
+                    disabled={isLoading}
+                  >
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Input {...form.register(`subtasks.${index}.name` as const)} placeholder="Subtask name" disabled={isLoading} />
-                  <Input type="date" {...form.register(`subtasks.${index}.due_date` as const)} disabled={isLoading} />
+                  <div>
+                    <Input 
+                      {...form.register(`subtasks.${index}.name` as const)} 
+                      placeholder="Subtask name" 
+                      disabled={isLoading} 
+                    />
+                    {form.formState.errors.subtasks?.[index]?.name && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {form.formState.errors.subtasks[index]?.name?.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Input 
+                      type="date" 
+                      {...form.register(`subtasks.${index}.due_date` as const)} 
+                      disabled={isLoading} 
+                    />
+                    {form.formState.errors.subtasks?.[index]?.due_date && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {form.formState.errors.subtasks[index]?.due_date?.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Textarea {...form.register(`subtasks.${index}.description` as const)} placeholder="Subtask description" disabled={isLoading} rows={2} />
+                  <Textarea 
+                    {...form.register(`subtasks.${index}.description` as const)} 
+                    placeholder="Subtask description (optional)" 
+                    disabled={isLoading} 
+                    rows={2} 
+                  />
                   <Select
-                    value={form.watch(`subtasks.${index}.priority` as const)}
+                    value={form.watch(`subtasks.${index}.priority` as const) || 'medium'}
                     onValueChange={(v) => form.setValue(`subtasks.${index}.priority` as const, v as any)}
                     disabled={isLoading}
                   >
@@ -318,7 +431,7 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
               User Assignments ({assignmentFields.length})
-              <span className="text-sm font-normal">{totalAssignedPercentage}% assigned</span>
+              <span className="text-sm font-normal">{totalAssignedPercentage.toFixed(1)}% assigned</span>
             </CardTitle>
             <Button
               type="button"
@@ -334,8 +447,12 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
             {form.formState.errors.assignments && (
               <p className="text-sm text-red-500">{form.formState.errors.assignments.message as string}</p>
             )}
+            
             <div className="w-full bg-muted rounded-full h-2">
-              <div className="bg-primary h-2 rounded-full transition-all duration-300" style={{ width: `${Math.min(totalAssignedPercentage, 100)}%` }} />
+              <div 
+                className="bg-primary h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${Math.min(totalAssignedPercentage, 100)}%` }} 
+              />
             </div>
 
             {assignmentFields.map((field, index) => (
@@ -353,6 +470,11 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
+                  {form.formState.errors.assignments?.[index]?.user_id && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {form.formState.errors.assignments[index]?.user_id?.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="w-24">
@@ -365,9 +487,20 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
                     step="0.01"
                     disabled={isLoading}
                   />
+                  {form.formState.errors.assignments?.[index]?.percentage && (
+                    <p className="text-sm text-red-500 mt-1">
+                      {form.formState.errors.assignments[index]?.percentage?.message}
+                    </p>
+                  )}
                 </div>
 
-                <Button type="button" variant="ghost" size="sm" onClick={() => removeAssignment(index)} disabled={isLoading}>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => removeAssignment(index)} 
+                  disabled={isLoading}
+                >
                   <X className="w-4 h-4" />
                 </Button>
               </div>
@@ -389,7 +522,13 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
         <div className="flex items-center gap-2">
           <Button
             type="submit"
-            disabled={isLoading || totalAssignedPercentage > 100 || (assignments?.length ?? 0) < 1}
+            disabled={
+              isLoading || 
+              totalAssignedPercentage > 100 || 
+              assignments.length === 0 ||
+              !form.watch('section_id') ||
+              !form.watch('name')?.trim()
+            }
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             {mode === 'edit' ? 'Save Changes' : 'Create Task with Everything'}

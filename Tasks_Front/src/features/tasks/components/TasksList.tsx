@@ -1,3 +1,4 @@
+// components/TasksList.tsx
 import React from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -22,7 +23,7 @@ interface TasksListProps {
   isLoading: boolean
   onDelete: (id: number) => Promise<void>
   onStatusChange: (id: number, status: string) => Promise<void>
-  assigneesMap?: AssigneesMap // 👈 NEW
+  assigneesMap?: AssigneesMap
 }
 
 const TasksList: React.FC<TasksListProps> = ({
@@ -60,10 +61,10 @@ const TasksList: React.FC<TasksListProps> = ({
             <TableHead className="text-foreground">Task</TableHead>
             <TableHead className="text-foreground">Status</TableHead>
             <TableHead className="text-foreground">Priority</TableHead>
-            <TableHead className="text-foreground">Assignees</TableHead> {/* 👈 renamed */}
+            <TableHead className="text-foreground">Assignees</TableHead>
             <TableHead className="text-foreground">Due Date</TableHead>
             <TableHead className="text-foreground">Subtasks</TableHead>
-            <TableHead className="text-foreground w-[260px]">Actions</TableHead> {/* 👈 wider */}
+            <TableHead className="text-foreground w-[260px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -73,7 +74,6 @@ const TasksList: React.FC<TasksListProps> = ({
             const canDelete = hasPermission('delete tasks')
             const canRate = hasAnyPermission(['create task ratings', 'edit task ratings'])
             const hasAnyAction = canView || canEdit || canDelete || canRate
-
             const taskAssignees = assigneesMap[task.id] || []
 
             return (
@@ -81,19 +81,14 @@ const TasksList: React.FC<TasksListProps> = ({
                 <TableCell>
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-foreground">{task.name}</p>
-                    {/* <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p> */}
                   </div>
                 </TableCell>
-
                 <TableCell>
                   <TaskStatusBadge status={task.status} />
                 </TableCell>
-
                 <TableCell>
                   <TaskPriorityBadge priority={task.priority} />
                 </TableCell>
-
-                {/* 👇 Assignees */}
                 <TableCell>
                   {taskAssignees.length ? (
                     <div className="flex flex-wrap gap-1">
@@ -107,21 +102,17 @@ const TasksList: React.FC<TasksListProps> = ({
                     <span className="text-xs text-muted-foreground">—</span>
                   )}
                 </TableCell>
-
                 <TableCell>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="w-4 h-4" />
                     {new Date(task.due_date).toLocaleDateString()}
                   </div>
                 </TableCell>
-
                 <TableCell>
                   <Badge variant="secondary" className="text-xs">
                     {task.subtasks?.length || 0} subtasks
                   </Badge>
                 </TableCell>
-
-                {/* 👇 Inline action buttons + (optional) dropdown */}
                 <TableCell>
                   <div className="flex items-center gap-2">
                     {canEdit && (
@@ -149,7 +140,6 @@ const TasksList: React.FC<TasksListProps> = ({
                         </Button>
                       </>
                     )}
-
                     {hasAnyAction && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -182,9 +172,6 @@ const TasksList: React.FC<TasksListProps> = ({
                               </Link>
                             </DropdownMenuItem>
                           )}
-
-                          {/* ⛔️ Removed the “Mark In Progress / Complete” items from dropdown */}
-
                           {canDelete && (
                             <DropdownMenuItem
                               onClick={() => onDelete(task.id)}

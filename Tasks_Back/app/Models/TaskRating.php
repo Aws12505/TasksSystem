@@ -37,6 +37,21 @@ class TaskRating extends Model
     {
         return $this->belongsTo(User::class, 'rater_id');
     }
+    protected static function boot()
+{
+    parent::boot();
+
+    static::saved(function (TaskRating $taskRating) {
+        if (!$taskRating->task_id) {
+            return;
+        }
+
+        // Skip global scopes in case visibility would block the update
+        \App\Models\Task::withoutGlobalScopes()
+            ->whereKey($taskRating->task_id)
+            ->update(['status' => 'rated']);
+    });
+}
 
 protected static function booted(): void
     {

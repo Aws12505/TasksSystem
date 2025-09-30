@@ -51,6 +51,9 @@ class Task extends Model
             // No subtasks, status remains as set manually
             return;
         }
+         if ($this->status === 'rated') {
+        return;
+    }
 
         $completedSubtasks = $subtasks->where('is_complete', true);
         

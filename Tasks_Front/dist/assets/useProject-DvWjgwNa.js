@@ -1,0 +1,1 @@
+import{a1 as f,r as j}from"./index-AhLzAXVj.js";const p=e=>{const{currentProject:c,projectSections:a,availableUsers:n,isLoading:i,error:u,fetchProject:t,fetchAvailableUsers:s,clearCurrentProject:o}=f(),r=typeof e=="string"?parseInt(e):e;return j.useEffect(()=>(r&&(t(r),s()),()=>{o()}),[r,t,s,o]),{project:c,sections:a,availableUsers:n,isLoading:i,error:u}};export{p as u};

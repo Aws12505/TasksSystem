@@ -293,3 +293,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('tasks/{task}/move-status', [KanbanController::class, 'moveTaskStatus']);
     });
 });
+
+Route::post('/task-ratings/calculate', [FinalRatingController::class, 'calculateWeightedRatings']);
+

@@ -54,7 +54,7 @@ const UserRatingsPage = () => {
     setError(null);
 
     try {
-      const response = await axios.post<ApiResponse[]>('/api/task-ratings/calculate', {
+      const response = await axios.post<ApiResponse[]>('https://tasksbackend.rdexperts.tech/api/task-ratings/calculate', {
         user_ids: userIds,
         start_date: format(startDate, 'yyyy-MM-dd'),
         end_date: format(endDate, 'yyyy-MM-dd'),

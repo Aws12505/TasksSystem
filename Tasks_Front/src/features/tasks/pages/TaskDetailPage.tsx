@@ -85,7 +85,7 @@ const TaskDetailPage: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleStatusUpdate('in_progress')}
-                disabled={task.status === 'in_progress'}
+                disabled={task.status === 'in_progress' || task.status === 'rated' || task.status === 'done'}
               >
                 Mark In Progress
               </Button>
@@ -93,7 +93,7 @@ const TaskDetailPage: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleStatusUpdate('done')}
-                disabled={task.status === 'done'}
+                disabled={task.status === 'done' || task.status === 'rated'}
               >
                 Mark Complete
               </Button>

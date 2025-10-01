@@ -43,7 +43,7 @@ const TasksPage: React.FC = () => {
   }
 
   const handleStatusChange = async (id: number, status: string) => {
-    if (!hasPermission('edit tasks')) return
+    if (!hasPermission('view tasks')) return
     await updateTaskStatus(id, { status: status as TaskStatus })
   }
 

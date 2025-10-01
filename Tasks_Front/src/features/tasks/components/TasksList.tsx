@@ -122,7 +122,7 @@ const TasksList: React.FC<TasksListProps> = ({
                           variant="secondary"
                           className="h-8"
                           onClick={() => onStatusChange(task.id, 'in_progress')}
-                          disabled={task.status === 'in_progress' || task.status === 'done'}
+                          disabled={task.status === 'in_progress' || task.status === 'done' || task.status === 'rated'}
                           title="Mark In Progress"
                         >
                           <Play className="mr-2 h-4 w-4" />
@@ -132,7 +132,7 @@ const TasksList: React.FC<TasksListProps> = ({
                           size="sm"
                           className="h-8"
                           onClick={() => onStatusChange(task.id, 'done')}
-                          disabled={task.status === 'done'}
+                          disabled={task.status === 'done'|| task.status === 'rated'}
                           title="Mark Complete"
                         >
                           <Check className="mr-2 h-4 w-4" />

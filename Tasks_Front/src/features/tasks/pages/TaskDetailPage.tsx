@@ -79,7 +79,7 @@ const TaskDetailPage: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {hasPermission('edit tasks') && (
+          {hasPermission('view tasks') && (
             <>
               <Button
                 variant="outline"

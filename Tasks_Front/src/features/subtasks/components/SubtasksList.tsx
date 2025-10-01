@@ -24,6 +24,8 @@ import { useSubtasks } from '../hooks/useSubtasks'
 import SubtaskForm from './SubtaskForm'
 import TaskPriorityBadge from '../../tasks/components/TaskPriorityBadge'
 import type { Subtask } from '../../../types/Subtask'
+import { usePermissions } from '@/hooks/usePermissions'
+
 
 interface SubtasksListProps {
   taskId: number
@@ -66,6 +68,9 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
   const handleToggleCompletion = async (id: number) => {
     await toggleCompletion(id)
   }
+
+  const { hasPermission, hasAnyPermission } = usePermissions()
+
 
   const completedCount = subtasks.filter(s => s.is_complete).length
   const completionPercentage = subtasks.length > 0 ? Math.round((completedCount / subtasks.length) * 100) : 0
@@ -114,6 +119,7 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
               <Badge variant="secondary" className="text-xs">
                 {completionPercentage}%
               </Badge>
+              {hasPermission('create subtasks') && (
               <Button
                 size="sm"
                 onClick={() => setShowCreateForm(true)}
@@ -121,7 +127,7 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Subtask
-              </Button>
+              </Button>)}
             </div>
           </div>
 
@@ -213,6 +219,7 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
                       </div>
                     </div>
                     
+                   { hasAnyPermission(['edit subtasks', 'delete subtasks']) && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -220,22 +227,23 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-popover border-border">
-                        <DropdownMenuItem 
+                        { hasPermission('edit subtasks') && (<DropdownMenuItem 
                           onClick={() => setEditingSubtask(subtask)}
                           className="hover:bg-accent hover:text-accent-foreground"
                         >
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
+                        </DropdownMenuItem>)}
+                        { hasPermission('delete subtasks') && (<DropdownMenuItem
                           onClick={() => handleDeleteSubtask(subtask.id)}
                           className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete
-                        </DropdownMenuItem>
+                        </DropdownMenuItem>)}
                       </DropdownMenuContent>
                     </DropdownMenu>
+                   )}
                   </div>
                 )}
               </div>

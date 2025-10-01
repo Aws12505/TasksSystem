@@ -115,7 +115,7 @@ const TasksList: React.FC<TasksListProps> = ({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    {canEdit && (
+                    {canView && (
                       <>
                         <Button
                           size="sm"

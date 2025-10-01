@@ -69,8 +69,9 @@ class TaskService
         if (!$task) {
             return null;
         }
-
+        if($task->status != 'rated'){
         $task->update(['status' => $status]);
+        }
         return $task->fresh(['section', 'subtasks']);
     }
 

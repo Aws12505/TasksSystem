@@ -134,8 +134,15 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
-        allPermissions: state.allPermissions
-      })
+        allPermissions: state.allPermissions,
+      }),
+      // 🔑 When persisted state is loaded, restore auth immediately
+      onRehydrateStorage: () => (state) => {
+        const token = state?.token ?? authService.getToken()
+        if (token) {
+          authService.setToken(token)
+        }
+      },
     }
   )
 )

@@ -17,6 +17,7 @@ import { ratingConfigsRoutes } from './routes/ratingConfigsRoutes'
 import { ratingsRoutes } from './routes/ratingsRoutes'
 import { analyticsRoutes } from './routes/analyticsRoutes'
 import { publicRoutes } from './routes/publicRoutes'
+import { useAuthStore } from './features/auth/stores/authStore' 
 
 const LoadingSpinner = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -58,6 +59,11 @@ const wrapProtectedRoutes = (routes: any[]) =>
     element: <MainProtectedRoute>{route.element}</MainProtectedRoute>
   }))
 
+  const HomeRedirect: React.FC = () => {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  // change '/dashboard' to whatever your default protected landing route is
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />
+}
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -79,14 +85,8 @@ export const router = createBrowserRouter([
       ...wrapProtectedRoutes(ratingsRoutes),
       ...wrapProtectedRoutes(analyticsRoutes),
       
-      {
-        path: '/',
-        element: <Navigate to="/login" replace />,
-      },
-      {
-        path: '*',
-        element: <Navigate to="/login" replace />,
-      }
+      { path: '/', element: <HomeRedirect /> },
+      { path: '*', element: <HomeRedirect /> },
     ]
   }
 ])

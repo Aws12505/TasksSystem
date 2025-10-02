@@ -28,6 +28,7 @@ class Task extends Model
         'due_date' => 'date',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'latest_final_rating' => 'decimal:2',
     ];
 
     protected $appends = ['project_id'];
@@ -77,6 +78,12 @@ class Task extends Model
         parent::boot();
         
         static::saved(function ($task) {
+            if ($task->wasChanged('status') && in_array($task->status, ['done', 'rated'], true)) {
+            // Bulk update: no model events fired for Subtask, avoids loops + is fast
+            $task->subtasks()
+                 ->where('is_complete', false)
+                 ->update(['is_complete' => true]);
+        }
             // Update project status and progress when task is saved
             $task->section->project->updateProjectStatusAndProgress();
         });

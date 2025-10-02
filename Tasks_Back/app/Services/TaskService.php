@@ -5,17 +5,88 @@ namespace App\Services;
 use App\Models\Task;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Models\Subtask;
+use App\Models\TaskRating;
 use Illuminate\Support\Facades\DB;
 class TaskService
 {
-    public function getAllTasks(int $perPage = 15): LengthAwarePaginator
+    public function getAllTasks(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        return Task::with(['section', 'subtasks'])->latest()->paginate($perPage);
-    }
+        $q = Task::query()
+            ->with([
+                'section.project',
+                'subtasks',
+                // 👇 hydrate assignees once (pivot includes percentage)
+                'assignedUsers',
+            ])
+            ->addSelect([
+                'latest_final_rating' => TaskRating::select('final_rating')
+                    ->whereColumn('task_ratings.task_id', 'tasks.id')
+                    ->latest()
+                    ->limit(1),
+            ])
+            ->latest();
 
-    public function getTaskById(int $id)
+        // ---- Filters ----
+        if (!empty($filters['status']) && $filters['status'] !== 'all') {
+            $q->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['project_id']) && $filters['project_id'] !== 'all') {
+            $projectId = (int) $filters['project_id'];
+            $q->whereHas('section', function ($sq) use ($projectId) {
+                $sq->where('project_id', $projectId);
+            });
+        }
+
+        // assignees: ALL selected assignees
+        if (!empty($filters['assignees']) && is_array($filters['assignees'])) {
+            foreach ($filters['assignees'] as $uid) {
+                $uid = (int) $uid;
+                $q->whereHas('assignedUsers', function ($sq) use ($uid) {
+                    $sq->where('users.id', $uid);
+                });
+            }
+        }
+
+        if (!empty($filters['due_from'])) {
+            $q->whereDate('due_date', '>=', $filters['due_from']);
+        }
+        if (!empty($filters['due_to'])) {
+            $q->whereDate('due_date', '<=', $filters['due_to']);
+        }
+
+        if (!empty($filters['search'])) {
+            $term = trim(strtolower($filters['search']));
+            $q->where(function ($sq) use ($term) {
+                $sq->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"])
+                  ->orWhereRaw('LOWER(COALESCE(description, "")) LIKE ?', ["%{$term}%"])
+                  ->orWhere(function ($x) use ($term) {
+                      $x->whereHas('section.project', function ($pq) use ($term) {
+                          $pq->whereRaw('LOWER(name) LIKE ?', ["%{$term}%"]);
+                      });
+                  })
+                  ->orWhere('id', is_numeric($term) ? (int) $term : null);
+            });
+        }
+
+        if (!empty($filters['per_page']) && (int)$filters['per_page'] > 0) {
+            $perPage = (int) $filters['per_page'];
+        }
+
+        return $q->paginate($perPage);
+    }
+    
+   public function getTaskById(int $id)
     {
-        return Task::with(['section', 'subtasks'])->find($id);
+        return Task::query()
+            ->with(['section.project', 'subtasks'])
+            ->addSelect([
+                'latest_final_rating' => TaskRating::select('final_rating')
+                    ->whereColumn('task_ratings.task_id', 'tasks.id')
+                    ->latest()
+                    ->limit(1),
+            ])
+            ->find($id);
     }
 
     public function createTask(array $data): Task
@@ -53,9 +124,16 @@ class TaskService
     }
 
     // Get tasks by section
-    public function getTasksBySection(int $sectionId, int $perPage = 15): LengthAwarePaginator
+     public function getTasksBySection(int $sectionId, int $perPage = 15): LengthAwarePaginator
     {
-        return Task::with(['section', 'subtasks'])
+        return Task::query()
+            ->with(['section.project', 'subtasks','assignedUsers'])
+            ->addSelect([
+                'latest_final_rating' => TaskRating::select('final_rating')
+                    ->whereColumn('task_ratings.task_id', 'tasks.id')
+                    ->latest()
+                    ->limit(1),
+            ])
             ->where('section_id', $sectionId)
             ->latest()
             ->paginate($perPage);

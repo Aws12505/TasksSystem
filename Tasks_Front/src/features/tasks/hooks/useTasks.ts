@@ -1,6 +1,7 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useCallback } from 'react'
 import { useTasksStore } from '../stores/tasksStore'
 import { useAuthStore } from '../../auth/stores/authStore'
+import type { TaskFilters } from '../../../services/taskService'
 
 export const useTasks = (sectionId?: number) => {
   const {
@@ -10,78 +11,81 @@ export const useTasks = (sectionId?: number) => {
     globalPagination,
     isLoading,
     error,
-    fetchAllTasks, // 🔑 NEW
+    fetchAllTasks,
     fetchTasksBySection,
     createTask,
     updateTask,
     updateTaskStatus,
     deleteTask,
     getTasksBySection,
-    createTaskComprehensive
+    createTaskComprehensive,
+    lastFilters,
   } = useTasksStore()
 
   const { isAuthenticated, user } = useAuthStore()
 
-  // 🔑 Select the appropriate tasks and pagination based on whether sectionId is provided
   const tasks = useMemo(() => {
     if (sectionId !== undefined) {
       return getTasksBySection(sectionId)
     }
-    return allTasks // 🔑 Return global tasks when no sectionId
+    return allTasks
   }, [sectionId, tasksBySection, allTasks, getTasksBySection])
 
   const currentPagination = useMemo(() => {
     if (sectionId !== undefined) {
       return pagination[sectionId] || null
     }
-    return globalPagination // 🔑 Return global pagination when no sectionId
+    return globalPagination
   }, [sectionId, pagination, globalPagination])
 
-  useEffect(() => {
-    // Only fetch if authenticated and user exists
-    if (!isAuthenticated || !user) {
-      return
-    }
+  // Stable wrappers (avoid changing function identity every render)
+  const fetchWithFilters = useCallback(
+    (page: number, filters: TaskFilters) => {
+      return fetchAllTasks(page, filters)
+    },
+    [fetchAllTasks]
+  )
 
-    if (sectionId !== undefined) {
-      // Fetch tasks for specific section
-      if (!tasks.length) {
-        fetchTasksBySection(sectionId)
+  const goToPage = useCallback(
+    (page: number) => {
+      if (sectionId !== undefined) {
+        fetchTasksBySection(sectionId, page)
+      } else {
+        fetchAllTasks(page, lastFilters || {})
       }
-    } else {
-      // 🔑 Fetch all tasks globally when no sectionId provided
-      if (!allTasks.length) {
-        fetchAllTasks()
-      }
-    }
-  }, [sectionId, tasks.length, allTasks.length, fetchTasksBySection, fetchAllTasks, isAuthenticated, user])
+    },
+    [sectionId, fetchTasksBySection, fetchAllTasks, lastFilters]
+  )
 
-  const goToPage = (page: number) => {
-    if (sectionId !== undefined) {
-      fetchTasksBySection(sectionId, page)
-    } else {
-      fetchAllTasks(page)
-    }
-  }
-
-  const nextPage = () => {
+  const nextPage = useCallback(() => {
     if (currentPagination && currentPagination.current_page < currentPagination.last_page) {
       goToPage(currentPagination.current_page + 1)
     }
-  }
+  }, [currentPagination, goToPage])
 
-  const prevPage = () => {
+  const prevPage = useCallback(() => {
     if (currentPagination && currentPagination.current_page > 1) {
       goToPage(currentPagination.current_page - 1)
     }
-  }
+  }, [currentPagination, goToPage])
+
+  // Initial fetch
+  useEffect(() => {
+    if (!isAuthenticated || !user) return
+    if (sectionId !== undefined) {
+      if (!tasks.length) fetchTasksBySection(sectionId)
+    } else {
+      if (!allTasks.length) fetchAllTasks(1, lastFilters || {})
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sectionId, isAuthenticated, user])
 
   return {
     tasks,
     pagination: currentPagination,
     isLoading,
     error,
-    fetchTasks: sectionId !== undefined ? fetchTasksBySection : fetchAllTasks, // 🔑 Dynamic fetch method
+    fetchTasks: fetchWithFilters,   // stable (page, filters)
     createTask,
     updateTask,
     updateTaskStatus,
@@ -89,6 +93,6 @@ export const useTasks = (sectionId?: number) => {
     createTaskComprehensive,
     goToPage,
     nextPage,
-    prevPage
+    prevPage,
   }
 }

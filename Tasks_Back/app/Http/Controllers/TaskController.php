@@ -12,7 +12,7 @@ use App\Http\Requests\AddUserToTaskRequest;
 use App\Http\Requests\UpdateUserAssignmentRequest;
 use App\Http\Requests\AssignUsersToTaskRequest;
 use App\Http\Requests\ComprehensiveCreateTaskRequest;
-
+use Illuminate\Http\Request;
 class TaskController extends Controller
 {
     public function __construct(
@@ -20,9 +20,18 @@ class TaskController extends Controller
         private TaskAssignmentService $taskAssignmentService
     ) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $tasks = $this->taskService->getAllTasks();
+        $filters = [
+        'status'     => $request->query('status'),
+        'project_id' => $request->query('project_id'),
+        'assignees'  => (array) $request->query('assignees', []), // assignees[]=1&assignees[]=2
+        'due_from'   => $request->query('due_from'),
+        'due_to'     => $request->query('due_to'),
+        'search'     => $request->query('search'),
+        'per_page'   => $request->integer('per_page', 15),
+    ];
+    $tasks = $this->taskService->getAllTasks($filters, $filters['per_page']);
 
         return response()->json([
             'success' => true,

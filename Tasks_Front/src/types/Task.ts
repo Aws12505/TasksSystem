@@ -1,9 +1,13 @@
 // types/Task.ts
 import type { Section } from './Section';
 import type { Subtask } from './Subtask';
+import type { Project } from './Project';
+import type { AssignedUser } from './TaskAssignment';
+
 
 export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'rated';
 export type Priority = 'low' | 'medium' | 'high' | 'critical';
+
 
 export interface Task {
   id: number;
@@ -15,8 +19,11 @@ export interface Task {
   status: TaskStatus;
   section_id: number;
   project_id: number;
+  project?: Project;
   section: Section;
+  latest_final_rating?: number | string; // string if returned as decimal
   subtasks: Subtask[];
+  assigned_users?: AssignedUser[];
   created_at: string;
   updated_at: string;
 }

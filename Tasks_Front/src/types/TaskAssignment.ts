@@ -7,6 +7,16 @@ export interface TaskAssignment {
   user_id: number;
   percentage: number;
 }
+export interface AssignedUserPivot {
+  percentage: number;
+}
+
+export interface AssignedUser {
+  id: number;
+  name?: string | null;
+  email?: string | null;
+  pivot?: AssignedUserPivot; // Laravel -> JSON includes pivot if withPivot()
+}
 
 export interface TaskUserPivot {
   id: number;

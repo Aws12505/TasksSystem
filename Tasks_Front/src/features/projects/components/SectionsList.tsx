@@ -1,4 +1,6 @@
 // components/SectionsList.tsx
+"use client"
+
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,7 +27,8 @@ import {
   ChevronRight,
   CheckSquare,
   Calendar,
-  Star
+  Star,
+  Users
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -33,10 +36,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import SectionForm from './SectionForm'
 import { useTasks } from '../../tasks/hooks/useTasks'
 import { useTaskDialog } from '@/components/TaskDialogProvider'
 import type { Section } from '../../../types/Section'
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { AvatarStack } from "@/components/ui/kibo-ui/avatar-stack"
 
 interface SectionsListProps {
   sections: Section[]
@@ -66,6 +83,9 @@ const SectionsList: React.FC<SectionsListProps> = ({
   // Get pagination for this project
   const pagination = projectPagination[projectId] || null
 
+  // NEW: delete section dialog state
+  const [pendingDeleteSectionId, setPendingDeleteSectionId] = useState<number | null>(null)
+
   const handleCreateSection = async (data: any) => {
     await onCreateSection({ ...data, project_id: projectId })
     setShowCreateForm(false)
@@ -78,19 +98,22 @@ const SectionsList: React.FC<SectionsListProps> = ({
     }
   }
 
-  const handleDeleteSection = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this section?')) {
-      await onDeleteSection(id)
+  // Open dialog instead of window.confirm
+  const handleRequestDeleteSection = async (id: number) => {
+    setPendingDeleteSectionId(id)
+  }
+
+  const confirmDeleteSection = async () => {
+    if (pendingDeleteSectionId != null) {
+      await onDeleteSection(pendingDeleteSectionId)
+      setPendingDeleteSectionId(null)
     }
   }
 
   const toggleSection = (sectionId: number) => {
     const newExpanded = new Set(expandedSections)
-    if (newExpanded.has(sectionId)) {
-      newExpanded.delete(sectionId)
-    } else {
-      newExpanded.add(sectionId)
-    }
+    if (newExpanded.has(sectionId)) newExpanded.delete(sectionId)
+    else newExpanded.add(sectionId)
     setExpandedSections(newExpanded)
   }
 
@@ -115,14 +138,12 @@ const SectionsList: React.FC<SectionsListProps> = ({
   const generatePaginationItems = () => {
     if (!pagination) return []
 
-    const items = []
+    const items: (number | 'ellipsis-start' | 'ellipsis-end')[] = []
     const { current_page, last_page } = pagination
     
     if (current_page > 3) {
       items.push(1)
-      if (current_page > 4) {
-        items.push('ellipsis-start')
-      }
+      if (current_page > 4) items.push('ellipsis-start')
     }
 
     for (let i = Math.max(1, current_page - 2); i <= Math.min(last_page, current_page + 2); i++) {
@@ -130,9 +151,7 @@ const SectionsList: React.FC<SectionsListProps> = ({
     }
 
     if (current_page < last_page - 2) {
-      if (current_page < last_page - 3) {
-        items.push('ellipsis-end')
-      }
+      if (current_page < last_page - 3) items.push('ellipsis-end')
       items.push(last_page)
     }
 
@@ -194,7 +213,7 @@ const SectionsList: React.FC<SectionsListProps> = ({
                 isExpanded={expandedSections.has(section.id)}
                 onToggle={() => toggleSection(section.id)}
                 onEdit={() => setEditingSection(section)}
-                onDelete={() => handleDeleteSection(section.id)}
+                onDelete={async () => { await handleRequestDeleteSection(section.id) }} // ensure Promise<void>
                 isEditing={editingSection?.id === section.id}
                 editingSection={editingSection}
                 onUpdateSection={handleUpdateSection}
@@ -252,6 +271,30 @@ const SectionsList: React.FC<SectionsListProps> = ({
           </CardContent>
         </Card>
       )}
+
+      {/* Centered delete SECTION confirmation dialog */}
+      <AlertDialog
+        open={pendingDeleteSectionId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteSectionId(null)}
+      >
+        <AlertDialogContent className="sm:max-w-[480px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete section</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this section? All contained tasks will remain but the section will be removed. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingDeleteSectionId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteSection}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -274,11 +317,18 @@ const SectionWithTasks: React.FC<any> = ({
   const { tasks, deleteTask } = useTasks(section.id)
   const { hasPermission } = usePermissions()
 
+  // NEW: delete TASK dialog state (local to section)
+  const [pendingDeleteTaskId, setPendingDeleteTaskId] = useState<number | null>(null)
+
   const handleDeleteTask = async (taskId: number) => {
     if (!hasPermission('delete tasks')) return
-    
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      await deleteTask(taskId)
+    setPendingDeleteTaskId(taskId) // open dialog
+  }
+
+  const confirmDeleteTask = async () => {
+    if (pendingDeleteTaskId != null) {
+      await deleteTask(pendingDeleteTaskId)
+      setPendingDeleteTaskId(null)
     }
   }
 
@@ -417,7 +467,7 @@ const SectionWithTasks: React.FC<any> = ({
                       key={task.id}
                       task={task}
                       onEdit={(task: any) => hasPermission('edit tasks') && openTaskDialog(section, projectId, task)}
-                      onDelete={handleDeleteTask}
+                      onDelete={async (id: number) => { await handleDeleteTask(id) }} // ensure Promise<void>
                     />
                   ))}
                 </div>
@@ -426,6 +476,30 @@ const SectionWithTasks: React.FC<any> = ({
           </div>
         </CollapsibleContent>
       </Collapsible>
+
+      {/* Centered delete TASK confirmation dialog (local to section) */}
+      <AlertDialog
+        open={pendingDeleteTaskId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteTaskId(null)}
+      >
+        <AlertDialogContent className="sm:max-w-[480px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingDeleteTaskId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteTask}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -442,7 +516,7 @@ const TaskItem: React.FC<any> = ({ task, onEdit, onDelete }) => {
       default: return 'bg-gray-500'
     }
   }
-
+  
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'done': return 'text-green-600 bg-green-100'
@@ -465,6 +539,53 @@ const TaskItem: React.FC<any> = ({ task, onEdit, onDelete }) => {
   const canRate = hasAnyPermission(['create task ratings', 'edit task ratings'])
   const hasAnyAction = canEdit || canDelete || canRate
 
+  const getInitials = (name?: string) =>
+    name
+      ? name.split(' ').filter(Boolean).map(n => n[0]?.toUpperCase()).slice(0, 2).join('')
+      : '?'
+
+  const renderAssignees = () => {
+    const list = (task.assigned_users as any[] | undefined) || []
+    if (list.length === 0) {
+      return (
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <Users className="w-3 h-3" />
+          No assignees
+        </span>
+      )
+    }
+
+    return (
+      <TooltipProvider>
+        <AvatarStack>
+          {list.map((a) => {
+            const u = (a && (a as any).user) ? (a as any).user : a
+            const key = u?.id ?? u?.email ?? u?.name ?? cryptoRandomKey()
+            return (
+              <Tooltip key={String(key)}>
+                <TooltipTrigger asChild>
+                  <Avatar className="h-6 w-6 ring-2 ring-background">
+                    <AvatarImage src={u?.avatar_url} alt={u?.name} />
+                    <AvatarFallback className="text-[10px]">
+                      {getInitials(u?.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  <div className="font-medium">{u?.name ?? 'Unknown'}</div>
+                  {u?.email && <div className="text-muted-foreground">{u.email}</div>}
+                </TooltipContent>
+              </Tooltip>
+            )
+          })}
+        </AvatarStack>
+      </TooltipProvider>
+    )
+  }
+
+  // tiny fallback for keys when id/email/name are missing
+  const cryptoRandomKey = () => Math.random().toString(36).slice(2)
+
   return (
     <div className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-accent/30 transition-colors">
       <div className="flex items-center gap-3 flex-1">
@@ -476,8 +597,13 @@ const TaskItem: React.FC<any> = ({ task, onEdit, onDelete }) => {
               {task.status.replace('_', ' ')}
             </Badge>
           </div>
+
+          {/* Assignees (Kibo UI AvatarStack) */}
+          <div className="mt-1">
+            {renderAssignees()}
+          </div>
           
-          <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Star className="w-3 h-3" />
               Weight: {task.weight}
@@ -488,12 +614,6 @@ const TaskItem: React.FC<any> = ({ task, onEdit, onDelete }) => {
               {isOverdue && <span className="text-red-500 font-medium">(Overdue)</span>}
             </span>
           </div>
-          
-          {task.description && (
-            <p className="text-xs text-muted-foreground mt-1 truncate">
-              {task.description}
-            </p>
-          )}
         </div>
       </div>
 
@@ -526,7 +646,7 @@ const TaskItem: React.FC<any> = ({ task, onEdit, onDelete }) => {
               )}
               {canDelete && (
                 <DropdownMenuItem
-                  onClick={() => onDelete(task.id)}
+                  onClick={async () => { await onDelete(task.id) }} // opens dialog upstream
                   className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />

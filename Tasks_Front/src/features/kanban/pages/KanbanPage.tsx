@@ -1,4 +1,5 @@
-import React from 'react'
+// pages/ProjectKanbanPage.tsx
+import React, { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,6 +22,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import type { TaskStatus } from '../../../types/Task'
 import type { Task } from '../../../types/Task'
 import type { Section } from '../../../types/Section'
@@ -30,7 +41,7 @@ import { useTasks } from '@/features/tasks/hooks/useTasks'
 type SectionKanbanItem = {
   id: string
   name: string
-  column: string // Format: "sectionId-status"
+  column: string // "sectionId-status"
   task: Task
   section: Section
   sectionId: number
@@ -38,7 +49,7 @@ type SectionKanbanItem = {
 }
 
 type SectionKanbanColumn = {
-  id: string // Format: "sectionId-status"
+  id: string // "sectionId-status"
   name: string
   sectionId: number
   status: TaskStatus
@@ -52,33 +63,32 @@ const ProjectKanbanPage: React.FC = () => {
   const { kanbanData, isLoading, error, moveTaskStatus, moveTaskToSection } = useKanban(id!)
   const { hasPermission, hasAnyPermission } = usePermissions()
 
-  // Check permissions
   const canEditTasks = hasPermission('edit tasks')
   const canDeleteTasks = hasPermission('delete tasks')
   const canRateTasks = hasAnyPermission(['create task ratings', 'edit task ratings'])
 
+  // Delete confirmation dialog state (task)
+  const [pendingDeleteTaskId, setPendingDeleteTaskId] = useState<number | null>(null)
+
   // Transform data for section-based Kanban
   const transformToSectionKanbanData = () => {
-    if (!kanbanData) return { columns: [], items: [] }
+    if (!kanbanData) return { columns: [] as SectionKanbanColumn[], items: [] as SectionKanbanItem[] }
 
     const columns: SectionKanbanColumn[] = []
     const items: SectionKanbanItem[] = []
 
-    // Create columns for each section-status combination
     kanbanData.sections.forEach((sectionData) => {
       const statuses: TaskStatus[] = ['pending', 'in_progress', 'done', 'rated']
-      
       statuses.forEach((status) => {
         columns.push({
           id: `${sectionData.section.id}-${status}`,
           name: status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
           sectionId: sectionData.section.id,
-          status: status,
-          section: sectionData.section
+          status,
+          section: sectionData.section,
         })
       })
 
-      // Add tasks
       Object.entries(sectionData.tasks_by_status as Record<TaskStatus, Task[]>)
         .forEach(([status, tasks]) => {
           (tasks as Task[]).forEach((task: Task) => {
@@ -89,7 +99,7 @@ const ProjectKanbanPage: React.FC = () => {
               task,
               section: sectionData.section,
               sectionId: sectionData.section.id,
-              status: status as TaskStatus
+              status: status as TaskStatus,
             })
           })
         })
@@ -99,14 +109,13 @@ const ProjectKanbanPage: React.FC = () => {
   }
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    if (!canEditTasks) return // Don't allow drag and drop if user can't edit tasks
-
+    if (!canEditTasks) return
     const { active, over } = event
     if (!over || active.id === over.id) return
 
     const taskId = parseInt(active.id as string)
     const [targetSectionId, targetStatus] = (over.id as string).split('-')
-    
+
     const { items } = transformToSectionKanbanData()
     const draggedItem = items.find(item => item.id === active.id)
     if (!draggedItem) return
@@ -116,55 +125,106 @@ const ProjectKanbanPage: React.FC = () => {
     const newSectionId = parseInt(targetSectionId)
     const newStatus = targetStatus as TaskStatus
 
-    // Move section if needed
-    if (currentSectionId !== newSectionId) {
-      await moveTaskToSection(taskId, newSectionId)
-    }
-    // Change status if needed
-    if (currentStatus !== newStatus) {
-      await moveTaskStatus(taskId, newStatus)
-    }
+    if (currentSectionId !== newSectionId) await moveTaskToSection(taskId, newSectionId)
+    if (currentStatus !== newStatus) await moveTaskStatus(taskId, newStatus)
   }
+
+  const { columns, items } = transformToSectionKanbanData()
 
   const handleEditTask = (task: Task) => {
-    if (!canEditTasks) return
-    window.open(`/tasks/${task.id}/edit`, '_blank')
+    if (canEditTasks) window.open(`/tasks/${task.id}/edit`, '_blank')
   }
 
-  const handleDeleteTask = async (taskId: number) => {
+  const handleDeleteTaskRequest = (taskId: number) => {
     if (!canDeleteTasks) return
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      await deleteTask(taskId)
+    setPendingDeleteTaskId(taskId)
+  }
+
+  const confirmDeleteTask = async () => {
+    if (pendingDeleteTaskId != null) {
+      await deleteTask(pendingDeleteTaskId)
+      setPendingDeleteTaskId(null)
     }
   }
 
   const handleRateTask = (taskId: number) => {
-    if (!canRateTasks) return
-    window.open(`/ratings/tasks/${taskId}`, '_blank')
+    if (canRateTasks) window.open(`/ratings/tasks/${taskId}`, '_blank')
   }
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 bg-muted animate-pulse rounded w-48" />
-        <div className="h-96 bg-muted animate-pulse rounded-lg" />
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
+          <div className="h-8 bg-muted animate-pulse rounded w-48" />
+          <div className="h-96 bg-muted animate-pulse rounded-lg" />
+        </div>
       </div>
     )
   }
 
   if (error || !kanbanData) {
     return (
-      <div className="text-center py-12">
-        <p className="text-destructive">{error || 'Failed to load kanban data'}</p>
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
+          <div className="text-center py-12">
+            <p className="text-destructive">{error || 'Failed to load kanban data'}</p>
+          </div>
+        </div>
       </div>
     )
   }
 
-  // Check if user has no permissions to interact with kanban
   if (!hasPermission('view tasks')) {
     return (
-      <div className="space-y-6">
-        {/* Header */}
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
+          {/* Header (parity with TasksPage) */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="sm" asChild>
+                <Link to={`/projects/${id}`}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Project
+                </Link>
+              </Button>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <CheckSquare className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground font-sans">
+                    {project?.name} – Kanban Board
+                  </h1>
+                  <p className="text-muted-foreground">Access restricted</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Card className="bg-card border-border">
+            <CardContent className="p-12 text-center">
+              <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">Access Restricted</h3>
+              <p className="text-muted-foreground">
+                You don't have permission to view tasks in the Kanban board.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  // Group columns by section for organized display
+  const groupedColumns = kanbanData.sections.map(sectionData => ({
+    section: sectionData.section,
+    columns: columns.filter(col => col.sectionId === sectionData.section.id),
+  }))
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
+        {/* Header (parity with TasksPage) */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="outline" size="sm" asChild>
@@ -174,204 +234,182 @@ const ProjectKanbanPage: React.FC = () => {
               </Link>
             </Button>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+              <div className="p-2 bg-primary/10 rounded-lg">
                 <CheckSquare className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground font-sans">
-                  {project?.name} - Kanban Board
+                <h1 className="text-3xl font-bold text-foreground font-sans">
+                  {project?.name} – Section-Based Kanban
                 </h1>
-                <p className="text-muted-foreground">Access restricted</p>
+                <p className="text-muted-foreground">
+                  Manage tasks across {kanbanData.sections.length} sections and 4 statuses
+                  {!canEditTasks && ' (Read-only)'}
+                </p>
               </div>
             </div>
           </div>
         </div>
-        
-        <Card className="bg-card border-border">
-          <CardContent className="p-12 text-center">
-            <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">Access Restricted</h3>
-            <p className="text-muted-foreground">
-              You don't have permission to view tasks in the Kanban board.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
 
-  const { columns, items } = transformToSectionKanbanData()
-
-  // Group columns by section for organized display
-  const groupedColumns = kanbanData.sections.map(sectionData => ({
-    section: sectionData.section,
-    columns: columns.filter(col => col.sectionId === sectionData.section.id)
-  }))
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" asChild>
-            <Link to={`/projects/${id}`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Project
-            </Link>
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-              <CheckSquare className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground font-sans">
-                {project?.name} - Section-Based Kanban
-              </h1>
-              <p className="text-muted-foreground">
-                Manage tasks across {kanbanData.sections.length} sections and 4 statuses
-                {!canEditTasks && ' (Read-only)'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Project Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Tasks</p>
-                <p className="text-2xl font-bold text-foreground">{items.length}</p>
-              </div>
-              <CheckSquare className="w-8 h-8 text-chart-1" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {items.filter(item => item.status === 'in_progress').length}
-                </p>
-              </div>
-              <CheckSquare className="w-8 h-8 text-chart-2" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {items.filter(item => item.status === 'done').length}
-                </p>
-              </div>
-              <CheckSquare className="w-8 h-8 text-chart-3" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Rated</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {items.filter(item => item.status === 'rated').length}
-                </p>
-              </div>
-              <CheckSquare className="w-8 h-8 text-chart-4" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Permission Notice */}
-      {!canEditTasks && (
-        <Card className="bg-yellow-50 border-yellow-200">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-yellow-800">
-              <AlertCircle className="w-4 h-4" />
-              <p className="text-sm font-medium">
-                You have read-only access. You cannot move tasks or modify their status.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Section-Based Kanban Board */}
-      <div className="space-y-8">
-        {groupedColumns.map((group) => (
-          <Card key={group.section.id} className="bg-background">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold flex items-center justify-between">
-                <span>{group.section.name}</span>
-                <Badge variant="outline">
-                  {items.filter(item => item.sectionId === group.section.id).length} tasks
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[400px]">
-                <KanbanProvider
-                  columns={group.columns}
-                  data={items}
-                  onDragEnd={handleDragEnd}
-                  className="h-full"
-                >
-                  {(column: SectionKanbanColumn) => (
-                    <KanbanBoard key={column.id} id={column.id} className="h-full">
-                      <KanbanHeader className="bg-background border-b">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-semibold">{column.name}</h3>
-                          <Badge variant="secondary" className="text-xs">
-                            {items.filter(item => item.column === column.id).length}
-                          </Badge>
-                        </div>
-                      </KanbanHeader>
-                      <KanbanCards id={column.id}>
-                        {(item: SectionKanbanItem) => (
-                          <KanbanCard
-                            key={item.id}
-                            id={item.id}
-                            column={item.column}
-                            name={item.name}
-                            className="bg-background"
-                          >
-                            <TaskCard 
-                              task={item.task} 
-                              section={item.section}
-                              canEdit={canEditTasks}
-                              canDelete={canDeleteTasks}
-                              canRate={canRateTasks}
-                              onEdit={() => handleEditTask(item.task)}
-                              onDelete={() => handleDeleteTask(item.task.id)}
-                              onRate={() => handleRateTask(item.task.id)}
-                            />
-                          </KanbanCard>
-                        )}
-                      </KanbanCards>
-                    </KanbanBoard>
-                  )}
-                </KanbanProvider>
+        {/* Stats (same breakpoints as TasksPage) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-card border-border">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Tasks</p>
+                  <p className="text-2xl font-bold text-foreground">{items.length}</p>
+                </div>
+                <CheckSquare className="w-6 h-6 text-chart-1" />
               </div>
             </CardContent>
           </Card>
-        ))}
+          <Card className="bg-card border-border">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">In Progress (page)</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {items.filter(item => item.status === 'in_progress').length}
+                  </p>
+                </div>
+                <CheckSquare className="w-6 h-6 text-chart-2" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Completed (page)</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {items.filter(item => item.status === 'done').length}
+                  </p>
+                </div>
+                <CheckSquare className="w-6 h-6 text-chart-3" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Rated (page)</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {items.filter(item => item.status === 'rated').length}
+                  </p>
+                </div>
+                <CheckSquare className="w-6 h-6 text-chart-4" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Read-only notice */}
+        {!canEditTasks && (
+          <Card className="bg-card border-border">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <AlertCircle className="w-4 h-4" />
+                <p className="text-sm">
+                  You have read-only access. You cannot move tasks or modify their status.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Kanban area */}
+        <Card className="bg-card border-border flex-1 flex flex-col min-h-0">
+          <CardContent className="p-4 flex-1 min-h-0 overflow-auto space-y-6">
+            {groupedColumns.map((group) => (
+              <Card key={group.section.id} className="bg-background border-border">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-semibold flex items-center justify-between">
+                    <span>{group.section.name}</span>
+                    <Badge variant="outline">
+                      {items.filter(item => item.sectionId === group.section.id).length} tasks
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[400px]">
+                    <KanbanProvider
+                      columns={group.columns}
+                      data={items}
+                      onDragEnd={handleDragEnd}
+                      className="h-full"
+                    >
+                      {(column: SectionKanbanColumn) => (
+                        <KanbanBoard key={column.id} id={column.id} className="h-full">
+                          <KanbanHeader className="bg-background border-b">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-semibold">{column.name}</h3>
+                              <Badge variant="secondary" className="text-xs">
+                                {items.filter(item => item.column === column.id).length}
+                              </Badge>
+                            </div>
+                          </KanbanHeader>
+                          <KanbanCards id={column.id}>
+                            {(item: SectionKanbanItem) => (
+                              <KanbanCard
+                                key={item.id}
+                                id={item.id}
+                                column={item.column}
+                                name={item.name}
+                                className="bg-background"
+                              >
+                                <TaskCard 
+                                  task={item.task} 
+                                  section={item.section}
+                                  canEdit={canEditTasks}
+                                  canDelete={canDeleteTasks}
+                                  canRate={canRateTasks}
+                                  onEdit={() => handleEditTask(item.task)}
+                                  onDelete={() => handleDeleteTaskRequest(item.task.id)}
+                                  onRate={() => handleRateTask(item.task.id)}
+                                />
+                              </KanbanCard>
+                            )}
+                          </KanbanCards>
+                        </KanbanBoard>
+                      )}
+                    </KanbanProvider>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Centered delete confirmation dialog (shadcn centers by default) */}
+      <AlertDialog
+        open={pendingDeleteTaskId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteTaskId(null)}
+      >
+        <AlertDialogContent className="sm:max-w-[480px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingDeleteTaskId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteTask}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
 
-// Updated TaskCard component with permissions
+// TaskCard
 interface TaskCardProps {
   task: Task
   section: Section
@@ -422,7 +460,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 className="h-6 w-6 p-0"
                 onClick={(e) => {
                   e.preventDefault()
-                  e.stopPropagation() // ensure no drag starts
+                  e.stopPropagation()
                 }}
               >
                 <MoreHorizontal className="h-3 w-3" />
@@ -432,18 +470,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
             <DropdownMenuContent
               align="end"
               className="bg-popover border-border"
-              onClick={(e) => {
-                // defensive: stop bubbling from any click inside menu
-                e.stopPropagation()
-              }}
+              onClick={(e) => e.stopPropagation()}
             >
               {canEdit && (
                 <DropdownMenuItem
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    onEdit()
-                  }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit() }}
                   className="hover:bg-accent hover:text-accent-foreground"
                 >
                   <Edit className="mr-2 h-3 w-3" />
@@ -453,11 +484,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
               {canRate && (
                 <DropdownMenuItem
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    onRate()
-                  }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRate() }}
                   className="hover:bg-accent hover:text-accent-foreground"
                 >
                   <Star className="mr-2 h-3 w-3" />
@@ -467,11 +494,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
               {canDelete && (
                 <DropdownMenuItem
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    onDelete()
-                  }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete() }}
                   className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                 >
                   <Trash2 className="mr-2 h-3 w-3" />
@@ -481,7 +504,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <div className="h-6 w-6" /> // Placeholder to maintain layout
+          <div className="h-6 w-6" />
         )}
       </div>
 
@@ -504,7 +527,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
           {isOverdue && <span className="text-red-500 font-medium">(Overdue)</span>}
         </div>
 
-        {/* Subtasks Progress */}
         {task.subtasks && task.subtasks.length > 0 && (
           <div className="text-xs text-muted-foreground">
             <CheckSquare className="w-3 h-3 inline mr-1" />
@@ -513,7 +535,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
         )}
       </div>
 
-      {/* Description */}
       {task.description && (
         <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
       )}

@@ -26,7 +26,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useAuthStore } from '../../features/auth/stores/authStore'
 import { useAuth } from '../../features/auth/hooks/useAuth'
@@ -43,7 +42,6 @@ import {
   Ticket, 
   Star, 
   Shield,
-  Search,
   User,
   ChevronRight
 } from 'lucide-react'
@@ -350,12 +348,25 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <div className="flex flex-1 flex-col">
-        <AppHeader />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          {children || <Outlet />}
-        </main>
+      {/* Viewport-bounded row containing the sidebar + content */}
+      <div className="fixed inset-0 flex overflow-hidden">
+        <AppSidebar />
+
+        {/* Content column must be allowed to shrink: min-w-0 */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <AppHeader />
+
+          {/* Scrolling happens inside main; prevent vertical overflow issues */}
+          <main className="flex-1 min-h-0 overflow-auto">
+            {/* Hard content boundary + safe text/media defaults */}
+            <div className="mx-auto w-full max-w-7xl px-4 md:px-6 break-words">
+              {/* If a child is inherently wider (e.g., tables), let it scroll horizontally */}
+              <div className="[&>table]:overflow-x-auto [&>pre]:overflow-auto [&>img]:max-w-full [&>img]:h-auto">
+                {children || <Outlet />}
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
     </SidebarProvider>
   )

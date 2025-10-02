@@ -7,7 +7,7 @@ import { useTickets } from '../hooks/useTickets'
 import { useTicketsStore } from '../stores/ticketsStore'
 import TicketForm from '../components/TicketForm'
 import { ArrowLeft, Ticket } from 'lucide-react'
-import { useAuthStore } from '@/features/auth/stores/authStore' // Add this import
+import { useAuthStore } from '@/features/auth/stores/authStore'
 
 const TicketEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -15,7 +15,7 @@ const TicketEditPage: React.FC = () => {
   const { ticket, availableUsers, isLoading, error } = useTicket(id!)
   const { updateTicket } = useTickets()
   const { getTypeOptions } = useTicketsStore()
-  const { isAuthenticated } = useAuthStore() // Add this line
+  const { isAuthenticated } = useAuthStore()
 
   const handleUpdateTicket = async (data: any) => {
     if (!ticket) return
@@ -27,44 +27,73 @@ const TicketEditPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 bg-muted animate-pulse rounded w-48" />
-        <div className="h-96 bg-muted animate-pulse rounded-lg" />
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Ticket className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <div className="h-8 bg-muted animate-pulse rounded w-48" />
+                <div className="h-4 bg-muted animate-pulse rounded w-64 mt-2" />
+              </div>
+            </div>
+            <div className="h-9 bg-muted animate-pulse rounded w-36" />
+          </div>
+
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground">Ticket Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-96 bg-muted animate-pulse rounded-lg" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
 
   if (error || !ticket) {
     return (
-      <div className="text-center py-12">
-        <p className="text-destructive">{error || 'Ticket not found'}</p>
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
+          <div className="text-center py-12">
+            <p className="text-destructive">{error || 'Ticket not found'}</p>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="sm" asChild>
-          <Link to={`/tickets/${id}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Ticket
-          </Link>
-        </Button>
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Ticket className="w-6 h-6 text-primary" />
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
+        {/* Header (match EnhancedAnalyticsPage layout) */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Ticket className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground font-sans">Edit Ticket</h1>
+              <p className="text-muted-foreground">Update {ticket.title}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground font-sans">Edit Ticket</h1>
-            <p className="text-muted-foreground">Update {ticket.title}</p>
+
+          {/* Right-side action (Back button) */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/tickets/${id}`}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Ticket
+              </Link>
+            </Button>
           </div>
         </div>
-      </div>
 
-      {/* Form */}
-      <div className="max-w-2xl">
+        {/* Form card (no width cap, consistent cadence) */}
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-foreground">Ticket Information</CardTitle>
@@ -76,7 +105,7 @@ const TicketEditPage: React.FC = () => {
               typeOptions={getTypeOptions()}
               onSubmit={handleUpdateTicket}
               isLoading={false}
-              isAuthenticated={isAuthenticated} // Add this prop
+              isAuthenticated={isAuthenticated}
             />
           </CardContent>
         </Card>

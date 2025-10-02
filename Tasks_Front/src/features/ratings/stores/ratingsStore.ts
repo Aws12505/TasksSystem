@@ -242,7 +242,7 @@ export const useRatingsStore = create<RatingsState>((set, get) => ({
   // Fetch reference data
   fetchAvailableTasks: async () => {
     try {
-      const response = await taskService.getTasks(1, 100)
+      const response = await taskService.getTasks(1)
       if (response.success) {
         set({ availableTasks: response.data })
       }

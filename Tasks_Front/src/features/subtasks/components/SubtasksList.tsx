@@ -20,12 +20,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useSubtasks } from '../hooks/useSubtasks'
 import SubtaskForm from './SubtaskForm'
 import TaskPriorityBadge from '../../tasks/components/TaskPriorityBadge'
 import type { Subtask } from '../../../types/Subtask'
 import { usePermissions } from '@/hooks/usePermissions'
-
 
 interface SubtasksListProps {
   taskId: number
@@ -44,8 +53,12 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
     nextPage,
     prevPage
   } = useSubtasks(taskId)
+
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingSubtask, setEditingSubtask] = useState<Subtask | null>(null)
+
+  // New: central delete-confirm dialog state
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
 
   const handleCreateSubtask = async (data: any) => {
     await createSubtask({ ...data, task_id: taskId })
@@ -59,9 +72,15 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
     }
   }
 
-  const handleDeleteSubtask = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this subtask?')) {
-      await deleteSubtask(id)
+  // Open dialog instead of window.confirm
+  const handleRequestDelete = async (id: number) => {
+    setPendingDeleteId(id)
+  }
+
+  const confirmDelete = async () => {
+    if (pendingDeleteId != null) {
+      await deleteSubtask(pendingDeleteId)
+      setPendingDeleteId(null)
     }
   }
 
@@ -71,7 +90,6 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
 
   const { hasPermission, hasAnyPermission } = usePermissions()
 
-
   const completedCount = subtasks.filter(s => s.is_complete).length
   const completionPercentage = subtasks.length > 0 ? Math.round((completedCount / subtasks.length) * 100) : 0
 
@@ -79,7 +97,7 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
   const generatePaginationItems = () => {
     if (!pagination) return []
 
-    const items = []
+    const items: (number | 'ellipsis-start' | 'ellipsis-end')[] = []
     const { current_page, last_page } = pagination
     
     if (current_page > 3) {
@@ -120,14 +138,15 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
                 {completionPercentage}%
               </Badge>
               {hasPermission('create subtasks') && (
-              <Button
-                size="sm"
-                onClick={() => setShowCreateForm(true)}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Subtask
-              </Button>)}
+                <Button
+                  size="sm"
+                  onClick={() => setShowCreateForm(true)}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Subtask
+                </Button>
+              )}
             </div>
           </div>
 
@@ -219,31 +238,35 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
                       </div>
                     </div>
                     
-                   { hasAnyPermission(['edit subtasks', 'delete subtasks']) && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-popover border-border">
-                        { hasPermission('edit subtasks') && (<DropdownMenuItem 
-                          onClick={() => setEditingSubtask(subtask)}
-                          className="hover:bg-accent hover:text-accent-foreground"
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>)}
-                        { hasPermission('delete subtasks') && (<DropdownMenuItem
-                          onClick={() => handleDeleteSubtask(subtask.id)}
-                          className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>)}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                   )}
+                    {hasAnyPermission(['edit subtasks', 'delete subtasks']) && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-popover border-border">
+                          {hasPermission('edit subtasks') && (
+                            <DropdownMenuItem 
+                              onClick={() => setEditingSubtask(subtask)}
+                              className="hover:bg-accent hover:text-accent-foreground"
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                          )}
+                          {hasPermission('delete subtasks') && (
+                            <DropdownMenuItem
+                              onClick={async () => { await handleRequestDelete(subtask.id) }}
+                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 )}
               </div>
@@ -297,6 +320,30 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
           </CardContent>
         </Card>
       )}
+
+      {/* Centered delete confirmation dialog (shadcn centers in viewport by default) */}
+      <AlertDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+      >
+        <AlertDialogContent className="sm:max-w-[480px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete subtask</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this subtask? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingDeleteId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

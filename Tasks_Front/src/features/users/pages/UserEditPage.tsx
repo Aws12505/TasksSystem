@@ -34,93 +34,142 @@ const UserEditPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 bg-muted animate-pulse rounded w-48" />
-        <div className="h-96 bg-muted animate-pulse rounded-lg" />
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <User className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <div className="h-8 bg-muted animate-pulse rounded w-48" />
+                <div className="h-4 bg-muted animate-pulse rounded w-64 mt-2" />
+              </div>
+            </div>
+            <div className="h-9 w-36 bg-muted animate-pulse rounded" />
+          </div>
+
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-foreground">User Profile</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-96 bg-muted animate-pulse rounded-lg" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
 
   if (error || !user) {
     return (
-      <div className="text-center py-12">
-        <p className="text-destructive">{error || 'User not found'}</p>
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
+          <div className="text-center py-12">
+            <p className="text-destructive">{error || 'User not found'}</p>
+          </div>
+        </div>
       </div>
     )
   }
 
-  // Safe access to arrays
   const userRoles = user.roles || []
   const userPermissions = user.permissions || []
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" asChild>
-            <Link to={`/users/${id}`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to User
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground font-sans">Edit User</h1>
-            <p className="text-muted-foreground">Update {user.name}'s profile and permissions</p>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
+        {/* Header (match EnhancedAnalyticsPage structure) */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <User className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground font-sans">Edit User</h1>
+              <p className="text-muted-foreground">
+                Update <span className="font-medium">{user.name}</span>'s profile and permissions
+              </p>
+            </div>
+          </div>
+
+          {/* Right-side action */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/users/${id}`}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to User
+              </Link>
+            </Button>
           </div>
         </div>
+
+        {/* Tabs (same spacing cadence) */}
+        <Tabs defaultValue="profile" className="space-y-6">
+          <TabsList className="bg-muted">
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger value="roles" className="flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              Roles
+            </TabsTrigger>
+            <TabsTrigger value="permissions" className="flex items-center gap-2">
+              <Key className="w-4 h-4" />
+              Permissions
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="profile">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">User Profile</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <UserForm
+                  user={user}
+                  onSubmit={handleUpdateUser}
+                  isLoading={false}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="roles">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Roles</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <UserRoles
+                  userRoles={userRoles}
+                  availableRoles={availableRoles}
+                  onSave={syncUserRoles}
+                  isLoading={false}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="permissions">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Permissions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <UserPermissions
+                  userPermissions={userPermissions}
+                  availablePermissions={availablePermissions}
+                  onSave={syncUserPermissions}
+                  isLoading={false}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="bg-muted">
-          <TabsTrigger value="profile" className="flex items-center gap-2">
-            <User className="w-4 h-4" />
-            Profile
-          </TabsTrigger>
-          <TabsTrigger value="roles" className="flex items-center gap-2">
-            <Shield className="w-4 h-4" />
-            Roles
-          </TabsTrigger>
-          <TabsTrigger value="permissions" className="flex items-center gap-2">
-            <Key className="w-4 h-4" />
-            Permissions
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="profile">
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-foreground">User Profile</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <UserForm
-                user={user}
-                onSubmit={handleUpdateUser}
-                isLoading={false}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="roles">
-          <UserRoles
-            userRoles={userRoles}
-            availableRoles={availableRoles}
-            onSave={syncUserRoles}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-
-        <TabsContent value="permissions">
-          <UserPermissions
-            userPermissions={userPermissions}
-            availablePermissions={availablePermissions}
-            onSave={syncUserPermissions}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-      </Tabs>
     </div>
   )
 }

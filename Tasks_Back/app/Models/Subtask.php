@@ -39,6 +39,7 @@ class Subtask extends Model
         parent::boot();
         
         static::saved(function ($subtask) {
+            
             // Update parent task status
             $subtask->task->updateTaskStatus();
         });

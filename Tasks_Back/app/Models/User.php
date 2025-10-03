@@ -10,6 +10,8 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Filesystem\FilesystemAdapter;
 
 class User extends Authenticatable
 {
@@ -25,6 +27,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'avatar_path'
     ];
 
     /**
@@ -49,6 +52,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    protected $appends = ['avatar_url'];
+
 
     protected $guard_name = 'sanctum';
 
@@ -110,5 +116,17 @@ public function getAvailableTickets()
                  ->where('status', 'open')
                  ->with(['requester'])
                  ->latest();
+}
+
+public function getAvatarUrlAttribute(): ?string
+{
+    if (!$this->avatar_path) {
+        return null;
+    }
+
+    /** @var FilesystemAdapter $disk */
+    $disk = Storage::disk('public');
+
+    return $disk->url($this->avatar_path);
 }
 }

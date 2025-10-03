@@ -18,6 +18,8 @@ import { ratingsRoutes } from './routes/ratingsRoutes'
 import { analyticsRoutes } from './routes/analyticsRoutes'
 import { publicRoutes } from './routes/publicRoutes'
 import { useAuthStore } from './features/auth/stores/authStore' 
+import SettingsLayout from './components/layout/SettingsLayout'
+import { profileRoutes } from './routes/profileRoutes'
 
 const LoadingSpinner = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -42,6 +44,17 @@ const MainProtectedRoute: React.FC<MainProtectedRouteProps> = ({ children }) => 
     </AuthGuard>
   )
 }
+const wrapWithSettingsProtectedRoutes = (routes: any[]) => 
+  routes.map(route => ({
+    ...route,
+    element: (
+      <MainProtectedRoute>
+        <SettingsLayout>
+          {route.element}
+        </SettingsLayout>
+      </MainProtectedRoute>
+    )
+  }))
 
 const wrapWithSuspense = (routes: any[]) =>
   routes.map(route => ({
@@ -84,7 +97,7 @@ export const router = createBrowserRouter([
       ...wrapProtectedRoutes(ratingConfigsRoutes),
       ...wrapProtectedRoutes(ratingsRoutes),
       ...wrapProtectedRoutes(analyticsRoutes),
-      
+      ...wrapWithSettingsProtectedRoutes(profileRoutes),
       { path: '/', element: <HomeRedirect /> },
       { path: '*', element: <HomeRedirect /> },
     ]

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Trophy, Medal, Award } from 'lucide-react'
 import type { TopPerformer } from '../../../types/Analytics'
 
@@ -62,6 +62,13 @@ const TopPerformers: React.FC<TopPerformersProps> = ({
                 <div className="flex items-center gap-3">
                   {getRankIcon(index)}
                   <Avatar className="w-8 h-8">
+                    {typeof performer.avatar_url === 'string' && performer.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={performer.avatar_url}
+              alt={performer.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                     <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                       {performer.name.charAt(0).toUpperCase()}
                     </AvatarFallback>

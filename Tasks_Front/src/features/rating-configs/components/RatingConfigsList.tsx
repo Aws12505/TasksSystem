@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { MoreHorizontal, Edit, Trash2, Eye, Play } from 'lucide-react'
 import {
   DropdownMenu,
@@ -107,6 +107,13 @@ const RatingConfigsList: React.FC<RatingConfigsListProps> = ({
                 <TableCell>
                   <div className="flex items-center space-x-2">
                     <Avatar className="w-6 h-6">
+                      {typeof config.creator?.avatar_url === 'string' && config.creator?.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={config.creator?.avatar_url}
+              alt={config.creator?.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                       <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                         {config.creator?.name?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>

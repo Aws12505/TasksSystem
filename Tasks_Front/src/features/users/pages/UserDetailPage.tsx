@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useUser } from '../hooks/useUser'
 import { usePermissions } from '@/hooks/usePermissions'
 import { Edit, ArrowLeft, Mail, Calendar, Shield, Key, TrendingUp } from 'lucide-react'
@@ -61,6 +61,13 @@ const UserDetailPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
             <Avatar className="w-12 h-12">
+              {typeof user.avatar_url === 'string' && user.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={user.avatar_url}
+              alt={user.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
               <AvatarFallback className="bg-primary text-primary-foreground text-lg">
                 {user.name?.charAt(0).toUpperCase() || 'U'}
               </AvatarFallback>

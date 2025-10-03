@@ -91,6 +91,7 @@ export interface TopPerformer {
   email: string;
   avg_final_rating: number;
   periods_rated: number;
+  avatar_url?: string | null;
 }
 
 export interface UserRanking extends TopPerformer {

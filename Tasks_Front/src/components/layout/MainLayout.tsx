@@ -22,7 +22,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -42,10 +41,10 @@ import {
   Ticket, 
   Star, 
   Shield,
-  User,
   ChevronRight
 } from 'lucide-react'
 import type { PermissionName } from '@/types/User'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface NavigationChild {
   title: string
@@ -133,6 +132,13 @@ const navigationItems: NavigationItem[] = [
     permission: "view roles"
   }
 ]
+const getInitials = (name?: string) =>
+  (name || 'User')
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 
 // App Sidebar Component
 function AppSidebar() {
@@ -275,9 +281,18 @@ function UserDropdown() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <SidebarMenuButton size="lg">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-primary-foreground" />
-          </div>
+          <Avatar className="h-8 w-8">
+  {typeof user?.avatar_url === 'string' && user.avatar_url.trim() !== '' && (
+    <AvatarImage
+      src={user.avatar_url}
+      alt={user?.name ? `${user.name}'s avatar` : 'User avatar'}
+      className="object-cover"
+    />
+  )}
+  <AvatarFallback className="bg-primary text-primary-foreground text-xs font-medium">
+    {getInitials(user?.name)}
+  </AvatarFallback>
+</Avatar>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">
               {user?.name || 'User'}
@@ -289,13 +304,8 @@ function UserDropdown() {
         </SidebarMenuButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" className="w-56">
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          Profile Settings
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          Preferences
+        <DropdownMenuItem asChild>
+           <Link to="/settings">My Profile</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout}>

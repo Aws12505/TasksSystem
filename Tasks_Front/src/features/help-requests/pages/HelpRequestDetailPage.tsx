@@ -3,7 +3,7 @@ import React from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useHelpRequest } from '../hooks/useHelpRequest'
 import HelpRequestStatusBadge from '../components/HelpRequestStatusBadge'
 import HelpRequestRatingBadge from '../components/HelpRequestRatingBadge'
@@ -262,6 +262,13 @@ const HelpRequestDetailPage: React.FC = () => {
               <CardContent>
                 <div className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
+                    {typeof helpRequest.requester?.avatar_url === 'string' && helpRequest.requester?.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={helpRequest.requester?.avatar_url}
+              alt={helpRequest.requester?.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {helpRequest.requester?.name?.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
@@ -290,6 +297,13 @@ const HelpRequestDetailPage: React.FC = () => {
                 {helpRequest.helper ? (
                   <div className="flex items-center gap-3">
                     <Avatar className="w-10 h-10">
+                      {typeof helpRequest.helper.avatar_url === 'string' && helpRequest.helper.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={helpRequest.helper.avatar_url}
+              alt={helpRequest.helper.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                       <AvatarFallback className="bg-chart-2 text-white">
                         {helpRequest.helper.name?.charAt(0).toUpperCase() || 'H'}
                       </AvatarFallback>

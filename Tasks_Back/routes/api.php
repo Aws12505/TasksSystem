@@ -18,7 +18,7 @@ use App\Http\Controllers\TaskRatingController;
 use App\Http\Controllers\StakeholderRatingController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\KanbanController;
-
+use App\Http\Controllers\ProfileController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -292,7 +292,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('tasks/{task}/move-section', [KanbanController::class, 'moveTaskToSection']);
         Route::post('tasks/{task}/move-status', [KanbanController::class, 'moveTaskStatus']);
     });
+
+    Route::get('/me', [ProfileController::class, 'me']);
+    Route::post('/profile', [ProfileController::class, 'update']);          // multipart
+    Route::post('/profile/password', [ProfileController::class, 'updatePassword']);
 });
 
-Route::post('/task-ratings/calculate', [FinalRatingController::class, 'calculateWeightedRatings']);
+// Route::post('/task-ratings/calculate', [FinalRatingController::class, 'calculateWeightedRatings']);
 

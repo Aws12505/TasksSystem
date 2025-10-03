@@ -1,10 +1,11 @@
+// src/features/auth/stores/authStore.ts
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { authService } from '../../../services/authService'
 import type { User } from '../../../types/User'
 import type { Permission } from '../../../types/Permission'
-import type { LoginRequest } from '../../../types/Auth'
 import { toast } from 'sonner'
+import type { LoginRequest } from '../../../types/Auth'
 
 interface AuthState {
   user: User | null
@@ -17,7 +18,6 @@ interface AuthState {
   checkAuth: () => Promise<void>
 }
 
-// Helper function to combine and deduplicate permissions
 const combinePermissions = (user: User | null): Permission[] => {
   if (!user) return []
   
@@ -136,7 +136,6 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: state.isAuthenticated,
         allPermissions: state.allPermissions,
       }),
-      // 🔑 When persisted state is loaded, restore auth immediately
       onRehydrateStorage: () => (state) => {
         const token = state?.token ?? authService.getToken()
         if (token) {

@@ -13,6 +13,7 @@ export interface User {
   projects?: Project[]; // Optional since not always loaded
   created_at: string;
   updated_at: string;
+  avatar_url?: string | null;
 }
 
 // Helper type for permission checking

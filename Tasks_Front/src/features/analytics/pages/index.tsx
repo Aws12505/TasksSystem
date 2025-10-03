@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAnalytics } from '../hooks/useAnalytics'
 import { useAnalyticsStore } from '../stores/analyticsStore'
 import { useRatingsStore } from '../../ratings/stores/ratingsStore'
@@ -170,6 +170,13 @@ const EnhancedAnalyticsPage: React.FC = () => {
                         <SelectItem key={user.id} value={user.id.toString()}>
                           <div className="flex items-center gap-2">
                             <Avatar className="w-6 h-6">
+                              {typeof user.avatar_url === 'string' && user.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={user.avatar_url}
+              alt={user.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                               <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                                 {user.name.charAt(0).toUpperCase()}
                               </AvatarFallback>
@@ -324,6 +331,13 @@ const EnhancedAnalyticsPage: React.FC = () => {
                     >
                       <span className="flex items-center gap-2">
                         <Avatar className="w-5 h-5">
+                          {typeof user.avatar_url === 'string' && user.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={user.avatar_url}
+              alt={user.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                           <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
                             {user.name.charAt(0)}
                           </AvatarFallback>
@@ -546,6 +560,13 @@ const EnhancedAnalyticsPage: React.FC = () => {
                                 </span>
                               </div>
                               <Avatar className="w-8 h-8">
+                                {typeof performer.avatar_url === 'string' && performer.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={performer.avatar_url}
+              alt={performer.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                                 <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                                   {performer.name.charAt(0).toUpperCase()}
                                 </AvatarFallback>

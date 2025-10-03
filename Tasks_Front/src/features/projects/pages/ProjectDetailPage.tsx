@@ -3,7 +3,7 @@ import React from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { useProject } from '../hooks/useProject'
 import { usePermissions } from '@/hooks/usePermissions'
@@ -183,6 +183,13 @@ const ProjectDetailPage: React.FC = () => {
                   <p className="text-sm text-muted-foreground">Stakeholder</p>
                   <div className="flex items-center gap-2 mt-1">
                     <Avatar className="w-8 h-8">
+                      {typeof project.stakeholder?.avatar_url === 'string' && project.stakeholder?.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={project.stakeholder?.avatar_url}
+              alt={project.stakeholder?.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                       <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                         {project.stakeholder?.name?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>

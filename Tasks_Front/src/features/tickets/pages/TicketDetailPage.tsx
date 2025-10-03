@@ -3,7 +3,7 @@ import React from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -257,6 +257,13 @@ const TicketDetailPage: React.FC = () => {
               <CardContent>
                 <div className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
+                    {typeof ticket.requester?.avatar_url === 'string' && ticket.requester?.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={ticket.requester?.avatar_url}
+              alt={ticket.requester?.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {ticket.requester?.name?.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
@@ -285,6 +292,13 @@ const TicketDetailPage: React.FC = () => {
                 {ticket.assignee ? (
                   <div className="flex items-center gap-3">
                     <Avatar className="w-10 h-10">
+                      {typeof ticket.assignee.avatar_url === 'string' && ticket.assignee.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={ticket.assignee.avatar_url}
+              alt={ticket.assignee.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                       <AvatarFallback className="bg-chart-2 text-white">
                         {ticket.assignee.name?.charAt(0).toUpperCase() || 'A'}
                       </AvatarFallback>

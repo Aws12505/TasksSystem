@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { MoreHorizontal, Edit, Trash2, Eye, TrendingUp } from 'lucide-react'
 import {
   DropdownMenu,
@@ -73,6 +73,13 @@ const UsersList: React.FC<UsersListProps> = ({ users, isLoading, onDelete }) => 
                 <TableCell>
                   <div className="flex items-center space-x-3">
                     <Avatar className="w-8 h-8">
+                      {typeof user.avatar_url === 'string' && user.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={user.avatar_url}
+              alt={user.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                       <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                         {user.name.charAt(0).toUpperCase()}
                       </AvatarFallback>

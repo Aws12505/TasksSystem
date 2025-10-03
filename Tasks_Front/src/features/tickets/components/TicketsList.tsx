@@ -9,7 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { MoreHorizontal, Edit, Trash2, Eye, UserCheck, UserX, CheckCircle } from 'lucide-react'
 import {
@@ -110,6 +110,13 @@ const TicketsList: React.FC<TicketsListProps> = ({
                 <TableCell>
                   <div className="flex items-center space-x-2">
                     <Avatar className="w-6 h-6">
+                      {typeof ticket.requester?.avatar_url === 'string' && ticket.requester?.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={ticket.requester?.avatar_url}
+              alt={ticket.requester?.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                       <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                         {ticket.requester?.name?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>
@@ -123,6 +130,13 @@ const TicketsList: React.FC<TicketsListProps> = ({
                   {ticket.assignee ? (
                     <div className="flex items-center space-x-2">
                       <Avatar className="w-6 h-6">
+                        {typeof ticket.assignee.avatar_url === 'string' && ticket.assignee.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={ticket.assignee.avatar_url}
+              alt={ticket.assignee.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                         <AvatarFallback className="bg-chart-2 text-white text-xs">
                           {ticket.assignee.name?.charAt(0).toUpperCase() || 'A'}
                         </AvatarFallback>

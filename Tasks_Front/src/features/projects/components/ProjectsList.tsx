@@ -9,7 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { MoreHorizontal, Edit, Trash2, Eye, BarChart3, Kanban } from 'lucide-react'
 import {
@@ -87,6 +87,13 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ projects, isLoading, onDele
                 <TableCell>
                   <div className="flex items-center space-x-2">
                     <Avatar className="w-6 h-6">
+                      {typeof project.stakeholder?.avatar_url === 'string' && project.stakeholder?.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={project.stakeholder?.avatar_url}
+              alt={project.stakeholder?.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                       <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                         {project.stakeholder?.name?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>

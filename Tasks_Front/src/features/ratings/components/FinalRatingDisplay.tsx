@@ -2,7 +2,7 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Calculator, Calendar, TrendingUp, Code } from 'lucide-react'
 import type { FinalRating } from '../../../types/Rating'
 
@@ -31,6 +31,13 @@ const FinalRatingDisplay: React.FC<FinalRatingDisplayProps> = ({ finalRating }) 
         {/* User Info */}
         <div className="flex items-center gap-3">
           <Avatar className="w-10 h-10">
+            {typeof finalRating.user.avatar_url === 'string' && finalRating.user.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={finalRating.user.avatar_url}
+              alt={finalRating.user.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
             <AvatarFallback className="bg-primary text-primary-foreground">
               {finalRating.user?.name?.charAt(0).toUpperCase() || 'U'}
             </AvatarFallback>

@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -279,6 +279,13 @@ const RatingConfigDetailPage: React.FC = () => {
               <CardContent>
                 <div className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
+                    {typeof ratingConfig.creator.avatar_url === 'string' && ratingConfig.creator.avatar_url.trim() !== '' && (
+              <AvatarImage
+              src={ratingConfig.creator.avatar_url}
+              alt={ratingConfig.creator.name || 'User avatar'}
+              className="object-cover"
+              />
+              )}
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {ratingConfig.creator?.name?.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>

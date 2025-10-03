@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Loader2 } from 'lucide-react'
+import { PasswordInput } from '@/components/ui/password-input'
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -70,13 +71,13 @@ const LoginForm: React.FC = () => {
             <FormItem>
               <FormLabel className="text-foreground">Password</FormLabel>
               <FormControl>
-                <Input
-                  type="password"
-                  placeholder="Enter your password"
-                  {...field}
-                  disabled={isLoading}
-                  className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:ring-ring"
-                />
+                 <PasswordInput
+                 placeholder="Enter your password"
+                 {...field}
+                 disabled={isLoading}
+                 autoComplete="current-password"
+                 className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:ring-ring"
+                 />
               </FormControl>
               <FormMessage className="text-destructive" />
             </FormItem>

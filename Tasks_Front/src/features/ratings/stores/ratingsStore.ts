@@ -4,21 +4,17 @@ import { ratingService } from '../../../services/ratingService'
 import { ratingConfigService } from '../../../services/ratingConfigService'
 import { taskService } from '../../../services/taskService'
 import { projectService } from '../../../services/projectService'
-import { userService } from '../../../services/userService'
 import type { 
   TaskRating, 
   StakeholderRating, 
-  FinalRating,
   CreateTaskRatingRequest,
   CreateStakeholderRatingRequest,
-  CalculateFinalRatingRequest
 } from '../../../types/Rating'
 import type { 
   RatingConfig,
 } from '../../../types/RatingConfig'
 import type { Task } from '../../../types/Task'
 import type { Project } from '../../../types/Project'
-import type { User } from '../../../types/User'
 import { toast } from 'sonner'
 
 interface PaginationInfo {
@@ -34,22 +30,18 @@ interface RatingsState {
   // Data
   taskRatings: TaskRating[]
   stakeholderRatings: StakeholderRating[]
-  finalRatings: FinalRating[]
   
   // Configs (for form building)
   taskRatingConfigs: RatingConfig[]
   stakeholderRatingConfigs: RatingConfig[]
-  finalRatingConfigs: RatingConfig[]
   
   // Reference data
   availableTasks: Task[]
   availableProjects: Project[]
-  availableUsers: User[]
   
   // Pagination with proper interface
   taskRatingsPagination: PaginationInfo | null
   stakeholderRatingsPagination: PaginationInfo | null
-  finalRatingsPagination: PaginationInfo | null
   
   // State
   isLoading: boolean
@@ -58,25 +50,19 @@ interface RatingsState {
   // Actions
   fetchTaskRatings: (taskId: number, page?: number) => Promise<void>
   fetchStakeholderRatings: (projectId: number, page?: number) => Promise<void>
-  fetchFinalRatings: (page?: number) => Promise<void>
-  fetchUserFinalRating: (userId: number, periodStart: string, periodEnd: string) => Promise<FinalRating | null>
   
   fetchTaskRatingConfigs: () => Promise<void>
   fetchStakeholderRatingConfigs: () => Promise<void>
-  fetchFinalRatingConfigs: () => Promise<void>
   
   fetchAvailableTasks: () => Promise<void>
   fetchAvailableProjects: () => Promise<void>
-  fetchAvailableUsers: () => Promise<void>
   
   createTaskRating: (data: CreateTaskRatingRequest) => Promise<TaskRating | null>
   updateTaskRating: (id: number, data: Partial<CreateTaskRatingRequest>) => Promise<TaskRating | null>
   
   createStakeholderRating: (data: CreateStakeholderRatingRequest) => Promise<StakeholderRating | null>
   updateStakeholderRating: (id: number, data: Partial<CreateStakeholderRatingRequest>) => Promise<StakeholderRating | null>
-  
-  calculateFinalRating: (userId: number, data: CalculateFinalRatingRequest) => Promise<FinalRating | null>
-  
+    
   clearAllRatings: () => void
 }
 
@@ -84,16 +70,12 @@ export const useRatingsStore = create<RatingsState>((set, get) => ({
   // Initial state
   taskRatings: [],
   stakeholderRatings: [],
-  finalRatings: [],
   taskRatingConfigs: [],
   stakeholderRatingConfigs: [],
-  finalRatingConfigs: [],
   availableTasks: [],
   availableProjects: [],
-  availableUsers: [],
   taskRatingsPagination: null,
   stakeholderRatingsPagination: null,
-  finalRatingsPagination: null,
   isLoading: false,
   error: null,
 
@@ -155,55 +137,6 @@ export const useRatingsStore = create<RatingsState>((set, get) => ({
     }
   },
 
-  // Fetch final ratings
-  fetchFinalRatings: async (page = 1) => {
-    set({ isLoading: true, error: null })
-    try {
-      const response = await ratingService.getAllFinalRatings(page)
-      if (response.success) {
-        set({
-          finalRatings: response.data,
-          finalRatingsPagination: response.pagination || {
-            current_page: 1,
-            total: response.data.length,
-            per_page: 15,
-            last_page: 1,
-            from: response.data.length > 0 ? 1 : null,
-            to: response.data.length
-          },
-          isLoading: false
-        })
-      } else {
-        set({ error: response.message, isLoading: false })
-        toast.error(response.message)
-      }
-    } catch (error: any) {
-      const errorMessage = error.message || 'Failed to fetch final ratings'
-      set({ error: errorMessage, isLoading: false })
-      toast.error(errorMessage)
-    }
-  },
-
-  // Fetch user's specific final rating
-  fetchUserFinalRating: async (userId: number, periodStart: string, periodEnd: string) => {
-    set({ isLoading: true, error: null })
-    try {
-      const response = await ratingService.getUserFinalRating(userId, periodStart, periodEnd)
-      if (response.success) {
-        set({ isLoading: false })
-        return response.data
-      } else {
-        set({ error: response.message, isLoading: false })
-        toast.error(response.message)
-        return null
-      }
-    } catch (error: any) {
-      const errorMessage = error.message || 'Failed to fetch user final rating'
-      set({ error: errorMessage, isLoading: false })
-      toast.error(errorMessage)
-      return null
-    }
-  },
 
   // Fetch rating configs
   fetchTaskRatingConfigs: async () => {
@@ -228,16 +161,6 @@ export const useRatingsStore = create<RatingsState>((set, get) => ({
     }
   },
 
-  fetchFinalRatingConfigs: async () => {
-    try {
-      const response = await ratingConfigService.getRatingConfigsByType('final_rating')
-      if (response.success) {
-        set({ finalRatingConfigs: response.data })
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch final rating configs:', error)
-    }
-  },
 
   // Fetch reference data
   fetchAvailableTasks: async () => {
@@ -259,17 +182,6 @@ export const useRatingsStore = create<RatingsState>((set, get) => ({
       }
     } catch (error: any) {
       console.error('Failed to fetch projects:', error)
-    }
-  },
-
-  fetchAvailableUsers: async () => {
-    try {
-      const response = await userService.getUsers(1, 100)
-      if (response.success) {
-        set({ availableUsers: response.data })
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch users:', error)
     }
   },
 
@@ -379,39 +291,14 @@ export const useRatingsStore = create<RatingsState>((set, get) => ({
     }
   },
 
-  // Calculate final rating
-  calculateFinalRating: async (userId: number, data: CalculateFinalRatingRequest) => {
-    set({ isLoading: true, error: null })
-    try {
-      const response = await ratingService.calculateFinalRating(userId, data)
-      if (response.success) {
-        set({ isLoading: false })
-        toast.success('Final rating calculated successfully')
-        // Refresh final ratings list
-        get().fetchFinalRatings()
-        return response.data
-      } else {
-        set({ error: response.message, isLoading: false })
-        toast.error(response.message)
-        return null
-      }
-    } catch (error: any) {
-      const errorMessage = error.message || 'Failed to calculate final rating'
-      set({ error: errorMessage, isLoading: false })
-      toast.error(errorMessage)
-      return null
-    }
-  },
 
   // Clear all ratings
   clearAllRatings: () => {
     set({
       taskRatings: [],
       stakeholderRatings: [],
-      finalRatings: [],
       taskRatingsPagination: null,
       stakeholderRatingsPagination: null,
-      finalRatingsPagination: null,
       error: null
     })
   }

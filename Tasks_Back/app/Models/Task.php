@@ -22,6 +22,7 @@ class Task extends Model
         'priority',
         'status',
         'section_id',
+        'completed_at',
     ];
 
     protected $casts = [
@@ -83,6 +84,7 @@ class Task extends Model
             $task->subtasks()
                  ->where('is_complete', false)
                  ->update(['is_complete' => true]);
+            $task['completed_at'] = $task->status === 'done' ? now() : null;
         }
             // Update project status and progress when task is saved
             $task->section->project->updateProjectStatusAndProgress();

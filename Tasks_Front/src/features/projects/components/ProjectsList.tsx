@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
-import { MoreHorizontal, Edit, Trash2, Eye, BarChart3, Kanban } from 'lucide-react'
+import { MoreHorizontal, Edit, Trash2, Eye, Kanban } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,9 +68,8 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ projects, isLoading, onDele
             const canView = hasPermission('view projects')
             const canEdit = hasPermission('edit projects')
             const canDelete = hasPermission('delete projects')
-            const canViewAnalytics = hasPermission('view analytics')
             
-            const hasAnyAction = canView || canEdit || canDelete || canViewAnalytics
+            const hasAnyAction = canView || canEdit || canDelete
 
             return (
               <TableRow key={project.id} className="border-border hover:bg-accent/50">
@@ -129,14 +128,6 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ projects, isLoading, onDele
                             <Link to={`/projects/${project.id}`} className="flex items-center">
                               <Eye className="mr-2 h-4 w-4" />
                               View
-                            </Link>
-                          </DropdownMenuItem>
-                        )}
-                        {canViewAnalytics && (
-                          <DropdownMenuItem asChild className="hover:bg-accent hover:text-accent-foreground">
-                            <Link to={`/analytics/projects/${project.id}`} className="flex items-center">
-                              <BarChart3 className="mr-2 h-4 w-4" />
-                              Analytics
                             </Link>
                           </DropdownMenuItem>
                         )}

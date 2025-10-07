@@ -82,7 +82,6 @@ const RatingConfigsPage: React.FC = () => {
   const activeConfigs = ratingConfigs.filter(c => c.is_active).length
   const taskRatingConfigs = ratingConfigs.filter(c => c.type === 'task_rating').length
   const stakeholderRatingConfigs = ratingConfigs.filter(c => c.type === 'stakeholder_rating').length
-  const finalRatingConfigs = ratingConfigs.filter(c => c.type === 'final_rating').length
 
   // Pagination items
   const generatePaginationItems = () => {
@@ -191,17 +190,6 @@ const RatingConfigsPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Final Rating
-              </CardTitle>
-              <Settings className="w-4 h-4 text-chart-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">{finalRatingConfigs}</div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Tabs */}
@@ -210,7 +198,6 @@ const RatingConfigsPage: React.FC = () => {
             <TabsTrigger value="all">All ({pagination?.total || ratingConfigs.length})</TabsTrigger>
             <TabsTrigger value="task_rating">Task Rating ({taskRatingConfigs})</TabsTrigger>
             <TabsTrigger value="stakeholder_rating">Stakeholder ({stakeholderRatingConfigs})</TabsTrigger>
-            <TabsTrigger value="final_rating">Final Rating ({finalRatingConfigs})</TabsTrigger>
           </TabsList>
 
           {/* All */}
@@ -390,64 +377,7 @@ const RatingConfigsPage: React.FC = () => {
             )}
           </TabsContent>
 
-          {/* Final Rating */}
-          <TabsContent value="final_rating" className="space-y-4">
-            <Card className="bg-card border-border flex-1 flex flex-col min-h-0">
-              <CardContent className="p-0">
-                <RatingConfigsList 
-                  ratingConfigs={ratingConfigs.filter(c => c.type === 'final_rating')} 
-                  isLoading={isLoading} 
-                  onDelete={async (id) => { await handleDelete(id) }}
-                  onActivate={async (id) => { await handleActivate(id) }}
-                />
-              </CardContent>
-            </Card>
 
-            {pagination && pagination.last_page > 1 && (
-              <Card className="bg-card border-border">
-                <CardContent className="p-3">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="text-sm text-muted-foreground text-center sm:text-left">
-                      Showing {pagination.from || 0} to {pagination.to || 0} of {pagination.total || 0} results
-                    </div>
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            onClick={prevPage}
-                            className={pagination.current_page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                          />
-                        </PaginationItem>
-                        
-                        {generatePaginationItems().map((item, index) => (
-                          <PaginationItem key={index}>
-                            {item === 'ellipsis-start' || item === 'ellipsis-end' ? (
-                              <PaginationEllipsis />
-                            ) : (
-                              <PaginationLink
-                                onClick={() => goToPage(item as number)}
-                                isActive={pagination.current_page === item}
-                                className="cursor-pointer"
-                              >
-                                {item}
-                              </PaginationLink>
-                            )}
-                          </PaginationItem>
-                        ))}
-                        
-                        <PaginationItem>
-                          <PaginationNext 
-                            onClick={nextPage}
-                            className={pagination.current_page === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
         </Tabs>
       </div>
 

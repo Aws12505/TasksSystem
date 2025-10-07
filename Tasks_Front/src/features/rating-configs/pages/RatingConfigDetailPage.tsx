@@ -18,11 +18,10 @@ import {
 import { useRatingConfig } from '../hooks/useRatingConfig'
 import { usePermissions } from '@/hooks/usePermissions'
 import RatingConfigTypeBadge from '../components/RatingConfigTypeBadge'
-import { Edit, ArrowLeft, Settings, Calendar, User as UserIcon, Play, Code } from 'lucide-react'
+import { Edit, ArrowLeft, Settings, Calendar, User as UserIcon, Play } from 'lucide-react'
 import type {
   TaskRatingConfigData,
   StakeholderRatingConfigData,
-  FinalRatingConfigData
 } from '../../../types/RatingConfig'
 
 const RatingConfigDetailPage: React.FC = () => {
@@ -50,61 +49,7 @@ const RatingConfigDetailPage: React.FC = () => {
   const renderConfigData = () => {
     if (!ratingConfig) return null
 
-    if (ratingConfig.type === 'final_rating') {
-      const configData = ratingConfig.config_data as FinalRatingConfigData
-      return (
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-foreground flex items-center gap-2">
-              <Code className="w-4 h-4" />
-              Formula Configuration
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Expression</p>
-              <div className="mt-1 p-3 bg-accent/20 rounded-lg overflow-x-auto">
-                <code className="text-sm font-mono text-foreground whitespace-pre">
-                  {configData.expression}
-                </code>
-              </div>
-            </div>
 
-            <div>
-              <p className="text-sm text-muted-foreground mb-3">
-                Variables ({configData.variables.length})
-              </p>
-              <div className="space-y-3">
-                {configData.variables.map((variable, index) => (
-                  <div key={index} className="p-3 border border-border rounded-lg">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Variable Name</p>
-                        <p className="text-sm font-mono text-foreground">{variable.name}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Operation</p>
-                        <Badge variant="outline" className="text-xs">
-                          {variable.operation.toUpperCase()}
-                        </Badge>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Model</p>
-                        <p className="text-sm text-foreground">{variable.model}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Column</p>
-                        <p className="text-sm font-mono text-foreground">{variable.column}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )
-    }
 
     const configData = ratingConfig.config_data as TaskRatingConfigData | StakeholderRatingConfigData
     return (
@@ -203,7 +148,6 @@ const RatingConfigDetailPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
-        {/* Header (parity with EnhancedAnalyticsPage) */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -347,22 +291,13 @@ const RatingConfigDetailPage: React.FC = () => {
                     {ratingConfig.is_active ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
-                {ratingConfig.type !== 'final_rating' && (
+
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Fields</span>
                     <Badge variant="outline">
                       {(ratingConfig.config_data as TaskRatingConfigData | StakeholderRatingConfigData).fields.length}
                     </Badge>
                   </div>
-                )}
-                {ratingConfig.type === 'final_rating' && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Variables</span>
-                    <Badge variant="outline">
-                      {(ratingConfig.config_data as FinalRatingConfigData).variables.length}
-                    </Badge>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>

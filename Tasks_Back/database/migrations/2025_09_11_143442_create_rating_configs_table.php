@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->enum('type', ['task_rating', 'stakeholder_rating', 'final_rating']);
+            $table->enum('type', ['task_rating', 'stakeholder_rating']);
             $table->json('config_data'); // Fields or formula expression
             $table->boolean('is_active')->default(true);
             $table->foreignId('created_by')->constrained('users');

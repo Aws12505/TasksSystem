@@ -30,29 +30,7 @@ export interface StakeholderRating {
   updated_at: string;
 }
 
-export interface FinalRating {
-  id: number;
-  user_id: number;
-  user: User;
-  period_start: string;
-  period_end: string;
-  final_rating: number;
-  calculation_steps: Array<{
-    expression?: string;
-    function?: string;
-    variable?: string;
-    model?: string;
-    column?: string;
-    operation?: string;
-    result: number;
-    type: string;
-  }>;
-  variables_used: Record<string, number>;
-  config_snapshot: any;
-  calculated_at: string;
-  created_at: string;
-  updated_at: string;
-}
+
 
 export interface CreateTaskRatingRequest {
   task_id: number;
@@ -70,7 +48,3 @@ export interface CreateStakeholderRatingRequest {
   rating_data: Record<string, number>;
 }
 
-export interface CalculateFinalRatingRequest {
-  period_start: string;
-  period_end: string;
-}

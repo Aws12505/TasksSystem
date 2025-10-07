@@ -2,145 +2,398 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\CalculateFinalRatingRequest;
-use App\Services\FinalRatingService;
+use App\Models\FinalRatingConfig;
+use App\Services\FinalRating\FinalRatingCalculator;
 use Carbon\Carbon;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use App\Models\TaskRating;
-use App\Models\User;
+use Illuminate\Support\Facades\Validator;
+use Barryvdh\DomPDF\Facade\Pdf;
+use ZipArchive;
+
 class FinalRatingController extends Controller
 {
-    public function __construct(
-        private FinalRatingService $finalRatingService
-    ) {}
+    private FinalRatingCalculator $calculator;
 
-    public function index(): JsonResponse
+    public function __construct(FinalRatingCalculator $calculator)
     {
-        $ratings = $this->finalRatingService->getAllFinalRatings();
-
-        return response()->json([
-            'success' => true,
-            'data' => $ratings->items(),
-            'pagination' => [
-                'current_page' => $ratings->currentPage(),
-                'total' => $ratings->total(),
-                'per_page' => $ratings->perPage(),
-                'last_page' => $ratings->lastPage(),
-                'from' => $ratings->firstItem(),
-                'to' => $ratings->lastItem(),
-            ],
-            'message' => 'Final ratings retrieved successfully',
-        ]);
+        $this->calculator = $calculator;
     }
 
-    public function calculateForUser(CalculateFinalRatingRequest $request, int $userId): JsonResponse
+    public function calculate(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'period_start' => 'required|date',
+            'period_end' => 'required|date|after_or_equal:period_start',
+            'max_points' => 'required|numeric|min:1',
+            'config_id' => 'nullable|exists:final_rating_configs,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
         try {
-            $data = $request->validated();
-            
-            $rating = $this->finalRatingService->calculateFinalRating(
-                $userId,
-                Carbon::parse($data['period_start']),
-                Carbon::parse($data['period_end'])
+            $startDate = Carbon::parse($request->period_start)->startOfDay();
+            $endDate = Carbon::parse($request->period_end)->endOfDay();
+            $maxPoints = floatval($request->max_points);
+
+            $config = $request->config_id 
+                ? FinalRatingConfig::findOrFail($request->config_id) 
+                : null;
+
+            $result = $this->calculator->calculate(
+                $startDate,
+                $endDate,
+                $maxPoints,
+                $config,
+                null
             );
 
             return response()->json([
                 'success' => true,
-                'data' => $rating,
-                'message' => 'Final rating calculated successfully',
-            ]);
+                'data' => $result,
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'data' => null,
                 'message' => $e->getMessage(),
-            ], 400);
+            ], 500);
         }
     }
 
-    public function getUserRating(int $userId, string $periodStart, string $periodEnd): JsonResponse
+    public function exportPdf(Request $request)
     {
-        $rating = $this->finalRatingService->getFinalRatingByUser(
-            $userId,
-            Carbon::parse($periodStart),
-            Carbon::parse($periodEnd)
-        );
+        $validator = Validator::make($request->all(), [
+            'period_start' => 'required|date',
+            'period_end' => 'required|date|after_or_equal:period_start',
+            'max_points' => 'required|numeric|min:1',
+            'config_id' => 'nullable|exists:final_rating_configs,id',
+        ]);
 
-        if (!$rating) {
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'data' => null,
-                'message' => 'Final rating not found for this user and period',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $tempDir = null;
+        $zipPath = null;
+
+        try {
+            $startDate = Carbon::parse($request->period_start)->startOfDay();
+            $endDate = Carbon::parse($request->period_end)->endOfDay();
+            $maxPoints = floatval($request->max_points);
+
+            $config = $request->config_id 
+                ? FinalRatingConfig::findOrFail($request->config_id) 
+                : null;
+
+            $result = $this->calculator->calculate(
+                $startDate,
+                $endDate,
+                $maxPoints,
+                $config,
+                null
+            );
+
+            // Create temp directory with unique timestamp
+            $tempDir = storage_path('app/temp/final-ratings-' . time() . '-' . uniqid());
+            if (!file_exists($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+
+            // 1. Generate Overview PDF
+            $overviewPdf = Pdf::loadView('pdf.final-ratings-overview', ['data' => $result]);
+            $overviewPdf->setPaper('a4', 'portrait');
+            $overviewPath = $tempDir . '/00_Overview_All_Employees.pdf';
+            $overviewPdf->save($overviewPath);
+
+            // 2. Generate Individual PDFs
+            foreach ($result['users'] as $index => $user) {
+                $individualPdf = Pdf::loadView('pdf.final-ratings-individual', [
+                    'user' => $user,
+                    'period' => $result['period'],
+                    'config' => $result['config'],
+                    'max_points' => $result['max_points_for_100_percent'],
+                ]);
+                $individualPdf->setPaper('a4', 'portrait');
+                
+                $sanitizedName = preg_replace('/[^a-zA-Z0-9]/', '_', $user['user_name']);
+                $fileName = sprintf('%02d_%s_%.2f_percent.pdf', 
+                    $index + 1, 
+                    $sanitizedName, 
+                    $user['final_percentage']
+                );
+                
+                $individualPath = $tempDir . '/' . $fileName;
+                $individualPdf->save($individualPath);
+            }
+
+            // 3. Create ZIP file
+            $zipFileName = 'final-ratings_' . $result['period']['start'] . '_to_' . $result['period']['end'] . '.zip';
+            $zipPath = storage_path('app/temp/' . $zipFileName);
+
+            $zip = new ZipArchive();
+            if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                throw new \Exception('Could not create ZIP file');
+            }
+
+            // Add all PDF files to ZIP
+            $files = scandir($tempDir);
+            foreach ($files as $file) {
+                if ($file !== '.' && $file !== '..') {
+                    $filePath = $tempDir . '/' . $file;
+                    $zip->addFile($filePath, $file);
+                }
+            }
+
+            $zip->close();
+
+            // Verify ZIP was created
+            if (!file_exists($zipPath)) {
+                throw new \Exception('ZIP file was not created successfully');
+            }
+
+            // Return the download response with proper headers
+            return response()->download($zipPath, $zipFileName, [
+                'Content-Type' => 'application/zip',
+                'Content-Disposition' => 'attachment; filename="' . $zipFileName . '"',
+            ])->deleteFileAfterSend(true);
+
+        } catch (\Exception $e) {
+            // Clean up on error
+            if ($tempDir && file_exists($tempDir)) {
+                array_map('unlink', glob("$tempDir/*.*"));
+                rmdir($tempDir);
+            }
+            if ($zipPath && file_exists($zipPath)) {
+                unlink($zipPath);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        } finally {
+            // Schedule cleanup after response is sent
+            if ($tempDir) {
+                register_shutdown_function(function() use ($tempDir) {
+                    if (file_exists($tempDir)) {
+                        $files = glob("$tempDir/*.*");
+                        foreach ($files as $file) {
+                            if (is_file($file)) {
+                                @unlink($file);
+                            }
+                        }
+                        @rmdir($tempDir);
+                    }
+                });
+            }
+        }
+    }
+
+    // Rest of methods remain the same
+    public function index()
+    {
+        $configs = FinalRatingConfig::orderBy('is_active', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $configs,
+        ], 200);
+    }
+
+    public function show(int $id)
+    {
+        $config = FinalRatingConfig::find($id);
+
+        if (!$config) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Config not found',
             ], 404);
         }
 
         return response()->json([
             'success' => true,
-            'data' => $rating,
-            'message' => 'Final rating retrieved successfully',
+            'data' => $config,
+        ], 200);
+    }
+
+    public function getActive()
+    {
+        $config = FinalRatingConfig::getActive();
+
+        if (!$config) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active configuration found',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $config,
+        ], 200);
+    }
+
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'config' => 'required|array',
+            'is_active' => 'boolean',
         ]);
-    }
 
-    public function calculateWeightedRatings(Request $request): JsonResponse
-{
-    $validated = $request->validate([
-        'user_ids' => 'required|array',
-        'user_ids.*' => 'required|integer|exists:users,id',
-        'start_date' => 'required|date',
-        'end_date' => 'required|date|after_or_equal:start_date',
-    ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
-    $userIds = $validated['user_ids'];
-    $startDate = Carbon::parse($validated['start_date'])->startOfDay();
-    $endDate = Carbon::parse($validated['end_date'])->endOfDay();
+        try {
+            $config = FinalRatingConfig::create([
+                'name' => $request->name,
+                'description' => $request->description,
+                'config' => $request->config,
+                'is_active' => false,
+            ]);
 
-    // Get latest rating for each task in date range
-    $latestRatings = TaskRating::select('task_ratings.*')
-        ->whereBetween('task_ratings.created_at', [$startDate, $endDate])
-        ->whereIn('task_ratings.id', function ($query) use ($startDate, $endDate) {
-            $query->select(DB::raw('MAX(id)'))
-                ->from('task_ratings')
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->groupBy('task_id');
-        })
-        ->get();
-
-    $results = [];
-
-    foreach ($userIds as $userId) {
-        $totalWeightedRating = 0;
-        $totalPercentage = 0;
-
-        foreach ($latestRatings as $rating) {
-            $taskUserPivot = DB::table('task_user')
-                ->where('task_id', $rating->task_id)
-                ->where('user_id', $userId)
-                ->first();
-
-            if ($taskUserPivot && $taskUserPivot->percentage > 0) {
-                $percentage = $taskUserPivot->percentage;
-                // Rating is already out of 100, so just weight it by percentage
-                $totalWeightedRating += ($rating->final_rating * $percentage);
-                $totalPercentage += $percentage;
+            if ($request->is_active) {
+                $config->activate();
             }
+
+            return response()->json([
+                'success' => true,
+                'data' => $config,
+                'message' => 'Configuration created successfully',
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         }
-
-        // Calculate weighted average - ALREADY out of 100
-        $ratingOutOf100 = null;
-        if ($totalPercentage > 0) {
-            $ratingOutOf100 = round($totalWeightedRating / $totalPercentage, 2);
-        }
-
-        $user = User::find($userId);
-
-        $results[] = [
-            'user_name' => $user->name,
-            'rating' => $ratingOutOf100
-        ];
     }
 
-    return response()->json($results);
-}
+    public function update(Request $request, int $id)
+    {
+        $config = FinalRatingConfig::find($id);
+
+        if (!$config) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Config not found',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|string|max:255',
+            'description' => 'nullable|string',
+            'config' => 'sometimes|array',
+            'is_active' => 'boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $config->update($request->only(['name', 'description', 'config']));
+
+            if ($request->has('is_active') && $request->is_active) {
+                $config->activate();
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $config->fresh(),
+                'message' => 'Configuration updated successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function destroy(int $id)
+    {
+        $config = FinalRatingConfig::find($id);
+
+        if (!$config) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Config not found',
+            ], 404);
+        }
+
+        if ($config->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete active configuration. Please activate another configuration first.',
+            ], 400);
+        }
+
+        try {
+            $config->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Configuration deleted successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function activate(int $id)
+    {
+        $config = FinalRatingConfig::find($id);
+
+        if (!$config) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Config not found',
+            ], 404);
+        }
+
+        try {
+            $config->activate();
+
+            return response()->json([
+                'success' => true,
+                'data' => $config->fresh(),
+                'message' => 'Configuration activated successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getDefaultStructure()
+    {
+        return response()->json([
+            'success' => true,
+            'data' => FinalRatingConfig::defaultConfig(),
+        ], 200);
+    }
 }

@@ -150,7 +150,7 @@ const TasksList: React.FC<TasksListProps> = ({
                             variant="secondary"
                             className="h-8"
                             onClick={() => onStatusChange(task.id, 'in_progress')}
-                            disabled={task.status === 'in_progress' || task.status === 'done' || task.status === 'rated'}
+                            disabled={task.status === 'in_progress' || task.status === 'rated'}
                             title="Mark In Progress"
                           >
                             <Play className="mr-2 h-4 w-4" />

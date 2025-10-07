@@ -129,4 +129,6 @@ public function getAvatarUrlAttribute(): ?string
 
     return $disk->url($this->avatar_path);
 }
+
+
 }

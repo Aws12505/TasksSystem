@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useUser } from '../hooks/useUser'
 import { usePermissions } from '@/hooks/usePermissions'
-import { Edit, ArrowLeft, Mail, Calendar, Shield, Key, TrendingUp } from 'lucide-react'
+import { Edit, ArrowLeft, Mail, Calendar, Shield, Key } from 'lucide-react'
 
 const UserDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -57,7 +57,6 @@ const UserDetailPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
-        {/* Header (match EnhancedAnalyticsPage structure) */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
             <Avatar className="w-12 h-12">
@@ -86,14 +85,6 @@ const UserDetailPage: React.FC = () => {
                 Back to Users
               </Link>
             </Button>
-            {hasPermission('view analytics') && (
-              <Button asChild variant="outline">
-                <Link to={`/analytics/users/${user.id}`}>
-                  <TrendingUp className="mr-2 h-4 w-4" />
-                  User Analytics
-                </Link>
-              </Button>
-            )}
             {hasPermission('edit users') && (
               <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Link to={`/users/${user.id}/edit`}>

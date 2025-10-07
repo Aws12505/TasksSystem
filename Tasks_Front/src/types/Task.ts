@@ -26,6 +26,7 @@ export interface Task {
   assigned_users?: AssignedUser[];
   created_at: string;
   updated_at: string;
+  completed_at?: string | null; // New field to track completion time
 }
 
 export interface CreateTaskRequest {

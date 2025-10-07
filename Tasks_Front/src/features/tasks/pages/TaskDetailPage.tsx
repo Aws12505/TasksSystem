@@ -97,7 +97,6 @@ const TaskDetailPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
-        {/* Header (parity with EnhancedAnalyticsPage) */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -119,7 +118,7 @@ const TaskDetailPage: React.FC = () => {
                   size="sm"
                   onClick={() => handleStatusUpdate('in_progress')}
                   disabled={
-                    task.status === 'in_progress' || task.status === 'rated' || task.status === 'done'
+                    task.status === 'in_progress' || task.status === 'rated'
                   }
                 >
                   Mark In Progress
@@ -203,6 +202,14 @@ const TaskDetailPage: React.FC = () => {
                   <p className="text-sm text-foreground flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
                     {new Date(task.due_date).toLocaleDateString()}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-muted-foreground">Completed At</p>
+                  <p className="text-sm text-foreground flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    {task.completed_at ? new Date(task.completed_at).toLocaleDateString() : 'Not completed'}
                   </p>
                 </div>
 

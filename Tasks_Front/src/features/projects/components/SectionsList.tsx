@@ -612,6 +612,7 @@ const TaskItem: React.FC<any> = ({ task, onEdit, onDelete }) => {
               <Calendar className="w-3 h-3" />
               Due: {new Date(task.due_date).toLocaleDateString()}
               {isOverdue && <span className="text-red-500 font-medium">(Overdue)</span>}
+              {!isOverdue && task.completed_at && <span className="text-green-500 font-medium">(Completed at {new Date(task.completed_at).toLocaleDateString()})</span>}
             </span>
           </div>
         </div>

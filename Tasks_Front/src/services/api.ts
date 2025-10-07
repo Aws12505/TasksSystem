@@ -7,7 +7,7 @@ class ApiClient {
 
   constructor() {
     const baseURL = 'https://tasksbackend.rdexperts.tech/api';
-
+    // const baseURL = 'http://localhost:8000/api';
     this.client = axios.create({
       baseURL,
       headers: {
@@ -72,6 +72,28 @@ class ApiClient {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return response.data
+  }
+
+async downloadFile(url: string, data?: object): Promise<{ blob: Blob; filename: string }> {
+    const response = await this.client.post(url, data, {
+      responseType: 'blob',
+    });
+
+    // Extract filename from Content-Disposition header
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = 'download.zip';
+    
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, '');
+      }
+    }
+
+    return {
+      blob: response.data,
+      filename: filename,
+    };
   }
 }
 

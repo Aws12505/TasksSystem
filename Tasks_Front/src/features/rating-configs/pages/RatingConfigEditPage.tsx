@@ -84,7 +84,6 @@ const RatingConfigEditPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
-        {/* Header (parity with EnhancedAnalyticsPage) */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">

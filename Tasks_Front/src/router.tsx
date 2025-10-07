@@ -15,7 +15,6 @@ import { helpRequestsRoutes } from './routes/helpRequestsRoutes'
 import { ticketsRoutes } from './routes/ticketsRoutes'
 import { ratingConfigsRoutes } from './routes/ratingConfigsRoutes'
 import { ratingsRoutes } from './routes/ratingsRoutes'
-import { analyticsRoutes } from './routes/analyticsRoutes'
 import { publicRoutes } from './routes/publicRoutes'
 import { useAuthStore } from './features/auth/stores/authStore' 
 import SettingsLayout from './components/layout/SettingsLayout'
@@ -96,7 +95,6 @@ export const router = createBrowserRouter([
       ...wrapProtectedRoutes(ticketsRoutes),
       ...wrapProtectedRoutes(ratingConfigsRoutes),
       ...wrapProtectedRoutes(ratingsRoutes),
-      ...wrapProtectedRoutes(analyticsRoutes),
       ...wrapWithSettingsProtectedRoutes(profileRoutes),
       { path: '/', element: <HomeRedirect /> },
       { path: '*', element: <HomeRedirect /> },

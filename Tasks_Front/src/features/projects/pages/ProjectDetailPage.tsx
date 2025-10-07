@@ -11,7 +11,7 @@ import { useSectionsStore } from '../../sections/stores/sectionsStore'
 import ProjectStatusBadge from '../components/ProjectStatusBadge'
 import SectionsList from '../components/SectionsList'
 import type { CreateSectionRequest, UpdateSectionRequest } from '../../../types/Section'
-import { Edit, ArrowLeft, FolderOpen, Calendar, CheckSquare, Users, BarChart3, Kanban } from 'lucide-react'
+import { Edit, ArrowLeft, FolderOpen, Calendar, CheckSquare, Users, Kanban } from 'lucide-react'
 import { useProjectsStore } from '../../projects/stores/projectsStore'
 
 const ProjectDetailPage: React.FC = () => {
@@ -104,7 +104,6 @@ const ProjectDetailPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
-        {/* Header (parity with EnhancedAnalyticsPage) */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -130,14 +129,6 @@ const ProjectDetailPage: React.FC = () => {
                 <Link to={`/ratings/projects/${project.id}/stakeholder`}>
                   <Users className="mr-2 h-4 w-4" />
                   Stakeholder Rating
-                </Link>
-              </Button>
-            )}
-            {hasPermission('view analytics') && (
-              <Button asChild variant="outline" size="sm">
-                <Link to={`/analytics/projects/${project.id}`}>
-                  <BarChart3 className="mr-2 h-4 w-4" />
-                  Project Analytics
                 </Link>
               </Button>
             )}

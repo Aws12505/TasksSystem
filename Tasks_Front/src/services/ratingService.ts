@@ -2,10 +2,8 @@ import { apiClient } from './api';
 import type { 
   TaskRating, 
   StakeholderRating,
-  FinalRating,
   CreateTaskRatingRequest, 
   CreateStakeholderRatingRequest,
-  CalculateFinalRatingRequest,
   UpdateTaskRatingRequest
 } from '../types/Rating';
 import type { ApiResponse, PaginatedApiResponse } from '../types/ApiResponse';
@@ -35,17 +33,6 @@ export class RatingService {
     return apiClient.getPaginated<StakeholderRating>(`/projects/${projectId}/stakeholder-ratings`, { page, per_page: perPage });
   }
 
-  async getAllFinalRatings(page = 1, perPage = 15): Promise<PaginatedApiResponse<FinalRating>> {
-    return apiClient.getPaginated<FinalRating>('/final-ratings', { page, per_page: perPage });
-  }
-
-  async calculateFinalRating(userId: number, data: CalculateFinalRatingRequest): Promise<ApiResponse<FinalRating>> {
-    return apiClient.post<FinalRating>(`/users/${userId}/calculate-final-rating`, data);
-  }
-
-  async getUserFinalRating(userId: number, periodStart: string, periodEnd: string): Promise<ApiResponse<FinalRating>> {
-    return apiClient.get<FinalRating>(`/users/${userId}/final-rating/${periodStart}/${periodEnd}`);
-  }
 }
 
 export const ratingService = new RatingService();

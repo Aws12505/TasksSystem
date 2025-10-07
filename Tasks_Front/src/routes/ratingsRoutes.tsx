@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 const RatingsPage = lazy(() => import('@/features/ratings/pages/index'))
 const TaskRatingsPage = lazy(() => import('@/features/ratings/pages/TaskRatingsPage'))
 const StakeholderRatingsPage = lazy(() => import('@/features/ratings/pages/StakeholderRatingsPage'))
+const FinalRatingsPage = lazy(() => import('@/features/final-ratings/pages/FinalRatingsPage'))
 
 export const ratingsRoutes: RouteObject[] = [
   {
@@ -18,7 +19,7 @@ export const ratingsRoutes: RouteObject[] = [
   {
     path: '/ratings',
     element: (
-            <ProtectedRoute permissions={['view final ratings', 'create task ratings', 'create stakeholder ratings']} requireAll={false}>
+            <ProtectedRoute permissions={['create task ratings', 'create stakeholder ratings']} requireAll={false}>
       <RatingsPage />
             </ProtectedRoute>
     ),
@@ -31,4 +32,12 @@ export const ratingsRoutes: RouteObject[] = [
             </ProtectedRoute>
     ),
   },
+  {
+    path: '/final-ratings',
+    element: (
+            <ProtectedRoute permissions={['calculate final ratings']} requireAll={false}>
+      <FinalRatingsPage />
+            </ProtectedRoute>
+    ),
+  }
 ]

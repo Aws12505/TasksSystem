@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { MoreHorizontal, Edit, Trash2, Eye, TrendingUp } from 'lucide-react'
+import { MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,9 +65,7 @@ const UsersList: React.FC<UsersListProps> = ({ users, isLoading, onDelete }) => 
             // Check if any action is available for this user
             const hasAnyAction = hasPermission('view users') || 
                                 hasPermission('edit users') || 
-                                hasPermission('delete users') || 
-                                hasPermission('view analytics')
-
+                                hasPermission('delete users')
             return (
               <TableRow key={user.id} className="border-border hover:bg-accent/50">
                 <TableCell>
@@ -121,14 +119,6 @@ const UsersList: React.FC<UsersListProps> = ({ users, isLoading, onDelete }) => 
                             <Link to={`/users/${user.id}`} className="flex items-center">
                               <Eye className="mr-2 h-4 w-4" />
                               View
-                            </Link>
-                          </DropdownMenuItem>
-                        )}
-                        {hasPermission('view analytics') && (
-                          <DropdownMenuItem asChild className="hover:bg-accent hover:text-accent-foreground">
-                            <Link to={`/analytics/users/${user.id}`} className="flex items-center">
-                              <TrendingUp className="mr-2 h-4 w-4" />
-                              User Analytics
                             </Link>
                           </DropdownMenuItem>
                         )}

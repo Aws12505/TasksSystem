@@ -4,15 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-// import {
-//   Pagination,
-//   PaginationContent,
-//   PaginationEllipsis,
-//   PaginationItem,
-//   PaginationLink,
-//   PaginationNext,
-//   PaginationPrevious,
-// } from "@/components/ui/pagination"
 import {
   Select,
   SelectContent,
@@ -23,19 +14,14 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { useRatings } from '../hooks/useRatings'
 import { usePermissions } from '@/hooks/usePermissions'
-// import FinalRatingCalculator from '../components/FinalRatingCalculator'
-// import FinalRatingDisplay from '../components/FinalRatingDisplay'
 import { 
   Star, 
-  Users, 
-  Calculator, 
-  TrendingUp, 
+  Users,
   Search, 
   CheckSquare, 
   FolderOpen,
   ArrowRight,
   Eye,
-  RefreshCw,
   AlertCircle,
 } from 'lucide-react'
 
@@ -49,29 +35,17 @@ const EnhancedRatingsPage: React.FC = () => {
   }>({ tasks: [], projects: [] })
   
   const { 
-    finalRatings,
-    finalRatingsPagination,
     availableTasks,
     availableProjects,
-    // availableUsers,
-    isLoading, 
-    // calculateFinalRating,
-    fetchFinalRatings,
-    // goToFinalRatingsPage,
-    // nextFinalRatingsPage,
-    // prevFinalRatingsPage
   } = useRatings()
 
   const { 
-    hasPermission, 
     hasAnyPermission 
   } = usePermissions()
 
   // Permission checks
   const canRateTasks = hasAnyPermission(['create task ratings', 'edit task ratings'])
   const canRateStakeholders = hasAnyPermission(['create stakeholder ratings', 'edit stakeholder ratings'])
-  const canViewFinalRatings = hasPermission('view final ratings')
-  const canCalculateFinalRatings = hasPermission('calculate final ratings')
 
   // Load recently viewed from localStorage
   useEffect(() => {
@@ -81,18 +55,7 @@ const EnhancedRatingsPage: React.FC = () => {
     }
   }, [])
 
-  // Fetch final ratings if user can view them
-  useEffect(() => {
-    if (canViewFinalRatings && !finalRatings.length) {
-      fetchFinalRatings(1)
-    }
-  }, [canViewFinalRatings, finalRatings.length, fetchFinalRatings])
-
-  // const handleCalculateFinalRating = async (userId: number, data: any) => {
-  //   if (!canCalculateFinalRatings) return
-  //   await calculateFinalRating(userId, data)
-  // }
-
+  
   const addToRecentlyViewed = (type: 'task' | 'project', id: number, name: string) => {
     const newItem = { id, name, viewedAt: new Date().toISOString() }
     const updated = { ...recentlyViewed }
@@ -130,40 +93,6 @@ const EnhancedRatingsPage: React.FC = () => {
     project.description?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // Stats (only show if user can view final ratings)
-  const totalRatings = canViewFinalRatings ? (finalRatingsPagination?.total || finalRatings.length) : 0
-  const averageRating = canViewFinalRatings && finalRatings.length > 0 
-    ? finalRatings.reduce((sum, r) => sum + r.final_rating, 0) / finalRatings.length 
-    : 0
-
-  const thisMonthRatings = canViewFinalRatings 
-    ? finalRatings.filter(r => 
-        new Date(r.calculated_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-      ).length
-    : 0
-
-  // Pagination items for final ratings
-  // const generatePaginationItems = () => {
-  //   if (!finalRatingsPagination) return []
-  //   const items: (number | 'ellipsis-start' | 'ellipsis-end')[] = []
-  //   const { current_page, last_page } = finalRatingsPagination
-    
-  //   if (current_page > 3) {
-  //     items.push(1)
-  //     if (current_page > 4) items.push('ellipsis-start')
-  //   }
-
-  //   for (let i = Math.max(1, current_page - 2); i <= Math.min(last_page, current_page + 2); i++) {
-  //     items.push(i)
-  //   }
-
-  //   if (current_page < last_page - 2) {
-  //     if (current_page < last_page - 3) items.push('ellipsis-end')
-  //     items.push(last_page)
-  //   }
-
-  //   return items
-  // }
 
   // Permission-based access message
   const NoPermissionMessage: React.FC<{ message: string }> = ({ message }) => (
@@ -188,16 +117,6 @@ const EnhancedRatingsPage: React.FC = () => {
               <h1 className="text-3xl font-bold text-foreground font-sans">Ratings Center</h1>
               <p className="text-muted-foreground">Performance evaluation and rating management system</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              disabled={isLoading} 
-              onClick={() => canViewFinalRatings && fetchFinalRatings(1)}
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
           </div>
         </div>
 
@@ -452,33 +371,6 @@ const EnhancedRatingsPage: React.FC = () => {
 
         {/* Stats Cards (same breakpoints as TasksPage) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Final Ratings
-              </CardTitle>
-              <Star className="w-4 h-4 text-chart-1" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {canViewFinalRatings ? totalRatings : '—'}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Average Rating
-              </CardTitle>
-              <TrendingUp className="w-4 h-4 text-chart-2" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {canViewFinalRatings ? `${Math.round(averageRating)}%` : '—'}
-              </div>
-            </CardContent>
-          </Card>
 
           <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -507,125 +399,19 @@ const EnhancedRatingsPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                This Month
-              </CardTitle>
-              <Calculator className="w-4 h-4 text-chart-5" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {canViewFinalRatings ? thisMonthRatings : '—'}
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Main Content Tabs */}
         <Tabs
-          defaultValue={canCalculateFinalRatings ? "calculate" : canViewFinalRatings ? "history" : "browse"}
+          defaultValue="browse"
           className="space-y-4"
         >
           <TabsList className="bg-muted">
-            {/* {canCalculateFinalRatings && (
-              <TabsTrigger value="calculate">Calculate Final Rating</TabsTrigger>
-            )} */}
-            {/* {canViewFinalRatings && (
-              <TabsTrigger value="history">Rating History ({totalRatings})</TabsTrigger>
-            )} */}
             {hasAnyPermission(['create task ratings', 'edit task ratings', 'create stakeholder ratings', 'edit stakeholder ratings']) && (
               <TabsTrigger value="browse">Browse Ratings</TabsTrigger>
             )}
           </TabsList>
           
-          {/* {canCalculateFinalRatings && (
-            <TabsContent value="calculate">
-              <div className="max-w-2xl">
-                <FinalRatingCalculator
-                  availableUsers={availableUsers}
-                  onCalculate={handleCalculateFinalRating}
-                  isLoading={isLoading}
-                />
-              </div>
-            </TabsContent>
-          )} */}
-          
-          {/* {canViewFinalRatings && (
-            <TabsContent value="history" className="space-y-4">
-              {isLoading ? (
-                <div className="space-y-4">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />
-                  ))}
-                </div>
-              ) : finalRatings.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">No final ratings calculated yet</p>
-                </div>
-              ) : (
-                <>
-                  <Card className="bg-card border-border flex-1 flex flex-col min-h-0">
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {finalRatings.map((rating) => (
-                          <FinalRatingDisplay key={rating.id} finalRating={rating} />
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card> */}
-
-                  {/* Final Ratings Pagination (responsive like TasksPage) */}
-                  {/* {finalRatingsPagination && finalRatingsPagination.last_page > 1 && (
-                    <Card className="bg-card border-border">
-                      <CardContent className="p-3">
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                          <div className="text-sm text-muted-foreground text-center sm:text-left">
-                            Showing {finalRatingsPagination.from || 0} to {finalRatingsPagination.to || 0} of {finalRatingsPagination.total || 0} results
-                          </div>
-                          <Pagination>
-                            <PaginationContent>
-                              <PaginationItem>
-                                <PaginationPrevious 
-                                  onClick={prevFinalRatingsPage}
-                                  className={finalRatingsPagination.current_page === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                                />
-                              </PaginationItem>
-                              
-                              {generatePaginationItems().map((item, index) => (
-                                <PaginationItem key={index}>
-                                  {item === 'ellipsis-start' || item === 'ellipsis-end' ? (
-                                    <PaginationEllipsis />
-                                  ) : (
-                                    <PaginationLink
-                                      onClick={() => goToFinalRatingsPage(item as number)}
-                                      isActive={finalRatingsPagination.current_page === item}
-                                      className="cursor-pointer"
-                                    >
-                                      {item}
-                                    </PaginationLink>
-                                  )}
-                                </PaginationItem>
-                              ))}
-                              
-                              <PaginationItem>
-                                <PaginationNext 
-                                  onClick={nextFinalRatingsPage}
-                                  className={finalRatingsPagination.current_page === finalRatingsPagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                                />
-                              </PaginationItem>
-                            </PaginationContent>
-                          </Pagination>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </>
-              )}
-            </TabsContent>
-          )} */}
-
           {hasAnyPermission(['create task ratings', 'edit task ratings', 'create stakeholder ratings', 'edit stakeholder ratings']) && (
             <TabsContent value="browse">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

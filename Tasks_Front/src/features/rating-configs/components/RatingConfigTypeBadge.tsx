@@ -19,11 +19,6 @@ const RatingConfigTypeBadge: React.FC<RatingConfigTypeBadgeProps> = ({ type }) =
           text: 'Stakeholder Rating', 
           className: 'text-purple-600 bg-purple-100'
         }
-      case 'final_rating':
-        return { 
-          text: 'Final Rating', 
-          className: 'text-green-600 bg-green-100'
-        }
       default:
         return { 
           text: type, 

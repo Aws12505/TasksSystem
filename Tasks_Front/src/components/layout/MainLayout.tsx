@@ -33,7 +33,6 @@ import { useTheme } from '../../hooks/useTheme'
 import { ThemeSwitcher } from '@/components/ui/kibo-ui/theme-switcher'
 import { 
   LayoutDashboard, 
-  BarChart3, 
   Users, 
   FolderOpen, 
   CheckSquare, 
@@ -71,12 +70,6 @@ const navigationItems: NavigationItem[] = [
     icon: LayoutDashboard
   },
   {
-    title: "Analytics",
-    icon: BarChart3,
-    href: "/analytics",
-    permission: "view analytics"
-  },
-  {
     title: "Users",
     href: "/users",
     icon: Users,
@@ -109,7 +102,7 @@ const navigationItems: NavigationItem[] = [
   {
     title: "Ratings",
     icon: Star,
-    permissions: ["view rating configs", "create task ratings", "create stakeholder ratings", "view final ratings"],
+    permissions: ["view rating configs", "create task ratings", "create stakeholder ratings"],
     requireAll: false,
     children: [
       { 
@@ -120,9 +113,14 @@ const navigationItems: NavigationItem[] = [
       { 
         title: "Ratings", 
         href: "/ratings",
-        permissions: ["create task ratings", "create stakeholder ratings", "view final ratings"],
+        permissions: ["create task ratings", "create stakeholder ratings"],
         requireAll: false
       },
+      {
+        title : "Final Ratings", 
+        href: "/final-ratings",
+        permission: "calculate final ratings"
+      }
     ]
   },
   {

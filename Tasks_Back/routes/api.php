@@ -12,13 +12,13 @@ use App\Http\Controllers\SubtaskController;
 use App\Http\Controllers\ProjectAssignmentController;
 use App\Http\Controllers\HelpRequestController;
 use App\Http\Controllers\TicketController;
-use App\Http\Controllers\FinalRatingController;
 use App\Http\Controllers\RatingConfigController;
 use App\Http\Controllers\TaskRatingController;
 use App\Http\Controllers\StakeholderRatingController;
-use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\KanbanController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\FinalRatingController;
+use App\Http\Controllers\DashboardController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -262,26 +262,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('stakeholder-ratings/{id}', [StakeholderRatingController::class, 'update']);
     });
     
-    // ==================== FINAL RATINGS ====================
-    Route::middleware(['permission:view final ratings'])->group(function () {
-        Route::get('final-ratings', [FinalRatingController::class, 'index']);
-        Route::get('users/{userId}/final-rating/{periodStart}/{periodEnd}', [FinalRatingController::class, 'getUserRating']);
-    });
     
-    Route::middleware(['permission:calculate final ratings'])->group(function () {
-        Route::post('users/{userId}/calculate-final-rating', [FinalRatingController::class, 'calculateForUser']);
-    });
-    
-    // ==================== ANALYTICS ====================
-    Route::prefix('analytics')->middleware(['permission:view analytics'])->group(function () {
-        Route::get('/dashboard', [AnalyticsController::class, 'dashboard']);
-        Route::get('/report', [AnalyticsController::class, 'report']);
-        Route::get('/export', [AnalyticsController::class, 'exportReport']);
-        Route::get('/users/{userId}', [AnalyticsController::class, 'userAnalytics']);
-        Route::get('/top-performers', [AnalyticsController::class, 'topPerformers']);
-        Route::get('/projects/{projectId}', [AnalyticsController::class, 'projectAnalytics']);
-        Route::get('/system', [AnalyticsController::class, 'systemStats']);
-    });
     
     // ==================== KANBAN ====================
     Route::middleware(['permission:view projects'])->group(function () {
@@ -296,7 +277,31 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/me', [ProfileController::class, 'me']);
     Route::post('/profile', [ProfileController::class, 'update']);          // multipart
     Route::post('/profile/password', [ProfileController::class, 'updatePassword']);
+   Route::get('/dashboard/employee', [DashboardController::class, 'getEmployeeDashboard']);
+    Route::get('/dashboard/analytics', [DashboardController::class, 'getManagerAnalytics']);
+    
+    Route::middleware(['permission:calculate final ratings'])->group(function () {
+   Route::prefix('final-ratings')->group(function () {
+        // Calculation
+        Route::post('/calculate', [FinalRatingController::class, 'calculate']);
+        Route::post('/export-pdf', [FinalRatingController::class, 'exportPdf']);
+        
+        // History
+        Route::get('/history', [FinalRatingController::class, 'getHistory']);
+        Route::get('/history/{id}', [FinalRatingController::class, 'getCalculationById']);
+        Route::delete('/history/{id}', [FinalRatingController::class, 'deleteCalculation']);
+        
+        // Configs
+        Route::get('/configs', [FinalRatingController::class, 'index']);
+        Route::get('/configs/active', [FinalRatingController::class, 'getActive']);
+        Route::get('/configs/default-structure', [FinalRatingController::class, 'getDefaultStructure']);
+        Route::get('/configs/{id}', [FinalRatingController::class, 'show']);
+        Route::post('/configs', [FinalRatingController::class, 'store']);
+        Route::put('/configs/{id}', [FinalRatingController::class, 'update']);
+        Route::delete('/configs/{id}', [FinalRatingController::class, 'destroy']);
+        Route::post('/configs/{id}/activate', [FinalRatingController::class, 'activate']);
+    });
+    });
 });
 
-// Route::post('/task-ratings/calculate', [FinalRatingController::class, 'calculateWeightedRatings']);
 

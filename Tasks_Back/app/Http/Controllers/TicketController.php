@@ -326,6 +326,7 @@ class TicketController extends Controller
     public function updateStatus(UpdateTicketStatusRequest $request,$id): JsonResponse
     {
         $id = (int) $id; // Cast to integer
+        
         $ticket = $this->ticketService->updateTicketStatus($id, $request->validated()['status']);
 
         if (!$ticket) {

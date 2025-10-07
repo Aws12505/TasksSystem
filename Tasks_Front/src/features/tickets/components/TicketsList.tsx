@@ -182,7 +182,7 @@ const TicketsList: React.FC<TicketsListProps> = ({
                               </Link>
                             </DropdownMenuItem>
                           )}
-                          {canEdit && ticket.is_available && (
+                          { ticket.is_available && (
                             <DropdownMenuItem
                               onClick={() => onClaim(ticket.id)}
                               className="hover:bg-accent hover:text-accent-foreground"
@@ -191,7 +191,7 @@ const TicketsList: React.FC<TicketsListProps> = ({
                               Claim
                             </DropdownMenuItem>
                           )}
-                          {canEdit && ticket.is_assigned && ticket.status === 'in_progress' && (
+                          { ticket.is_assigned && ticket.status === 'in_progress' && (
                             <DropdownMenuItem
                               onClick={() => onComplete(ticket.id)}
                               className="hover:bg-accent hover:text-accent-foreground"
@@ -200,7 +200,7 @@ const TicketsList: React.FC<TicketsListProps> = ({
                               Complete
                             </DropdownMenuItem>
                           )}
-                          {canEdit && ticket.is_assigned && ticket.status !== 'resolved' && (
+                          { ticket.is_assigned && ticket.status !== 'resolved' && (
                             <DropdownMenuItem
                               onClick={() => onUnassign(ticket.id)}
                               className="hover:bg-accent hover:text-accent-foreground"

@@ -38,32 +38,24 @@ const TicketDetailPage: React.FC = () => {
   const [pendingAction, setPendingAction] = React.useState<null | 'complete' | 'unassign'>(null)
 
   const handleClaim = async () => {
-    if (!hasPermission('edit tickets')) return
     await claimTicket()
   }
 
   // Open dialogs instead of window.confirm
   const handleComplete = async () => {
-    if (!hasPermission('edit tickets')) return
     setPendingAction('complete')
   }
 
   const handleUnassign = async () => {
-    if (!hasPermission('edit tickets')) return
     setPendingAction('unassign')
   }
 
   const handleStatusUpdate = async (status: string) => {
-    if (!hasPermission('edit tickets')) return
     await updateStatus(status)
   }
 
   // Confirms whichever action is pending, then closes the dialog
   const confirmPendingAction = async () => {
-    if (!hasPermission('edit tickets')) {
-      setPendingAction(null)
-      return
-    }
 
     if (pendingAction === 'complete') {
       await completeTicket()
@@ -173,19 +165,19 @@ const TicketDetailPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {hasPermission('edit tickets') && ticket.is_available && (
+            {ticket.is_available && (
               <Button variant="outline" size="sm" onClick={handleClaim}>
                 <UserCheck className="mr-2 h-4 w-4" />
                 Claim Ticket
               </Button>
             )}
-            {hasPermission('edit tickets') && ticket.is_assigned && ticket.status === 'in_progress' && (
+            {ticket.is_assigned && ticket.status === 'in_progress' && (
               <Button variant="outline" size="sm" onClick={handleComplete}>
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Mark Resolved
               </Button>
             )}
-            {hasPermission('edit tickets') && ticket.is_assigned && ticket.status !== 'resolved' && (
+            {ticket.is_assigned && ticket.status !== 'resolved' && (
               <Button variant="outline" size="sm" onClick={handleUnassign}>
                 <UserX className="mr-2 h-4 w-4" />
                 Unassign
@@ -342,7 +334,6 @@ const TicketDetailPage: React.FC = () => {
             </Card>
 
             {/* Quick Actions */}
-            {hasPermission('edit tickets') && (
               <Card className="bg-card border-border">
                 <CardHeader>
                   <CardTitle className="text-foreground">Quick Actions</CardTitle>
@@ -377,7 +368,6 @@ const TicketDetailPage: React.FC = () => {
                   </Button>
                 </CardContent>
               </Card>
-            )}
           </div>
         </div>
       </div>

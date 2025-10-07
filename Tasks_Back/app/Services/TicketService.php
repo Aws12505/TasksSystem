@@ -166,7 +166,7 @@ class TicketService
     }
 
     // Update ticket status
-    public function updateTicketStatus(int $id, TicketStatus $status): ?Ticket
+    public function updateTicketStatus(int $id, string $status): ?Ticket
     {
         $ticket = Ticket::find($id);
         
@@ -175,7 +175,8 @@ class TicketService
         }
 
         $updateData = ['status' => $status];
-        
+        $status = $status instanceof TicketStatus ? $status : TicketStatus::from($status);
+
         // If resolving, set completed_at
         if ($status === TicketStatus::RESOLVED) {
             $updateData['completed_at'] = now();

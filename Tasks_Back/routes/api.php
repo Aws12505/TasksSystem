@@ -209,14 +209,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('users/{userId}/tickets/requested', [TicketController::class, 'getByRequester']);
         Route::get('users/{userId}/tickets/assigned', [TicketController::class, 'getByAssignee']);
     });
-    
+           Route::post('tickets/{id}/complete', [TicketController::class, 'complete']);
+        Route::post('tickets/{id}/unassign', [TicketController::class, 'unassign']);
+        Route::post('tickets/{id}/status', [TicketController::class, 'updateStatus']); 
+        Route::post('tickets/{id}/claim', [TicketController::class, 'claim']);
     Route::middleware(['permission:edit tickets'])->group(function () {
         Route::put('tickets/{id}', [TicketController::class, 'update']);
-        Route::post('tickets/{id}/claim', [TicketController::class, 'claim']);
         Route::post('tickets/{id}/assign/{userId}', [TicketController::class, 'assign']);
-        Route::post('tickets/{id}/complete', [TicketController::class, 'complete']);
-        Route::post('tickets/{id}/unassign', [TicketController::class, 'unassign']);
-        Route::post('tickets/{id}/status', [TicketController::class, 'updateStatus']);
     });
     
     Route::middleware(['permission:delete tickets'])->group(function () {

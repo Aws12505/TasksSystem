@@ -4,10 +4,9 @@ namespace App\Models;
 
 use App\Enums\HelpRequestRating;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class HelpRequest extends Model
+class HelpRequest extends BaseModel
 {
     use HasFactory;
 

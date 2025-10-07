@@ -4,10 +4,9 @@ namespace App\Models;
 
 use App\Enums\RatingConfigType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class RatingConfig extends Model
+class RatingConfig extends BaseModel
 {
     use HasFactory;
 

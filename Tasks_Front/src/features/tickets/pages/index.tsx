@@ -64,23 +64,19 @@ const TicketsPage: React.FC = () => {
 
   // Keep the other actions unchanged (no confirm needed)
   const handleClaim = async (id: number) => {
-    if (!hasPermission('edit tickets')) return
     await claimTicket(id)
   }
 
   const handleAssign = async (id: number, userId: number) => {
-    if (!hasPermission('edit tickets')) return
     await assignTicket(id, userId)
   }
 
   const handleComplete = async (id: number) => {
-    if (!hasPermission('edit tickets')) return
     await completeTicket(id)
   }
 
   // Open the confirm dialog for unassign
   const handleUnassign = async (id: number) => {
-    if (!hasPermission('edit tickets')) return
     setPendingAction({ type: 'unassign', id })
   }
 

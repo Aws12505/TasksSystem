@@ -21,6 +21,7 @@ class Ticket extends Model
         'requester_id',
         'assigned_to',
         'completed_at',
+        'requester_name',
     ];
 
     protected $casts = [

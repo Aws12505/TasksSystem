@@ -1,3 +1,4 @@
+// components/TicketForm.tsx
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -29,12 +30,16 @@ import type {
 } from '../../../types/Ticket'
 import type { User } from '../../../types/User'
 
-const createTicketSchema = z.object({
+// Dynamic schema for create (requester_name required for guests)
+const makeCreateTicketSchema = (requireRequesterName: boolean) => z.object({
   title: z.string().min(1, 'Title is required').max(255),
   description: z.string().min(1, 'Description is required'),
   type: z.enum(['quick_fix', 'bug_investigation', 'user_support']),
   priority: z.enum(['low', 'medium', 'high', 'critical']),
   assigned_to: z.number().optional(),
+  requester_name: requireRequesterName
+    ? z.string().min(1, 'Your name is required').max(255)
+    : z.string().max(255).optional(),
 })
 
 const updateTicketSchema = z.object({
@@ -44,6 +49,7 @@ const updateTicketSchema = z.object({
   priority: z.enum(['low', 'medium', 'high', 'critical']),
   status: z.enum(['open', 'in_progress', 'resolved']).optional(),
   assigned_to: z.number().optional(),
+  requester_name: z.string().max(255).optional(),
 })
 
 interface TicketFormProps {
@@ -52,10 +58,8 @@ interface TicketFormProps {
   typeOptions: TicketTypeOption[]
   onSubmit: (data: CreateTicketRequest | UpdateTicketRequest) => Promise<void>
   isLoading: boolean
-  isAuthenticated: boolean // Add this new prop
+  isAuthenticated: boolean
 }
-
-
 
 // Create Form Component
 const CreateTicketForm: React.FC<{
@@ -63,26 +67,33 @@ const CreateTicketForm: React.FC<{
   typeOptions: TicketTypeOption[]
   onSubmit: (data: CreateTicketRequest) => Promise<void>
   isLoading: boolean
-  isAuthenticated: boolean // Add this new prop
+  isAuthenticated: boolean
 }> = ({ availableUsers, typeOptions, onSubmit, isLoading, isAuthenticated }) => {
-  const form = useForm<z.infer<typeof createTicketSchema>>({
-    resolver: zodResolver(createTicketSchema),
+  const schema = React.useMemo(
+    () => makeCreateTicketSchema(!isAuthenticated),
+    [isAuthenticated]
+  )
+
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
     defaultValues: {
       title: '',
       description: '',
       type: 'quick_fix',
       priority: 'medium',
       assigned_to: undefined,
+      requester_name: '', // ignored when authenticated
     },
   })
 
-  const handleSubmit = async (data: z.infer<typeof createTicketSchema>) => {
+  const handleSubmit = async (data: z.infer<typeof schema>) => {
     const submitData: CreateTicketRequest = {
       title: data.title,
       description: data.description,
       type: data.type,
       priority: data.priority,
       assigned_to: data.assigned_to,
+      ...(data.requester_name ? { requester_name: data.requester_name } : {}),
     }
     await onSubmit(submitData)
   }
@@ -129,6 +140,28 @@ const CreateTicketForm: React.FC<{
           )}
         />
 
+        {/* Guests provide their name */}
+        {!isAuthenticated && (
+          <FormField
+            control={form.control}
+            name="requester_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-foreground">Your name</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Enter your name"
+                    {...field}
+                    disabled={isLoading}
+                    className="bg-background border-input text-foreground"
+                  />
+                </FormControl>
+                <FormMessage className="text-destructive" />
+              </FormItem>
+            )}
+          />
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -147,7 +180,6 @@ const CreateTicketForm: React.FC<{
                       <SelectItem key={option.value} value={option.value}>
                         <div className="flex flex-col">
                           <span className="font-medium">{option.label}</span>
-                          {/* <span className="text-xs text-muted-foreground">{option.estimatedTime}</span> */}
                         </div>
                       </SelectItem>
                     ))}
@@ -183,7 +215,7 @@ const CreateTicketForm: React.FC<{
           />
         </div>
 
-        {/* Conditionally render the assign to field */}
+        {/* Assign to (only when authenticated) */}
         {isAuthenticated && (
           <FormField
             control={form.control}
@@ -241,7 +273,7 @@ const EditTicketForm: React.FC<{
   typeOptions: TicketTypeOption[]
   onSubmit: (data: UpdateTicketRequest) => Promise<void>
   isLoading: boolean
-  isAuthenticated: boolean // Add this new prop
+  isAuthenticated: boolean
 }> = ({ ticket, availableUsers, typeOptions, onSubmit, isLoading, isAuthenticated }) => {
   const form = useForm<z.infer<typeof updateTicketSchema>>({
     resolver: zodResolver(updateTicketSchema),
@@ -252,6 +284,7 @@ const EditTicketForm: React.FC<{
       priority: ticket.priority,
       status: ticket.status,
       assigned_to: ticket.assigned_to || undefined,
+      requester_name: ticket.requester_name || '',
     },
   })
 
@@ -263,9 +296,12 @@ const EditTicketForm: React.FC<{
       priority: data.priority,
       status: data.status,
       assigned_to: data.assigned_to,
+      requester_name: data.requester_name,
     }
     await onSubmit(submitData)
   }
+
+  const isExternalRequester = !ticket.requester // show requester_name for external
 
   return (
     <Form {...form}>
@@ -308,6 +344,27 @@ const EditTicketForm: React.FC<{
             </FormItem>
           )}
         />
+
+        {isExternalRequester && (
+          <FormField
+            control={form.control}
+            name="requester_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-foreground">Requester Name</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Enter requester name"
+                    {...field}
+                    disabled={isLoading}
+                    className="bg-background border-input text-foreground"
+                  />
+                </FormControl>
+                <FormMessage className="text-destructive" />
+              </FormItem>
+            )}
+          />
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
@@ -386,7 +443,7 @@ const EditTicketForm: React.FC<{
           />
         </div>
 
-        {/* Conditionally render the assign to field */}
+        {/* Assign to (only when authenticated) */}
         {isAuthenticated && (
           <FormField
             control={form.control}
@@ -437,7 +494,7 @@ const EditTicketForm: React.FC<{
   )
 }
 
-// Main wrapper component
+// Main wrapper
 const TicketForm: React.FC<TicketFormProps> = ({
   ticket,
   availableUsers = [],
@@ -447,7 +504,6 @@ const TicketForm: React.FC<TicketFormProps> = ({
   isAuthenticated
 }) => {
   if (ticket) {
-    // Edit mode
     return (
       <EditTicketForm
         ticket={ticket}
@@ -460,7 +516,6 @@ const TicketForm: React.FC<TicketFormProps> = ({
     )
   }
 
-  // Create mode
   return (
     <CreateTicketForm
       availableUsers={availableUsers}

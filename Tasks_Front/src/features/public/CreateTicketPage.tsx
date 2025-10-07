@@ -1,8 +1,9 @@
+// pages/PublicCreateTicketPage.tsx
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTicketsStore } from '@/features/tickets/stores/ticketsStore'
 import TicketForm from '@/features/tickets/components/TicketForm'
-import { useAuthStore } from '@/features/auth/stores/authStore' // Add this import
+import { useAuthStore } from '@/features/auth/stores/authStore'
 
 /**
  * PublicCreateTicketPage
@@ -20,9 +21,7 @@ const PublicCreateTicketPage: React.FC = () => {
     getTypeOptions,
   } = useTicketsStore()
 
-  const { isAuthenticated } = useAuthStore() // Add this line
-
-
+  const { isAuthenticated } = useAuthStore()
 
   const handleCreateTicket = async (data: any) => {
     const ticket = await createTicket(data)
@@ -52,17 +51,15 @@ const PublicCreateTicketPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Form surface (no dashboard layout, just a tasteful panel) */}
+        {/* Form surface */}
         <div className="w-full rounded-xl border border-border bg-card/95 p-6 shadow-sm backdrop-blur md:p-8">
           <TicketForm
             typeOptions={getTypeOptions()}
             onSubmit={handleCreateTicket}
             isLoading={isLoading}
-            isAuthenticated={isAuthenticated} // Add this prop
+            isAuthenticated={isAuthenticated}
           />
         </div>
-
-        
       </div>
     </div>
   )

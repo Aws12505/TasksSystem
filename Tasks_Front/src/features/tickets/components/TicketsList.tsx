@@ -1,3 +1,4 @@
+// components/TicketsList.tsx
 import React from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -29,7 +30,7 @@ interface TicketsListProps {
   isLoading: boolean
   onDelete: (id: number) => Promise<void>
   onClaim: (id: number) => Promise<void>
-  onAssign: (id: number, userId: number) => Promise<void>
+  onAssign?: (id: number, userId: number) => Promise<void> // not used in UI here
   onComplete: (id: number) => Promise<void>
   onUnassign: (id: number) => Promise<void>
   showActions?: boolean
@@ -81,12 +82,13 @@ const TicketsList: React.FC<TicketsListProps> = ({
         </TableHeader>
         <TableBody>
           {tickets.map((ticket) => {
-            // Check available actions based on permissions
             const canView = hasPermission('view tickets')
             const canEdit = hasPermission('edit tickets')
             const canDelete = hasPermission('delete tickets')
-            
             const hasAnyAction = canView || canEdit || canDelete
+
+            const requesterName = ticket.requester?.name || ticket.requester_name || 'Unknown Requester'
+            const requesterInitial = (ticket.requester?.name || ticket.requester_name || 'U').charAt(0).toUpperCase()
 
             return (
               <TableRow key={ticket.id} className="border-border hover:bg-accent/50">
@@ -111,18 +113,18 @@ const TicketsList: React.FC<TicketsListProps> = ({
                   <div className="flex items-center space-x-2">
                     <Avatar className="w-6 h-6">
                       {typeof ticket.requester?.avatar_url === 'string' && ticket.requester?.avatar_url.trim() !== '' && (
-              <AvatarImage
-              src={ticket.requester?.avatar_url}
-              alt={ticket.requester?.name || 'User avatar'}
-              className="object-cover"
-              />
-              )}
+                        <AvatarImage
+                          src={ticket.requester.avatar_url}
+                          alt={ticket.requester.name || 'User avatar'}
+                          className="object-cover"
+                        />
+                      )}
                       <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                        {ticket.requester?.name?.charAt(0).toUpperCase() || 'U'}
+                        {requesterInitial}
                       </AvatarFallback>
                     </Avatar>
                     <span className="text-sm text-foreground">
-                      {ticket.requester?.name || 'Unknown User'}
+                      {requesterName}
                     </span>
                   </div>
                 </TableCell>
@@ -131,12 +133,12 @@ const TicketsList: React.FC<TicketsListProps> = ({
                     <div className="flex items-center space-x-2">
                       <Avatar className="w-6 h-6">
                         {typeof ticket.assignee.avatar_url === 'string' && ticket.assignee.avatar_url.trim() !== '' && (
-              <AvatarImage
-              src={ticket.assignee.avatar_url}
-              alt={ticket.assignee.name || 'User avatar'}
-              className="object-cover"
-              />
-              )}
+                          <AvatarImage
+                            src={ticket.assignee.avatar_url}
+                            alt={ticket.assignee.name || 'User avatar'}
+                            className="object-cover"
+                          />
+                        )}
                         <AvatarFallback className="bg-chart-2 text-white text-xs">
                           {ticket.assignee.name?.charAt(0).toUpperCase() || 'A'}
                         </AvatarFallback>

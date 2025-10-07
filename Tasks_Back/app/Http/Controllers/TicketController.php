@@ -57,18 +57,26 @@ class TicketController extends Controller
     }
 
     public function store(StoreTicketRequest $request): JsonResponse
-    {
-        $data = $request->validated();
-        $data['requester_id'] = Auth::id(); // Set current user as requester
-        
-        $ticket = $this->ticketService->createTicket($data);
+{
+    $data = $request->validated();
 
-        return response()->json([
-            'success' => true,
-            'data' => $ticket,
-            'message' => 'Ticket created successfully',
-        ], 201);
+    if (Auth::check()) {
+        // Server decides the requester; ignore any client attempt
+        $data['requester_id'] = Auth::id();
+        $data['requester_name'] = Auth::user()->name;
+    } else {
+        // Guests: requester_id stays null; requester_name already validated as required
+        $data['requester_id'] = null;
     }
+
+    $ticket = $this->ticketService->createTicket($data);
+
+    return response()->json([
+        'success' => true,
+        'data' => $ticket,
+        'message' => 'Ticket created successfully',
+    ], 201);
+}
 
     public function update(UpdateTicketRequest $request, $id): JsonResponse
     {

@@ -17,12 +17,15 @@ class UpdateTicketRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'sometimes|required|string|max:255',
-            'description' => 'sometimes|required|string',
-            'type' => ['sometimes', 'required', new Enum(TicketType::class)],
-            'priority' => 'sometimes|required|in:low,medium,high,critical',
-            'status' => ['sometimes', 'required', new Enum(TicketStatus::class)],
-            'assigned_to' => 'nullable|exists:users,id',
+            'title'        => 'sometimes|required|string|max:255',
+            'description'  => 'sometimes|required|string',
+            'type'         => ['sometimes', 'required', new Enum(TicketType::class)],
+            'priority'     => 'sometimes|required|in:low,medium,high,critical',
+            'status'       => ['sometimes', 'required', new Enum(TicketStatus::class)],
+            'assigned_to'  => 'nullable|exists:users,id',
+
+            // Do NOT accept requester_id changes from client
+            'requester_name' => 'sometimes|nullable|string|max:255',
         ];
     }
 }

@@ -1,3 +1,4 @@
+// pages/TicketEditPage.tsx
 import React from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -92,7 +93,7 @@ const TicketEditPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Form card (no width cap, consistent cadence) */}
+        {/* Form card */}
         <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-foreground">Ticket Information</CardTitle>

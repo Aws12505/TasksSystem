@@ -52,7 +52,7 @@ const CreateTicketPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Form card (same cadence & spacing) */}
+        {/* Form card */}
         <div className="max-w-2xl">
           <Card className="bg-card border-border">
             <CardHeader>

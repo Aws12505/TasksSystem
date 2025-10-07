@@ -152,6 +152,9 @@ const TicketDetailPage: React.FC = () => {
       : ''
   const confirmLabel = pendingAction === 'complete' ? 'Mark Resolved' : 'Unassign'
 
+  const requesterDisplayName = ticket.requester?.name || ticket.requester_name || 'Unknown Requester'
+  const requesterInitial = (ticket.requester?.name || ticket.requester_name || 'U').charAt(0).toUpperCase()
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
@@ -257,22 +260,22 @@ const TicketDetailPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
                     {typeof ticket.requester?.avatar_url === 'string' && ticket.requester?.avatar_url.trim() !== '' && (
-              <AvatarImage
-              src={ticket.requester?.avatar_url}
-              alt={ticket.requester?.name || 'User avatar'}
-              className="object-cover"
-              />
-              )}
+                      <AvatarImage
+                        src={ticket.requester.avatar_url}
+                        alt={ticket.requester.name || 'User avatar'}
+                        className="object-cover"
+                      />
+                    )}
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {ticket.requester?.name?.charAt(0).toUpperCase() || 'U'}
+                      {requesterInitial}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="font-medium text-foreground">
-                      {ticket.requester?.name || 'Unknown User'}
+                      {requesterDisplayName}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {ticket.requester?.email}
+                      {ticket.requester?.email || ''}
                     </p>
                   </div>
                 </div>
@@ -292,12 +295,12 @@ const TicketDetailPage: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <Avatar className="w-10 h-10">
                       {typeof ticket.assignee.avatar_url === 'string' && ticket.assignee.avatar_url.trim() !== '' && (
-              <AvatarImage
-              src={ticket.assignee.avatar_url}
-              alt={ticket.assignee.name || 'User avatar'}
-              className="object-cover"
-              />
-              )}
+                        <AvatarImage
+                          src={ticket.assignee.avatar_url}
+                          alt={ticket.assignee.name || 'User avatar'}
+                          className="object-cover"
+                        />
+                      )}
                       <AvatarFallback className="bg-chart-2 text-white">
                         {ticket.assignee.name?.charAt(0).toUpperCase() || 'A'}
                       </AvatarFallback>
@@ -379,7 +382,7 @@ const TicketDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Centered confirmation dialog (shadcn centers modal in viewport by default) */}
+      {/* Confirmation dialog */}
       <AlertDialog
         open={pendingAction !== null}
         onOpenChange={(open) => !open && setPendingAction(null)}

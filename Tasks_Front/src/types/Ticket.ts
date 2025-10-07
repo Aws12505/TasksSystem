@@ -12,8 +12,12 @@ export interface Ticket {
   status: TicketStatus;
   type: TicketType;
   priority: Priority;
-  requester_id: number;
-  requester: User;
+
+  // ⬇️ changed / added
+  requester_id: number | null;
+  requester: User | null;
+  requester_name: string | null;
+
   assigned_to: number | null;
   assignee: User | null;
   completed_at: string | null;
@@ -30,6 +34,9 @@ export interface CreateTicketRequest {
   type: TicketType;
   priority: Priority;
   assigned_to?: number; // For direct assignment
+
+  // ⬇️ added: for guests
+  requester_name?: string;
 }
 
 export interface UpdateTicketRequest {
@@ -39,6 +46,9 @@ export interface UpdateTicketRequest {
   priority?: Priority;
   status?: TicketStatus;
   assigned_to?: number;
+
+  // ⬇️ added: allow editing external name
+  requester_name?: string;
 }
 
 export interface UpdateTicketStatusRequest {

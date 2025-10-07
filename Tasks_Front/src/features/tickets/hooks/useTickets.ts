@@ -36,17 +36,18 @@ export const useTickets = () => {
 
   // Filter tickets based on search query - apply to current page only
   const filteredTickets = tickets.filter(ticket => 
-    ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.requester?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  ticket.requester?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  ticket.requester_name?.toLowerCase().includes(searchQuery.toLowerCase()) // ⬅️ added
+)
 
-  const filteredAvailableTickets = availableTickets.filter(ticket => 
-    ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.requester?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
+const filteredAvailableTickets = availableTickets.filter(ticket => 
+  ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  ticket.requester?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  ticket.requester_name?.toLowerCase().includes(searchQuery.toLowerCase()) // ⬅️ added
+)
   // Pagination functions
   const goToPage = (page: number) => {
     fetchTickets(page)

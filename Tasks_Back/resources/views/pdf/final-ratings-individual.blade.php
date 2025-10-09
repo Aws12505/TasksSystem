@@ -337,21 +337,14 @@
 <body>
     <div class="container">
         <div class="header">
-
-            @php
-    // Turn possibly-full URL into a relative path under storage/app/public
-    $relative = str_replace(url('/storage/'), '', (string) $user['avatar_url']);
-    $localPath = storage_path('app/public/' . $relative); // e.g. /var/www/html/storage/app/public/avatars/...
-    $src = file_exists($localPath) ? ('file://' . $localPath) : null;
-@endphp
             <div class="avatar-container">
-                @if($src)
-    <img src="{{ $src }}" class="avatar" />
-@else
-    <div class="avatar" style="background: var(--primary); ...">
-        {{ strtoupper(substr($user['user_name'], 0, 1)) }}
-    </div>
-@endif
+               @if(!empty($user['avatar_data_uri']))
+        <img src="{{ $user['avatar_data_uri'] }}" class="avatar" />
+    @else
+        <div class="avatar" style="background: var(--primary-foreground); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold;">
+            {{ strtoupper(substr($user['user_name'], 0, 1)) }}
+        </div>
+    @endif
             </div>
             <h1>{{ $user['user_name'] }}</h1>
             <div class="subtitle">

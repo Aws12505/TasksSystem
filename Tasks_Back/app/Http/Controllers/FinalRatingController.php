@@ -51,7 +51,10 @@ class FinalRatingController extends Controller
                 $config,
                 null
             );
-
+foreach ($result['users'] as &$u) {
+    $u['avatar_data_uri'] = $this->avatarToDataUri($u['avatar_url'] ?? null);
+}
+unset($u);
             return response()->json([
                 'success' => true,
                 'data' => $result,
@@ -195,7 +198,53 @@ class FinalRatingController extends Controller
             }
         }
     }
+private function avatarToDataUri(?string $avatarUrl): ?string
+{
+    if (!$avatarUrl) return null;
 
+    // Try to map a typical /storage URL to storage/app/public
+    $relative = str_replace(url('/storage/'), '', $avatarUrl);
+    $local = storage_path('app/public/' . $relative);
+
+    $data = null;
+
+    if (is_file($local)) {
+        $data = @file_get_contents($local);
+        $mime = mime_content_type($local) ?: 'image/jpeg';
+    } else {
+        // Fallback: try direct path or a remote URL (if allow_url_fopen is on)
+        // BE CAREFUL with remote – you may want to whitelist your own domains.
+        $context = stream_context_create(['http' => ['timeout' => 3]]);
+        $data = @file_get_contents($avatarUrl, false, $context);
+        // Best-effort mime sniff
+        $tmpMime = null;
+        if ($data) {
+            $f = finfo_open(FILEINFO_MIME_TYPE);
+            $tmpMime = finfo_buffer($f, $data);
+            finfo_close($f);
+        }
+        $mime = $tmpMime ?: 'image/jpeg';
+    }
+
+    if (!$data) return null;
+
+    // dompdf has spotty WEBP support; convert webp to png on the fly
+    if (str_contains(strtolower($mime), 'webp')) {
+        if (function_exists('imagecreatefromstring')) {
+            $im = @imagecreatefromstring($data);
+            if ($im) {
+                ob_start();
+                // convert to PNG (widely supported)
+                imagepng($im);
+                $data = ob_get_clean();
+                imagedestroy($im);
+                $mime = 'image/png';
+            }
+        }
+    }
+
+    return 'data:' . $mime . ';base64,' . base64_encode($data);
+}
     // Rest of methods remain the same
     public function index()
     {

@@ -338,13 +338,13 @@
     <div class="container">
         <div class="header">
             <div class="avatar-container">
-               @if(!empty($user['avatar_data_uri']))
+               {{-- @if(!empty($user['avatar_data_uri']))
         <img src="{{ $user['avatar_data_uri'] }}" class="avatar" />
-    @else
+    @else --}}
         <div class="avatar" style="background: var(--primary-foreground); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold;">
             {{ strtoupper(substr($user['user_name'], 0, 1)) }}
         </div>
-    @endif
+    {{-- @endif --}}
             </div>
             <h1>{{ $user['user_name'] }}</h1>
             <div class="subtitle">

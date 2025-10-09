@@ -51,10 +51,10 @@ class FinalRatingController extends Controller
                 $config,
                 null
             );
-foreach ($result['users'] as &$u) {
-    $u['avatar_data_uri'] = $this->avatarToDataUri($u['avatar_url'] ?? null);
-}
-unset($u);
+// foreach ($result['users'] as &$u) {
+//     $u['avatar_data_uri'] = $this->avatarToDataUri($u['avatar_url'] ?? null);
+// }
+// unset($u);
             return response()->json([
                 'success' => true,
                 'data' => $result,

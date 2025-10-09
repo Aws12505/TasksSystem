@@ -382,15 +382,20 @@
                                     {{ $index + 1 }}
                                 </div>
                             </td>
-                            
+                            @php
+    // Turn possibly-full URL into a relative path under storage/app/public
+    $relative = str_replace(url('/storage/'), '', (string) $user['avatar_url']);
+    $localPath = storage_path('app/public/' . $relative); // e.g. /var/www/html/storage/app/public/avatars/...
+    $src = file_exists($localPath) ? ('file://' . $localPath) : null;
+@endphp
                             <td style="text-align: center;">
-                                @if($user['avatar_url'])
-                                    <img src="{{ public_path('storage/' . str_replace(url('/storage/'), '', $user['avatar_url'])) }}" class="avatar" />
-                                @else
-                                    <div class="avatar" style="background: var(--primary); color: var(--primary-foreground); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold;">
-                                        {{ strtoupper(substr($user['user_name'], 0, 1)) }}
-                                    </div>
-                                @endif
+                                @if($src)
+    <img src="{{ $src }}" class="avatar" />
+@else
+    <div class="avatar" style="background: var(--primary); ...">
+        {{ strtoupper(substr($user['user_name'], 0, 1)) }}
+    </div>
+@endif
                             </td>
                             
                             <td>

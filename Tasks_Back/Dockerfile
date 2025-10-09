@@ -6,14 +6,14 @@ RUN apt-get update && apt-get install -y \
     unzip \
     libpng-dev \
     libjpeg-dev \
-    libfreetype6-dev
+    libfreetype6-dev \
+    libzip-dev
 
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg
-RUN docker-php-ext-install pdo pdo_mysql gd
+RUN docker-php-ext-install pdo pdo_mysql gd zip
 
 COPY . /var/www/html
 COPY .env.example /var/www/html/.env
-
 RUN chown -R www-data:www-data /var/www/html
 RUN a2enmod rewrite
 

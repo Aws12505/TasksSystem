@@ -12,6 +12,7 @@ import type {
 } from '../../../types/Ticket'
 import type { User } from '../../../types/User'
 import { toast } from 'sonner'
+import { useAuthStore } from '../../auth/stores/authStore' // <- adjust path if needed
 
 interface PaginationInfo {
   current_page: number
@@ -272,7 +273,10 @@ export const useTicketsStore = create<TicketsState>((set, get) => ({
         set({ isLoading: false })
         toast.success('Ticket created successfully')
         // Refresh tickets list
+        const { isAuthenticated } = useAuthStore.getState()
+        if (isAuthenticated) {
         get().fetchTickets()
+      }
         return response.data
       } else {
         set({ error: response.message, isLoading: false })

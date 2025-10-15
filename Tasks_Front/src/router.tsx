@@ -19,7 +19,7 @@ import { publicRoutes } from './routes/publicRoutes'
 import { useAuthStore } from './features/auth/stores/authStore' 
 import SettingsLayout from './components/layout/SettingsLayout'
 import { profileRoutes } from './routes/profileRoutes'
-
+import { clockingRoutes } from './routes/clockingRoutes'
 const LoadingSpinner = () => (
   <div className="min-h-screen flex items-center justify-center">
     <Loader2 className="h-8 w-8 animate-spin" />
@@ -95,6 +95,7 @@ export const router = createBrowserRouter([
       ...wrapProtectedRoutes(ticketsRoutes),
       ...wrapProtectedRoutes(ratingConfigsRoutes),
       ...wrapProtectedRoutes(ratingsRoutes),
+      ...wrapProtectedRoutes(clockingRoutes),
       ...wrapWithSettingsProtectedRoutes(profileRoutes),
       { path: '/', element: <HomeRedirect /> },
       { path: '*', element: <HomeRedirect /> },

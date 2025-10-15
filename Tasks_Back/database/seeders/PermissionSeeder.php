@@ -81,6 +81,7 @@ class PermissionSeeder extends Seeder
             
             // Analytics permissions
             'view analytics',
+
         ];
 
         foreach ($permissions as $permission) {

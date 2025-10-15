@@ -246,6 +246,8 @@ class FinalRatingController extends Controller
 //     return 'data:' . $mime . ';base64,' . base64_encode($data);
 // }
     // Rest of methods remain the same
+
+    
     public function index()
     {
         $configs = FinalRatingConfig::orderBy('is_active', 'desc')

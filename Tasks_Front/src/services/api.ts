@@ -6,8 +6,7 @@ class ApiClient {
   private client: AxiosInstance;
 
   constructor() {
-    const baseURL = 'https://tasksbackend.rdexperts.tech/api';
-    // const baseURL = 'http://localhost:8000/api';
+    const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     this.client = axios.create({
       baseURL,
       headers: {

@@ -40,7 +40,8 @@ import {
   Ticket, 
   Star, 
   Shield,
-  ChevronRight
+  ChevronRight,
+  Clock
 } from 'lucide-react'
 import type { PermissionName } from '@/types/User'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -120,6 +121,25 @@ const navigationItems: NavigationItem[] = [
         title : "Final Ratings", 
         href: "/final-ratings",
         permission: "calculate final ratings"
+      }
+    ]
+  },
+  {
+    title: "Clocking",
+    icon: Clock,
+    children: [
+      {
+        title: "Clocking IN/OUT",
+        href: "/clocking",
+      },
+      {
+        title: "Clocking Records",
+        href: "/clocking/records",
+      },
+      {
+        title: "Clocking Sessions",
+        href: "/clocking/manager",
+        permission: "view all clocking sessions"
       }
     ]
   },

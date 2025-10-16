@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 // Load all route files
 Route::prefix('')->group(function () {
     require __DIR__ . '/api/auth.php';
+    require __DIR__ . '/api/clocking.php';
     require __DIR__ . '/api/users.php';
     require __DIR__ . '/api/roles.php';
     require __DIR__ . '/api/permissions.php';

@@ -29,7 +29,7 @@ export type PermissionName =
   | 'view tickets' | 'edit tickets' | 'delete tickets'
   | 'view rating configs' | 'create rating configs' | 'edit rating configs' | 'delete rating configs'
   | 'create task ratings' | 'edit task ratings'
-  | 'create stakeholder ratings' | 'edit stakeholder ratings' | 'calculate final ratings' | 'view analytics' ;
+  | 'create stakeholder ratings' | 'edit stakeholder ratings' | 'calculate final ratings' | 'view analytics'   | 'view all clocking sessions';
 
 export interface CreateUserRequest {
   name: string;

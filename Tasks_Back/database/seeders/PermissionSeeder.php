@@ -82,6 +82,7 @@ class PermissionSeeder extends Seeder
             // Analytics permissions
             'view analytics',
 
+            'view all clocking sessions',
         ];
 
         foreach ($permissions as $permission) {

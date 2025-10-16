@@ -131,5 +131,15 @@ public function getAvatarUrlAttribute(): ?string
     return $disk->url($this->avatar_path);
 }
 
+public function clockSessions(): HasMany
+{
+    return $this->hasMany(ClockSession::class);
+}
 
+public function activeClockSession()
+{
+    return $this->hasOne(ClockSession::class)
+                ->whereIn('status', ['active', 'on_break'])
+                ->latest('clock_in_utc');
+}
 }

@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     libzip-dev
 
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg
-RUN docker-php-ext-install pdo pdo_mysql gd zip
+RUN docker-php-ext-install pdo pdo_mysql gd zip pcntl sockets
 
 COPY . /var/www/html
 COPY .env.example /var/www/html/.env

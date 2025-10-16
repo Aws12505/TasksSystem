@@ -47,6 +47,9 @@ export const ClockingCard = ({
   };
 
   const activeBreak = session?.break_records?.find(b => b.status === 'active');
+  
+  // Treat completed sessions as no session
+  const isSessionActive = session && session.status !== 'completed';
 
   return (
     <>
@@ -57,7 +60,7 @@ export const ClockingCard = ({
 
         <CardContent className="pt-6 space-y-6">
           {/* Status Display */}
-          {session && (
+          {isSessionActive && (
             <div className="space-y-3">
               <div className="flex items-center justify-between p-4 bg-accent rounded-lg">
                 <div>
@@ -90,7 +93,8 @@ export const ClockingCard = ({
 
           {/* Action Buttons */}
           <div className="space-y-3">
-            {!session ? (
+            {!isSessionActive ? (
+              // No active session or completed session - show Clock In button
               <Button
                 onClick={onClockIn}
                 disabled={isLoading}
@@ -101,6 +105,7 @@ export const ClockingCard = ({
                 Clock In
               </Button>
             ) : session.status === 'active' ? (
+              // Active session - show Start Break and Clock Out
               <div className="space-y-2">
                 <Button
                   onClick={onStartBreak}
@@ -121,6 +126,7 @@ export const ClockingCard = ({
                 </Button>
               </div>
             ) : (
+              // On break - show End Break options
               <div className="space-y-2">
                 <Button
                   onClick={() => setEndBreakOpen(true)}

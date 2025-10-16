@@ -21,3 +21,31 @@ services:
     volumes:
       - ./Tasks_Front/dist:/var/www/html:ro
     restart: unless-stopped
+
+  # ----- added -----
+  queue:
+    build:
+      context: ./Tasks_Back
+      dockerfile: Dockerfile
+    container_name: tasks_queue
+    command: sh -lc "php artisan queue:work --queue=high,default --tries=3 --timeout=120 --sleep=1"
+    volumes:
+      - ./Tasks_Back:/var/www/html
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # ----- added -----
+  reverb:
+    build:
+      context: ./Tasks_Back
+      dockerfile: Dockerfile
+    container_name: tasks_reverb
+    command: sh -lc "php artisan reverb:start --host=0.0.0.0 --port=6001"
+    ports:
+      - "6001:6001"   # Nginx will proxy wss://ws.tasksbackend.rdexperts.tech -> 127.0.0.1:6001
+    volumes:
+      - ./Tasks_Back:/var/www/html
+    restart: unless-stopped
+    depends_on:
+      - backend

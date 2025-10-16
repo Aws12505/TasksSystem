@@ -11,8 +11,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 RUN docker-php-ext-install pdo pdo_mysql gd zip
-RUN pecl install redis \
-    && docker-php-ext-enable redis
+
 COPY . /var/www/html
 COPY .env.example /var/www/html/.env
 RUN chown -R www-data:www-data /var/www/html

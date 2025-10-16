@@ -9,21 +9,12 @@ import { useClockingStore } from '../stores/clockingStore';
 import { ManagerDashboard } from '../components/ManagerDashboard';
 import { RecordsTable } from '../components/RecordsTable';
 import { RefreshCw, Users } from 'lucide-react';
-import { useRef, useEffect } from 'react';
 
 const ClockingManagerPage = () => {
   const { sessions, companyTimezone, isLoading, refresh, fetchAllRecords } = useClockingManager();
   const { managerAllRecords, managerAllRecordsPagination } = useClockingStore();
   const [filters, setFilters] = useState<any>({ per_page: 15 });
-  const renderCount = useRef(0);
-  
-  useEffect(() => {
-    renderCount.current += 1;
-    console.group(`⚫ [LEVEL 5] ClockingManagerPage Render #${renderCount.current}`);
-    console.log('Sessions from hook:', sessions.length);
-    console.log('Timestamp:', new Date().toISOString());
-    console.groupEnd();
-  });
+
   const handleFetchRecords = () => {
     fetchAllRecords(filters);
   };
@@ -31,7 +22,6 @@ const ClockingManagerPage = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -53,7 +43,6 @@ const ClockingManagerPage = () => {
           </Button>
         </div>
 
-        {/* Tabs */}
         <Tabs defaultValue="dashboard" className="space-y-6">
           <TabsList className="bg-muted">
             <TabsTrigger value="dashboard">Live Dashboard</TabsTrigger>
@@ -68,17 +57,6 @@ const ClockingManagerPage = () => {
           </TabsContent>
 
           <TabsContent value="records" className="space-y-4">
-            <div className="flex justify-end">
-              {/* <Button 
-                onClick={() => exportAll()} 
-                disabled={isExporting}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                {isExporting ? 'Exporting...' : 'Export All (ZIP)'}
-              </Button> */}
-            </div>
-
             <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle className="text-foreground">All Employee Records</CardTitle>

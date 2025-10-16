@@ -7,7 +7,6 @@ import { useWorkTimer, useBreakTimer } from '../../../hooks/useClockingTimers';
 import { Users, Clock, Coffee, Activity } from 'lucide-react';
 import type { SessionResponse } from '../../../types/Clocking';
 import { convertToCompanyTime } from '../../../utils/clockingCalculations';
-import { useRef, useEffect } from 'react';
 
 interface Props {
   sessions: SessionResponse[];
@@ -15,54 +14,7 @@ interface Props {
 }
 
 export const ManagerDashboard = ({ sessions, companyTimezone }: Props) => {
-    const renderCount = useRef(0);
-  const prevSessionsRef = useRef(sessions);
-  
-  useEffect(() => {
-    renderCount.current += 1;
-    
-    console.group(`🟤 [LEVEL 4] ManagerDashboard Render #${renderCount.current}`);
-    console.log('Sessions prop:', sessions.length);
-    console.log('Sessions data:', sessions.map(s => ({
-      userId: s.session?.user_id,
-      sessionId: s.session?.id,
-      status: s.session?.status,
-      breakCount: s.session?.break_records?.length,
-    })));
-    
-    // Check if reference changed
-    console.log('Sessions reference changed?', prevSessionsRef.current !== sessions);
-    
-    // Check if content changed
-    if (prevSessionsRef.current !== sessions) {
-      console.log('🔍 Comparing old vs new:');
-      sessions.forEach((newSession, index) => {
-        const oldSession = prevSessionsRef.current[index];
-        if (oldSession && newSession !== oldSession) {
-          console.log(`Session ${index} changed:`, {
-            old: {
-              userId: oldSession.session?.user_id,
-              status: oldSession.session?.status,
-              breakCount: oldSession.session?.break_records?.length,
-            },
-            new: {
-              userId: newSession.session?.user_id,
-              status: newSession.session?.status,
-              breakCount: newSession.session?.break_records?.length,
-            }
-          });
-        }
-      });
-    }
-    
-    prevSessionsRef.current = sessions;
-    console.groupEnd();
-  });
-
   const activeSessions = sessions.filter(s => s.session !== null);
-
-  console.log('🔵 [LEVEL 4] Rendering', activeSessions.length, 'active sessions');
-
 
   return (
     <Card className="bg-card border-border">
@@ -113,7 +65,6 @@ const ActiveSessionRow = ({
 }) => {
   const session = sessionData.session!;
 
-  // Work timer
   const workTime = useWorkTimer(
     session.clock_in_utc,
     session.clock_out_utc,
@@ -121,7 +72,6 @@ const ActiveSessionRow = ({
     session.status
   );
 
-  // Break timer
   const breakTime = useBreakTimer(
     session.break_records,
     session.status
@@ -135,7 +85,6 @@ const ActiveSessionRow = ({
     .toUpperCase()
     .slice(0, 2);
 
-  // FIXED: Safe time formatting with fallback
   const formatClockInTime = () => {
     try {
       if (!session.clock_in_utc || !companyTimezone) return '—';
@@ -143,7 +92,6 @@ const ActiveSessionRow = ({
       const parts = fullTime.split(', ');
       return parts.length > 1 ? parts[1] : fullTime;
     } catch (error) {
-      console.error('Error formatting time:', error);
       return '—';
     }
   };
@@ -154,7 +102,6 @@ const ActiveSessionRow = ({
         ? 'bg-accent border-chart-3/20' 
         : 'bg-accent border-chart-2/20'
     }`}>
-      {/* Header Row - User Info */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
           <Avatar className="h-12 w-12 ring-2 ring-background">
@@ -173,7 +120,6 @@ const ActiveSessionRow = ({
           </div>
         </div>
 
-        {/* Status Badge */}
         <Badge className={`h-10 px-6 text-sm font-semibold ${
           session.status === 'active' 
             ? 'bg-chart-3 text-white hover:bg-chart-3/90' 
@@ -184,9 +130,7 @@ const ActiveSessionRow = ({
         </Badge>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Total Work Time */}
         <div className="p-4 bg-background rounded-lg border border-border">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="w-4 h-4 text-chart-3" />
@@ -210,7 +154,6 @@ const ActiveSessionRow = ({
           )}
         </div>
 
-        {/* Total Break Time */}
         <div className="p-4 bg-background rounded-lg border border-border">
           <div className="flex items-center gap-2 mb-2">
             <Coffee className="w-4 h-4 text-chart-2" />
@@ -234,7 +177,6 @@ const ActiveSessionRow = ({
           )}
         </div>
 
-        {/* Break Count */}
         <div className="p-4 bg-background rounded-lg border border-border">
           <div className="flex items-center gap-2 mb-2">
             <Coffee className="w-4 h-4 text-chart-5" />

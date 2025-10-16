@@ -6,24 +6,20 @@ import type { ClockSession, SessionResponse } from '../../../types/Clocking';
 import { toast } from 'sonner';
 
 interface ClockingState {
-  // Employee data
   session: ClockSession | null;
   companyTimezone: string;
   serverTimeUtc: string;
   records: ClockSession[];
   recordsPagination: any | null;
   
-  // Manager data
   managerSessions: SessionResponse[];
   managerAllRecords: ClockSession[];
   managerAllRecordsPagination: any | null;
   
-  // UI
   isLoading: boolean;
   isExporting: boolean;
   error: string | null;
   
-  // Actions
   fetchInitialData: () => Promise<void>;
   updateSession: (data: SessionResponse) => void;
   clockIn: () => Promise<void>;
@@ -33,7 +29,6 @@ interface ClockingState {
   fetchRecords: (filters?: any) => Promise<void>;
   exportRecords: (data?: any) => Promise<void>;
   
-  // Manager actions
   fetchManagerInitialData: () => Promise<void>;
   updateManagerSession: (userId: number, data: SessionResponse) => void;
   fetchManagerAllRecords: (filters?: any) => Promise<void>;
@@ -43,7 +38,6 @@ interface ClockingState {
 }
 
 export const useClockingStore = create<ClockingState>((set, get) => ({
-  // Initial state
   session: null,
   companyTimezone: 'UTC',
   serverTimeUtc: '',
@@ -56,7 +50,6 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
   isExporting: false,
   error: null,
 
-  // Fetch initial data
   fetchInitialData: async () => {
     try {
       const response = await clockingService.getInitialData();
@@ -72,7 +65,6 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
     }
   },
 
-  // Update session from backend (WebSocket or API response)
   updateSession: (data: SessionResponse) => {
     set({
       session: data.session,
@@ -81,7 +73,6 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
     });
   },
 
-  // Clock in
   clockIn: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -99,7 +90,6 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
     }
   },
 
-  // Clock out
   clockOut: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -117,7 +107,6 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
     }
   },
 
-  // Start break
   startBreak: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -135,7 +124,6 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
     }
   },
 
-  // End break
   endBreak: async (description?: string) => {
     set({ isLoading: true, error: null });
     try {
@@ -155,7 +143,6 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
     }
   },
 
-  // Fetch records
   fetchRecords: async (filters?: any) => {
     set({ isLoading: true, error: null });
     try {
@@ -175,7 +162,6 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
     }
   },
 
-  // Export records
   exportRecords: async (data?: any) => {
     set({ isExporting: true });
     try {
@@ -191,7 +177,6 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
     }
   },
 
-  // Fetch manager initial data
   fetchManagerInitialData: async () => {
     set({ isLoading: true });
     try {
@@ -210,67 +195,43 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
     }
   },
 
-  // Update manager session from WebSocket
-updateManagerSession: (userId: number, data: SessionResponse) => {
-  console.group(`🔴 [LEVEL 3] Store updateManagerSession Called`);
-  console.log('userId:', userId);
-  console.log('data:', data);
-  
-  const currentState = get();
-  console.log('Current state managerSessions:', currentState.managerSessions.length);
-  
-  set((state) => {
-    console.log('Inside set function');
-    console.log('State at set time:', state.managerSessions.length);
-    
-    const updatedSessions = state.managerSessions.map((s) => {
-      const isMatch = s.session?.user_id === userId;
-      console.log(`Checking session - userId: ${s.session?.user_id}, matches: ${isMatch}`);
-      
-      if (isMatch) {
-        console.log('✅ Match found! Updating session');
-        console.log('Old session:', {
-          id: s.session?.id,
-          status: s.session?.status,
-          breakCount: s.session?.break_records?.length,
-        });
-        console.log('New data:', {
-          id: data.session?.id,
-          status: data.session?.status,
-          breakCount: data.session?.break_records?.length,
-        });
-        return data;
+  // Update or remove manager session based on status
+  updateManagerSession: (userId: number, data: SessionResponse) => {
+    set((state) => {
+      // If session is completed or null, remove it from the list
+      if (!data.session || data.session.status === 'completed') {
+        return {
+          managerSessions: state.managerSessions.filter(
+            s => s.session?.user_id !== userId
+          ),
+          serverTimeUtc: data.server_time_utc,
+        };
       }
-      
-      return s;
-    });
-    
-    // Check if any session was actually updated
-    const wasUpdated = updatedSessions.some((s, index) => s !== state.managerSessions[index]);
-    console.log('Was any session updated?', wasUpdated);
-    console.log('Old array reference:', state.managerSessions);
-    console.log('New array reference:', updatedSessions);
-    console.log('References are different?', state.managerSessions !== updatedSessions);
-    
-    console.groupEnd();
-    
-    return {
-      managerSessions: updatedSessions,
-    };
-  });
-  
-  // Verify state after set
-  setTimeout(() => {
-    const newState = get();
-    console.group(`🟠 [LEVEL 3] State After Set`);
-    console.log('New state managerSessions count:', newState.managerSessions.length);
-    const targetSession = newState.managerSessions.find(s => s.session?.user_id === userId);
-    console.log('Target session now:', targetSession);
-    console.groupEnd();
-  }, 50);
-},
 
-  // Fetch manager all records
+      // Otherwise, update or add the session
+      const sessionIndex = state.managerSessions.findIndex(
+        s => s.session?.user_id === userId
+      );
+
+      if (sessionIndex === -1) {
+        // User not found - add new session
+        return {
+          managerSessions: [...state.managerSessions, data],
+          serverTimeUtc: data.server_time_utc,
+        };
+      }
+
+      // Update existing session
+      const newSessions = [...state.managerSessions];
+      newSessions[sessionIndex] = data;
+
+      return {
+        managerSessions: newSessions,
+        serverTimeUtc: data.server_time_utc,
+      };
+    });
+  },
+
   fetchManagerAllRecords: async (filters?: any) => {
     set({ isLoading: true });
     try {
@@ -288,7 +249,6 @@ updateManagerSession: (userId: number, data: SessionResponse) => {
     }
   },
 
-  // Export manager records
   exportManagerRecords: async (data?: any) => {
     set({ isExporting: true });
     try {

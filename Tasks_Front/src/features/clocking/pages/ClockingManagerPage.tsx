@@ -9,12 +9,21 @@ import { useClockingStore } from '../stores/clockingStore';
 import { ManagerDashboard } from '../components/ManagerDashboard';
 import { RecordsTable } from '../components/RecordsTable';
 import { RefreshCw, Users } from 'lucide-react';
+import { useRef, useEffect } from 'react';
 
 const ClockingManagerPage = () => {
   const { sessions, companyTimezone, isLoading, refresh, fetchAllRecords } = useClockingManager();
   const { managerAllRecords, managerAllRecordsPagination } = useClockingStore();
   const [filters, setFilters] = useState<any>({ per_page: 15 });
-
+  const renderCount = useRef(0);
+  
+  useEffect(() => {
+    renderCount.current += 1;
+    console.group(`⚫ [LEVEL 5] ClockingManagerPage Render #${renderCount.current}`);
+    console.log('Sessions from hook:', sessions.length);
+    console.log('Timestamp:', new Date().toISOString());
+    console.groupEnd();
+  });
   const handleFetchRecords = () => {
     fetchAllRecords(filters);
   };

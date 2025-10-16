@@ -69,41 +69,47 @@ class WebSocketClient {
    * @param eventName - Name of the event (e.g., 'ClockSessionUpdated')
    * @param callback - Function to call when event is received
    */
-  subscribe<T = any>(
-    channelName: string,
-    eventName: string,
-    callback: (data: T) => void
-  ): void {
-    if (!this.echo) {
-      console.error('WebSocket not initialized. Call initialize() first.');
-      return;
-    }
-
-    // Prevent duplicate subscriptions
-    if (this.subscribedChannels.has(channelName)) {
-      console.warn(`Already subscribed to ${channelName}`);
-      return;
-    }
-
-    // Subscribe to channel
-    const channel = this.echo.channel(channelName);
-    
-    // Listen for the event
-    channel.listen(eventName, callback);
-    
-    // Log successful subscription
-    channel.subscribed(() => {
-      console.log(`✅ Subscribed to ${channelName}`);
-    });
-
-    // Log errors
-    channel.error((error: any) => {
-      console.error(`❌ Error on ${channelName}:`, error);
-    });
-
-    // Store channel reference for cleanup
-    this.subscribedChannels.set(channelName, channel);
+subscribe<T = any>(
+  channelName: string,
+  eventName: string,
+  callback: (data: T) => void
+): void {
+  if (!this.echo) {
+    console.error('WebSocket not initialized. Call initialize() first.');
+    return;
   }
+
+  if (this.subscribedChannels.has(channelName)) {
+    console.warn(`Already subscribed to ${channelName}`);
+    return;
+  }
+
+  const channel = this.echo.channel(channelName);
+  
+  // LEVEL 1: Log raw event data
+  channel.listen(eventName, (rawData: any) => {
+    console.group(`🔵 [LEVEL 1] WebSocket Raw Event Received`);
+    console.log('Channel:', channelName);
+    console.log('Event:', eventName);
+    console.log('Raw Data Type:', typeof rawData);
+    console.log('Raw Data:', rawData);
+    console.log('Is String?', typeof rawData === 'string');
+    console.log('Timestamp:', new Date().toISOString());
+    console.groupEnd();
+    
+    callback(rawData as T);
+  });
+  
+  channel.subscribed(() => {
+    console.log(`✅ Subscribed to ${channelName}`);
+  });
+
+  channel.error((error: any) => {
+    console.error(`❌ Error on ${channelName}:`, error);
+  });
+
+  this.subscribedChannels.set(channelName, channel);
+}
 
   /**
    * Unsubscribe from a channel

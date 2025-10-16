@@ -211,13 +211,64 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
   },
 
   // Update manager session from WebSocket
-  updateManagerSession: (userId: number, data: SessionResponse) => {
-    set((state) => ({
-      managerSessions: state.managerSessions.map((s) =>
-        s.session?.user_id === userId ? data : s
-      ),
-    }));
-  },
+updateManagerSession: (userId: number, data: SessionResponse) => {
+  console.group(`🔴 [LEVEL 3] Store updateManagerSession Called`);
+  console.log('userId:', userId);
+  console.log('data:', data);
+  
+  const currentState = get();
+  console.log('Current state managerSessions:', currentState.managerSessions.length);
+  
+  set((state) => {
+    console.log('Inside set function');
+    console.log('State at set time:', state.managerSessions.length);
+    
+    const updatedSessions = state.managerSessions.map((s) => {
+      const isMatch = s.session?.user_id === userId;
+      console.log(`Checking session - userId: ${s.session?.user_id}, matches: ${isMatch}`);
+      
+      if (isMatch) {
+        console.log('✅ Match found! Updating session');
+        console.log('Old session:', {
+          id: s.session?.id,
+          status: s.session?.status,
+          breakCount: s.session?.break_records?.length,
+        });
+        console.log('New data:', {
+          id: data.session?.id,
+          status: data.session?.status,
+          breakCount: data.session?.break_records?.length,
+        });
+        return data;
+      }
+      
+      return s;
+    });
+    
+    // Check if any session was actually updated
+    const wasUpdated = updatedSessions.some((s, index) => s !== state.managerSessions[index]);
+    console.log('Was any session updated?', wasUpdated);
+    console.log('Old array reference:', state.managerSessions);
+    console.log('New array reference:', updatedSessions);
+    console.log('References are different?', state.managerSessions !== updatedSessions);
+    
+    console.groupEnd();
+    
+    return {
+      managerSessions: updatedSessions,
+    };
+  });
+  
+  // Verify state after set
+  setTimeout(() => {
+    const newState = get();
+    console.group(`🟠 [LEVEL 3] State After Set`);
+    console.log('New state managerSessions count:', newState.managerSessions.length);
+    const targetSession = newState.managerSessions.find(s => s.session?.user_id === userId);
+    console.log('Target session now:', targetSession);
+    console.groupEnd();
+  }, 50);
+},
 
   // Fetch manager all records
   fetchManagerAllRecords: async (filters?: any) => {

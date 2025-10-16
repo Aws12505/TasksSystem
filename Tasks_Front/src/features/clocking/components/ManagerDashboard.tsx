@@ -7,6 +7,7 @@ import { useWorkTimer, useBreakTimer } from '../../../hooks/useClockingTimers';
 import { Users, Clock, Coffee, Activity } from 'lucide-react';
 import type { SessionResponse } from '../../../types/Clocking';
 import { convertToCompanyTime } from '../../../utils/clockingCalculations';
+import { useRef, useEffect } from 'react';
 
 interface Props {
   sessions: SessionResponse[];
@@ -14,7 +15,54 @@ interface Props {
 }
 
 export const ManagerDashboard = ({ sessions, companyTimezone }: Props) => {
+    const renderCount = useRef(0);
+  const prevSessionsRef = useRef(sessions);
+  
+  useEffect(() => {
+    renderCount.current += 1;
+    
+    console.group(`🟤 [LEVEL 4] ManagerDashboard Render #${renderCount.current}`);
+    console.log('Sessions prop:', sessions.length);
+    console.log('Sessions data:', sessions.map(s => ({
+      userId: s.session?.user_id,
+      sessionId: s.session?.id,
+      status: s.session?.status,
+      breakCount: s.session?.break_records?.length,
+    })));
+    
+    // Check if reference changed
+    console.log('Sessions reference changed?', prevSessionsRef.current !== sessions);
+    
+    // Check if content changed
+    if (prevSessionsRef.current !== sessions) {
+      console.log('🔍 Comparing old vs new:');
+      sessions.forEach((newSession, index) => {
+        const oldSession = prevSessionsRef.current[index];
+        if (oldSession && newSession !== oldSession) {
+          console.log(`Session ${index} changed:`, {
+            old: {
+              userId: oldSession.session?.user_id,
+              status: oldSession.session?.status,
+              breakCount: oldSession.session?.break_records?.length,
+            },
+            new: {
+              userId: newSession.session?.user_id,
+              status: newSession.session?.status,
+              breakCount: newSession.session?.break_records?.length,
+            }
+          });
+        }
+      });
+    }
+    
+    prevSessionsRef.current = sessions;
+    console.groupEnd();
+  });
+
   const activeSessions = sessions.filter(s => s.session !== null);
+
+  console.log('🔵 [LEVEL 4] Rendering', activeSessions.length, 'active sessions');
+
 
   return (
     <Card className="bg-card border-border">

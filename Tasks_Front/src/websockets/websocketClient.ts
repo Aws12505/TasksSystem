@@ -84,51 +84,23 @@ subscribe<T = any>(
     return;
   }
 
-  console.group('🔧 Setting up WebSocket subscription');
-  console.log('Channel:', channelName);
-  console.log('Event:', eventName);
-  console.groupEnd();
-
   const channel = this.echo.channel(channelName);
   
-  // DEBUG: Log all events on this channel
-  console.log('📡 Setting up catch-all listener for debugging...');
+  // FIX: Laravel Echo requires dot prefix for public channel events
+  const echoEventName = eventName.startsWith('.') ? eventName : `.${eventName}`;
   
-  // Try listening with different event name formats
-  const eventVariants = [
-    eventName,                           // ClockSessionUpdated
-    `.${eventName}`,                     // .ClockSessionUpdated
-    `\\App\\Events\\${eventName}`,       // \App\Events\ClockSessionUpdated
-    `.App\\Events\\${eventName}`,        // .App\Events\ClockSessionUpdated
-  ];
-
-  console.log('🔍 Will try these event variants:', eventVariants);
-
-  eventVariants.forEach((variant, index) => {
-    channel.listen(variant, (data: any) => {
-      console.group(`🎯 [VARIANT ${index}] Event caught with: ${variant}`);
-      console.log('Data:', data);
-      console.groupEnd();
-      
-      if (index === 0) {
-        // Only call callback once (for the first successful variant)
-        callback(data as T);
-      }
-    });
-  });
-
-  // SUPER DEBUG: Bind to ALL events (Pusher-level)
-  if (this.echo.connector && this.echo.connector.pusher) {
-    console.log('🔥 Setting up Pusher-level catch-all...');
+  console.log(`📡 Listening for event: ${echoEventName}`);
+  
+  channel.listen(echoEventName, (data: any) => {
+    console.group(`🔵 [LEVEL 1] WebSocket Raw Event Received`);
+    console.log('Channel:', channelName);
+    console.log('Event:', eventName);
+    console.log('Raw Data:', data);
+    console.log('Timestamp:', new Date().toISOString());
+    console.groupEnd();
     
-    this.echo.connector.pusher.bind_global((eventName: string, data: any) => {
-      console.group('🌍 [GLOBAL PUSHER EVENT]');
-      console.log('Event Name:', eventName);
-      console.log('Data:', data);
-      console.log('Timestamp:', new Date().toISOString());
-      console.groupEnd();
-    });
-  }
+    callback(data as T);
+  });
   
   channel.subscribed(() => {
     console.log(`✅ Subscribed to ${channelName}`);

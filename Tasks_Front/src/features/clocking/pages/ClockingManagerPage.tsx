@@ -10,10 +10,15 @@ import { ManagerDashboard } from '../components/ManagerDashboard';
 import { RecordsTable } from '../components/RecordsTable';
 import { RefreshCw, Users } from 'lucide-react';
 
+type DashboardLayout = 'list' | 'grid';
+
 const ClockingManagerPage = () => {
   const { sessions, companyTimezone, isLoading, refresh, fetchAllRecords } = useClockingManager();
   const { managerAllRecords, managerAllRecordsPagination } = useClockingStore();
   const [filters, setFilters] = useState<any>({ per_page: 15 });
+
+  // NEW: layout state
+  const [layout] = useState<DashboardLayout>('grid');
 
   const handleFetchRecords = () => {
     fetchAllRecords(filters);
@@ -32,15 +37,44 @@ const ClockingManagerPage = () => {
               <p className="text-muted-foreground">Monitor and manage employee clocking sessions</p>
             </div>
           </div>
-          <Button 
-            onClick={refresh} 
-            disabled={isLoading}
-            variant="outline"
-            className="bg-background border-input"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+
+          <div className="flex items-center gap-2">
+            {/* NEW: layout toggle */}
+            {/* <div className="inline-flex rounded-md border border-input bg-background p-1">
+              <Button
+                type="button"
+                size="sm"
+                variant={layout === 'list' ? 'default' : 'ghost'}
+                className="rounded-sm"
+                onClick={() => setLayout('list')}
+                aria-label="List layout"
+                title="List layout"
+              >
+                <LayoutList className="w-4 h-4" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={layout === 'grid' ? 'default' : 'ghost'}
+                className="rounded-sm"
+                onClick={() => setLayout('grid')}
+                aria-label="Grid layout"
+                title="Grid layout"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </Button>
+            </div> */}
+
+            <Button 
+              onClick={refresh} 
+              disabled={isLoading}
+              variant="outline"
+              className="bg-background border-input"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">
@@ -52,7 +86,9 @@ const ClockingManagerPage = () => {
           <TabsContent value="dashboard" className="space-y-4">
             <ManagerDashboard 
               sessions={sessions} 
-              companyTimezone={companyTimezone} 
+              companyTimezone={companyTimezone}
+              // NEW
+              layout={layout}
             />
           </TabsContent>
 

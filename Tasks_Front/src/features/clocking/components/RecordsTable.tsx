@@ -1,5 +1,4 @@
-// src/features/clocking/components/RecordsTable.tsx
-
+import { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -17,8 +16,19 @@ import {
   calculateWorkDuration, 
   calculateTotalBreakDuration, 
   formatDuration,
-  convertToCompanyTime 
+  convertToCompanyTime,
+  formatCompanyCalendarDate,
 } from '../../../utils/clockingCalculations';
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../../../components/ui/dialog';
+import { Separator } from '../../../components/ui/separator';
 
 interface Props {
   records: ClockSession[];
@@ -35,6 +45,9 @@ export const RecordsTable = ({
   showUser = false, 
   onPageChange 
 }: Props) => {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<ClockSession | null>(null);
+
   if (!records.length) {
     return (
       <div className="text-center py-12">
@@ -69,7 +82,15 @@ export const RecordsTable = ({
               const breakSeconds = calculateTotalBreakDuration(session.break_records);
 
               return (
-                <TableRow key={session.id} className="border-border hover:bg-accent/50">
+                <TableRow
+                  key={session.id}
+                  className="border-border hover:bg-accent/50 cursor-pointer"
+                  role="button"
+                  onClick={() => {
+                    setSelected(session);
+                    setOpen(true);
+                  }}
+                >
                   {showUser && (
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -89,10 +110,11 @@ export const RecordsTable = ({
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-foreground">
-                        {new Date(session.session_date).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
+                        {formatCompanyCalendarDate({
+                          sessionDate: session.session_date,
+                          companyTimezone,
+                          utcFallback: session.clock_in_utc, // ensures day matches the time columns
+                          locale: 'en-US',
                         })}
                       </span>
                       {session.crosses_midnight && (
@@ -172,6 +194,91 @@ export const RecordsTable = ({
           </div>
         </div>
       )}
+
+      {/* Breaks Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="bg-card border-border text-foreground max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Session Details</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {selected
+                ? `Date: ${formatCompanyCalendarDate({
+                    sessionDate: selected.session_date,
+                    companyTimezone,
+                    utcFallback: selected.clock_in_utc,
+                    locale: 'en-US',
+                  })} • ${selected.crosses_midnight ? 'Crossed midnight' : 'Same day'}`
+                : ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selected?.break_records?.length ? (
+            <div className="space-y-4">
+              {selected.break_records.map((b, idx) => {
+                const start = convertToCompanyTime(b.break_start_utc, companyTimezone).split(', ')[1];
+                const end = b.break_end_utc
+                  ? convertToCompanyTime(b.break_end_utc, companyTimezone).split(', ')[1]
+                  : null;
+
+                const seconds =
+                  b.break_end_utc
+                    ? Math.max(
+                        0,
+                        Math.floor(
+                          (new Date(b.break_end_utc).getTime() -
+                            new Date(b.break_start_utc).getTime()) / 1000
+                        )
+                      )
+                    : 0;
+
+                return (
+                  <div key={b.id} className="rounded-md border border-border p-4 bg-accent">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium">
+                        Break {idx + 1}{' '}
+                        {b.status === 'active' ? (
+                          <span className="ml-2 inline-block rounded bg-chart-2 px-2 py-0.5 text-xs text-white">
+                            Active
+                          </span>
+                        ) : null}
+                      </div>
+                      {b.status === 'completed' ? (
+                        <div className="text-sm font-mono tabular-nums text-foreground">
+                          {formatDuration(seconds)}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <Separator className="my-3 bg-border" />
+
+                    <div className="text-sm text-muted-foreground">
+                      <div>
+                        <span className="text-foreground">Start:</span> {start}
+                      </div>
+                      <div>
+                        <span className="text-foreground">End:</span> {end ?? '—'}
+                      </div>
+                      {b.description ? (
+                        <div className="mt-2">
+                          <span className="text-foreground">Notes:</span> {b.description}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No breaks recorded for this session.</div>
+          )}
+
+          <DialogFooter className="mt-4">
+            <Button variant="outline" className="border-input" onClick={() => setOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

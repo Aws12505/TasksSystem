@@ -50,35 +50,36 @@ class ClockingService
     /**
      * Clock out
      */
-    public function clockOut(User $user): array
-    {
-        $session = $this->getActiveSession($user);
+public function clockOut(User $user): array
+{
+    $session = $this->getActiveSession($user);
 
-        DB::transaction(function () use ($session) {
-            $now = Carbon::now('UTC');
+    DB::transaction(function () use ($session) {
+        $nowUtc   = Carbon::now('UTC');
+        $timezone = config('app.company_timezone', 'UTC');
 
-            // If on break, auto-end it
-            if ($session->status === 'on_break') {
-                $this->endBreakInternal($session, $now);
-            }
+        // If on break, auto-end it
+        if ($session->status === 'on_break') {
+            $this->endBreakInternal($session, $nowUtc);
+        }
 
-            // Check midnight crossing
-            $timezone = config('app.company_timezone', 'UTC');
-            $clockInDate = Carbon::parse($session->clock_in_utc)->timezone($timezone)->toDateString();
-            $clockOutDate = $now->timezone($timezone)->toDateString();
+        // Check midnight crossing (compute on a CLONE, don't mutate $nowUtc)
+        $clockInDate  = Carbon::parse($session->clock_in_utc)->timezone($timezone)->toDateString();
+        $clockOutDate = $nowUtc->copy()->timezone($timezone)->toDateString();
 
-            $session->update([
-                'clock_out_utc' => $now,
-                'status' => 'completed',
-                'crosses_midnight' => $clockInDate !== $clockOutDate,
-            ]);
-        });
+        $session->update([
+            'clock_out_utc'    => $nowUtc, // still UTC
+            'status'           => 'completed',
+            'crosses_midnight' => $clockInDate !== $clockOutDate,
+        ]);
+    });
 
-        $session->refresh();
-        broadcast(new ClockSessionUpdated($session));
+    $session->refresh();
+    broadcast(new ClockSessionUpdated($session));
 
-        return $this->formatSessionResponse($session);
-    }
+    return $this->formatSessionResponse($session);
+}
+
 
     /**
      * Start break

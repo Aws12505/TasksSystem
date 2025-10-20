@@ -54,6 +54,62 @@ export const convertToCompanyTime = (utcTime: string, timezone: string): string 
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false
+    hour12: true
   });
+};
+
+/**
+ * Safe calendar-date formatter that:
+ * 1) If sessionDate is "YYYY-MM-DD", formats it WITHOUT timezone math (no shifting).
+ * 2) Otherwise falls back to a UTC timestamp rendered in the company timezone (so day matches your time columns).
+ *
+ * This ensures the displayed "Date" column matches the company timezone the backend used.
+ */
+export const formatCompanyCalendarDate = ({
+  sessionDate,
+  companyTimezone,
+  utcFallback, // e.g., clock_in_utc
+  locale = 'en-US',
+}: {
+  sessionDate?: string | null;
+  companyTimezone: string;
+  utcFallback?: string | null;
+  locale?: string;
+}): string => {
+  const yyyyMmDd = sessionDate?.trim() ?? '';
+
+  // 1) Strict YYYY-MM-DD
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(yyyyMmDd);
+  if (m) {
+    const [, y, mm, dd] = m;
+    // Render as a plain string (no Date construction => no timezone shifting)
+    if (locale === 'en-US') {
+      const shortMonths: Record<string, string> = {
+        '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr',
+        '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug',
+        '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec',
+      };
+      const mon = shortMonths[mm] ?? mm;
+      return `${mon} ${parseInt(dd, 10)}, ${y}`;
+    } else {
+      const monthNamesShortIntl = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const monIdx = Math.max(1, Math.min(12, parseInt(mm, 10))) - 1;
+      return `${parseInt(dd, 10)} ${monthNamesShortIntl[monIdx]} ${y}`;
+    }
+  }
+
+  // 2) Fallback: use a UTC timestamp (e.g., clock_in_utc) and format only the date **in the company timezone**
+  if (utcFallback) {
+    const dt = new Date(utcFallback);
+    return new Intl.DateTimeFormat(locale, {
+      timeZone: companyTimezone,
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour12: true
+    }).format(dt);
+  }
+
+  // 3) Last resort: show whatever we got (prevents NaN)
+  return yyyyMmDd || '';
 };

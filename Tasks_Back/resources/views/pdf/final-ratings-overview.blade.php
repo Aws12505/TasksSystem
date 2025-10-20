@@ -384,7 +384,7 @@
                             </td>
                             
                             <td style="text-align: center;">
-    @if(!empty($user['avatar_local_path']))
+    @if (!empty($user['avatar_local_path']))
         <img src="{{ $user['avatar_local_path'] }}" class="avatar" />
     @else
         <div class="avatar" style="background: var(--primary); color: var(--primary-foreground); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold;">

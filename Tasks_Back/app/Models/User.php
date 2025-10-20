@@ -70,7 +70,21 @@ class User extends Authenticatable
                 ->withPivot('percentage')
                 ->withTimestamps();
 }
+    public function getAvatarLocalPathAttribute(): ?string
+    {
+        if (! $this->avatar_path) {
+            return null;
+        }
 
+        // Assuming you store in public disk; adjust if different
+        $fullPath = Storage::disk('public')->path($this->avatar_path);
+
+        if (file_exists($fullPath)) {
+            return $fullPath;
+        }
+
+        return null;
+    }
 // Get tasks assigned to user for a specific project
 public function getTasksForProject(int $projectId): BelongsToMany
 {

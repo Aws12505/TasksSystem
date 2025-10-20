@@ -9,7 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Barryvdh\DomPDF\Facade\Pdf;
 use ZipArchive;
-
+use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 class FinalRatingController extends Controller
 {
     private FinalRatingCalculator $calculator;
@@ -67,162 +68,171 @@ class FinalRatingController extends Controller
         }
     }
 
-public function exportPdf(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'period_start' => 'required|date',
-        'period_end'   => 'required|date|after_or_equal:period_start',
-        'max_points'   => 'required|numeric|min:1',
-        'config_id'    => 'nullable|exists:final_rating_configs,id',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'errors'  => $validator->errors(),
-        ], 422);
-    }
-
-    $tempDir = null;
-    $zipPath  = null;
-
-    try {
-        $startDate = Carbon::parse($request->period_start)->startOfDay();
-        $endDate   = Carbon::parse($request->period_end)->endOfDay();
-        $maxPoints = floatval($request->max_points);
-
-        $config = $request->config_id
-            ? FinalRatingConfig::findOrFail($request->config_id)
-            : null;
-
-        $result = $this->calculator->calculate(
-            $startDate,
-            $endDate,
-            $maxPoints,
-            $config,
-            null
-        );
-
-        // Convert avatar URLs to local absolute paths if exists
-        foreach ($result['users'] as &$user) {
-            $user['avatar_local_path'] = $this->getAvatarLocalPath($user['avatar_path'] ?? null);
-        }
-        unset($user);
-
-        // Create temporary directory
-        $tempDir = storage_path('app/temp/final-ratings-' . time() . '-' . uniqid());
-        if (! file_exists($tempDir)) {
-            mkdir($tempDir, 0755, true);
-        }
-
-        // 1. Generate Overview PDF
-        $overviewPdf = Pdf::loadView('pdf.final-ratings-overview', [
-            'data' => $result
+    public function exportPdf(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'period_start' => 'required|date',
+            'period_end'   => 'required|date|after_or_equal:period_start',
+            'max_points'   => 'required|numeric|min:1',
+            'config_id'    => 'nullable|exists:final_rating_configs,id',
         ]);
-        $overviewPdf->setPaper('a4', 'portrait');
-        $overviewPath = $tempDir . '/00_Overview_All_Employees.pdf';
-        $overviewPdf->save($overviewPath);
 
-        // 2. Generate Individual PDFs
-        foreach ($result['users'] as $index => $user) {
-            $individualPdf = Pdf::loadView('pdf.final-ratings-individual', [
-                'user'       => $user,
-                'period'     => $result['period'],
-                'config'     => $result['config'],
-                'max_points' => $result['max_points_for_100_percent'],
-            ]);
-            $individualPdf->setPaper('a4', 'portrait');
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
 
-            $sanitizedName = preg_replace('/[^a-zA-Z0-9]/', '_', $user['user_name']);
-            $fileName      = sprintf(
-                '%02d_%s_%.2f_percent.pdf',
-                $index + 1,
-                $sanitizedName,
-                $user['final_percentage']
+        $tempDir = null;
+        $zipPath = null;
+
+        try {
+            $startDate = Carbon::parse($request->period_start)->startOfDay();
+            $endDate   = Carbon::parse($request->period_end)->endOfDay();
+            $maxPoints = (float) $request->max_points;
+
+            $config = $request->config_id
+                ? FinalRatingConfig::findOrFail($request->config_id)
+                : null;
+
+            $result = $this->calculator->calculate(
+                $startDate,
+                $endDate,
+                $maxPoints,
+                $config,
+                null
             );
 
-            $individualPath = $tempDir . '/' . $fileName;
-            $individualPdf->save($individualPath);
-        }
+            // ---- Inject avatar_local_path for each user row ----
+            // Prefer using the model's accessor (avatar_local_path).
+            foreach ($result['users'] as &$u) {
+                $userModel = null;
 
-        // 3. Create ZIP file
-        $zipFileName = 'final-ratings_' . $result['period']['start'] . '_to_' . $result['period']['end'] . '.zip';
-        $zipPath     = storage_path('app/temp/' . $zipFileName);
+                // Try common id keys your calculator might output
+                if (isset($u['user_id'])) {
+                    $userModel = User::find($u['user_id']);
+                } elseif (isset($u['id'])) {
+                    $userModel = User::find($u['id']);
+                } elseif (isset($u['user']['id'])) {
+                    $userModel = User::find($u['user']['id']);
+                }
 
-        $zip = new ZipArchive();
-        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new \Exception('Could not create ZIP file');
-        }
-
-        $files = scandir($tempDir);
-        foreach ($files as $file) {
-            if ($file !== '.' && $file !== '..') {
-                $filePath = $tempDir . '/' . $file;
-                $zip->addFile($filePath, $file);
+                if ($userModel) {
+                    // Uses the model method you added (accessor)
+                    // getAvatarLocalPathAttribute() => $userModel->avatar_local_path
+                    $u['avatar_local_path'] = $userModel->avatar_local_path;
+                } else {
+                    // Fallback: resolve from array's avatar_path string (if present)
+                    $u['avatar_local_path'] = $this->resolveAvatarLocalPathFromArray($u['avatar_path'] ?? null);
+                }
             }
-        }
-        $zip->close();
+            unset($u);
+            // ----------------------------------------------------
 
-        if (!file_exists($zipPath)) {
-            throw new \Exception('ZIP file was not created successfully');
-        }
+            // Create temp directory with unique timestamp
+            $tempDir = storage_path('app/temp/final-ratings-' . time() . '-' . uniqid());
+            if (!file_exists($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
 
-        return response()->download($zipPath, $zipFileName, [
-            'Content-Type'        => 'application/zip',
-            'Content-Disposition' => 'attachment; filename="' . $zipFileName . '"',
-        ])->deleteFileAfterSend(true);
+            // 1) Overview PDF
+            $overviewPdf = Pdf::loadView('pdf.final-ratings-overview', ['data' => $result]);
+            $overviewPdf->setPaper('a4', 'portrait');
+            $overviewPath = $tempDir . '/00_Overview_All_Employees.pdf';
+            $overviewPdf->save($overviewPath);
 
-    } catch (\Exception $e) {
-        if ($tempDir && file_exists($tempDir)) {
-            array_map('unlink', glob("$tempDir/*.*"));
-            @rmdir($tempDir);
-        }
-        if ($zipPath && file_exists($zipPath)) {
-            unlink($zipPath);
-        }
+            // 2) Individual PDFs
+            foreach ($result['users'] as $index => $user) {
+                $individualPdf = Pdf::loadView('pdf.final-ratings-individual', [
+                    'user'       => $user,
+                    'period'     => $result['period'],
+                    'config'     => $result['config'],
+                    'max_points' => $result['max_points_for_100_percent'],
+                ]);
+                $individualPdf->setPaper('a4', 'portrait');
 
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage(),
-        ], 500);
-    } finally {
-        if ($tempDir) {
-            register_shutdown_function(function() use ($tempDir) {
-                if (file_exists($tempDir)) {
-                    $files = glob("$tempDir/*.*");
-                    foreach ($files as $file) {
-                        if (is_file($file)) {
+                $sanitizedName = preg_replace('/[^a-zA-Z0-9]/', '_', $user['user_name']);
+                $fileName = sprintf('%02d_%s_%.2f_percent.pdf',
+                    $index + 1,
+                    $sanitizedName,
+                    $user['final_percentage']
+                );
+
+                $individualPdf->save($tempDir . '/' . $fileName);
+            }
+
+            // 3) ZIP all PDFs
+            $zipFileName = 'final-ratings_' . $result['period']['start'] . '_to_' . $result['period']['end'] . '.zip';
+            $zipPath = storage_path('app/temp/' . $zipFileName);
+
+            $zip = new ZipArchive();
+            if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                throw new \Exception('Could not create ZIP file');
+            }
+
+            foreach (scandir($tempDir) as $file) {
+                if ($file !== '.' && $file !== '..') {
+                    $zip->addFile($tempDir . '/' . $file, $file);
+                }
+            }
+            $zip->close();
+
+            if (!file_exists($zipPath)) {
+                throw new \Exception('ZIP file was not created successfully');
+            }
+
+            return response()->download($zipPath, $zipFileName, [
+                'Content-Type'        => 'application/zip',
+                'Content-Disposition' => 'attachment; filename="' . $zipFileName . '"',
+            ])->deleteFileAfterSend(true);
+
+        } catch (\Exception $e) {
+            if ($tempDir && file_exists($tempDir)) {
+                array_map('unlink', glob("$tempDir/*.*"));
+                @rmdir($tempDir);
+            }
+            if ($zipPath && file_exists($zipPath)) {
+                @unlink($zipPath);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        } finally {
+            if ($tempDir) {
+                register_shutdown_function(function () use ($tempDir) {
+                    if (file_exists($tempDir)) {
+                        foreach (glob("$tempDir/*.*") as $file) {
                             @unlink($file);
                         }
+                        @rmdir($tempDir);
                     }
-                    @rmdir($tempDir);
-                }
-            });
+                });
+            }
         }
     }
-}
 
-/**
- * Resolve the avatar file path (local storage) or return null.
- *
- * @param string|null $avatarPath  Path stored (e.g., 'avatars/user123.png')
- * @return string|null             Absolute path or null if not exists.
- */
-private function getAvatarLocalPath(?string $avatarPath): ?string
-{
-    if (!$avatarPath) {
-        return null;
+    /**
+     * Fallback resolver if we only have a stored avatar_path string in the array,
+     * and not a User model instance.
+     */
+    private function resolveAvatarLocalPathFromArray(?string $avatarPath): ?string
+    {
+        if (!$avatarPath) {
+            return null;
+        }
+
+        // If you store avatars on the `public` disk:
+        // storage/app/public/<avatarPath>
+        $full = Storage::disk('public')->path($avatarPath);
+        return file_exists($full) ? $full : null;
+
+        // If you store directly under public/:
+        // $full = public_path($avatarPath);
+        // return file_exists($full) ? $full : null;
     }
-
-    // e.g., stored path like 'avatars/user123.png'
-    $fullPath = public_path($avatarPath);
-
-    if (file_exists($fullPath)) {
-        return $fullPath;
-    }
-
-    return null;
-}
     public function index()
     {
         $configs = FinalRatingConfig::orderBy('is_active', 'desc')

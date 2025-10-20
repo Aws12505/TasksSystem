@@ -1,5 +1,6 @@
 FROM php:8.2-apache
 
+# OS deps (now includes libwebp-dev + build-essential)
 RUN apt-get update && apt-get install -y \
     git \
     zip \
@@ -8,11 +9,13 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libfreetype6-dev \
     libzip-dev \
-    libwebp-dev \        # <-- add this
-    build-essential      # <-- helpful for compiling php extensions
+    libwebp-dev \
+    build-essential \
+ && rm -rf /var/lib/apt/lists/*
 
+# Configure GD with WebP (plus JPEG & Freetype)
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp
-RUN docker-php-ext-install pdo pdo_mysql gd zip pcntl sockets
+RUN docker-php-ext-install -j"$(nproc)" pdo pdo_mysql gd zip pcntl sockets
 
 COPY . /var/www/html
 COPY .env.example /var/www/html/.env

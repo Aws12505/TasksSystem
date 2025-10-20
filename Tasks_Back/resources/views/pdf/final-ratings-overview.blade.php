@@ -384,14 +384,14 @@
                             </td>
                             
                             <td style="text-align: center;">
-                               {{-- @if(!empty($user['avatar_data_uri']))
-        <img src="{{ $user['avatar_data_uri'] }}" class="avatar" />
-    @else --}}
+    @if(!empty($user['avatar_local_path']))
+        <img src="{{ $user['avatar_local_path'] }}" class="avatar" />
+    @else
         <div class="avatar" style="background: var(--primary); color: var(--primary-foreground); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold;">
             {{ strtoupper(substr($user['user_name'], 0, 1)) }}
         </div>
-    {{-- @endif --}}
-                            </td>
+    @endif
+</td>
                             
                             <td>
                                 <strong style="font-size: 15px;">{{ $user['user_name'] }}</strong><br>

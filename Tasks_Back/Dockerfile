@@ -7,9 +7,11 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
-    libzip-dev
+    libzip-dev \
+    libwebp-dev \        # <-- add this
+    build-essential      # <-- helpful for compiling php extensions
 
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp
 RUN docker-php-ext-install pdo pdo_mysql gd zip pcntl sockets
 
 COPY . /var/www/html

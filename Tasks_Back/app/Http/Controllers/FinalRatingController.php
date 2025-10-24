@@ -11,6 +11,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use ZipArchive;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
+use App\Models\TaskRating;
+use Illuminate\Support\Facades\DB;
 class FinalRatingController extends Controller
 {
     private FinalRatingCalculator $calculator;
@@ -434,4 +436,64 @@ class FinalRatingController extends Controller
     }
 
 
+    public function calculateWeightedRatingsSOS(Request $request)
+{
+    $validated = $request->validate([
+        'user_ids' => 'required|array',
+        'user_ids.*' => 'required|integer|exists:users,id',
+        'start_date' => 'required|date',
+        'end_date' => 'required|date|after_or_equal:start_date',
+    ]);
+
+    $userIds = $validated['user_ids'];
+    $startDate = Carbon::parse($validated['start_date'])->startOfDay();
+    $endDate = Carbon::parse($validated['end_date'])->endOfDay();
+
+    // Get latest rating for each task in date range
+    $latestRatings = TaskRating::select('task_ratings.*')
+        ->whereBetween('task_ratings.created_at', [$startDate, $endDate])
+        ->whereIn('task_ratings.id', function ($query) use ($startDate, $endDate) {
+            $query->select(DB::raw('MAX(id)'))
+                ->from('task_ratings')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->groupBy('task_id');
+        })
+        ->get();
+
+    $results = [];
+
+    foreach ($userIds as $userId) {
+        $totalWeightedRating = 0;
+        $totalPercentage = 0;
+
+        foreach ($latestRatings as $rating) {
+            $taskUserPivot = DB::table('task_user')
+                ->where('task_id', $rating->task_id)
+                ->where('user_id', $userId)
+                ->first();
+
+            if ($taskUserPivot && $taskUserPivot->percentage > 0) {
+                $percentage = $taskUserPivot->percentage;
+                // Rating is already out of 100, so just weight it by percentage
+                $totalWeightedRating += ($rating->final_rating * $percentage);
+                $totalPercentage += $percentage;
+            }
+        }
+
+        // Calculate weighted average - ALREADY out of 100
+        $ratingOutOf100 = null;
+        if ($totalPercentage > 0) {
+            $ratingOutOf100 = round($totalWeightedRating / $totalPercentage, 2);
+        }
+
+        $user = User::find($userId);
+
+        $results[] = [
+            'user_name' => $user->name,
+            'rating' => $ratingOutOf100
+        ];
+    }
+
+    return response()->json($results);
+}
 }

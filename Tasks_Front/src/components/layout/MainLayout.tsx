@@ -121,6 +121,11 @@ const navigationItems: NavigationItem[] = [
         title : "Final Ratings", 
         href: "/final-ratings",
         permission: "calculate final ratings"
+      },
+      {
+        title: "Weighted Ratings (SOS)",
+        href: "/ratings/sos",
+        permission: "calculate final ratings"
       }
     ]
   },

@@ -6,6 +6,7 @@ const RatingsPage = lazy(() => import('@/features/ratings/pages/index'))
 const TaskRatingsPage = lazy(() => import('@/features/ratings/pages/TaskRatingsPage'))
 const StakeholderRatingsPage = lazy(() => import('@/features/ratings/pages/StakeholderRatingsPage'))
 const FinalRatingsPage = lazy(() => import('@/features/final-ratings/pages/FinalRatingsPage'))
+const WeightedRatingsSOSPage = lazy(() => import('@/features/final-ratings/pages/WeightedRatingsSOSPage'))
 
 export const ratingsRoutes: RouteObject[] = [
   {
@@ -38,6 +39,14 @@ export const ratingsRoutes: RouteObject[] = [
             <ProtectedRoute permissions={['calculate final ratings']} requireAll={false}>
       <FinalRatingsPage />
             </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/ratings/sos',
+    element: (
+<ProtectedRoute permissions={['calculate final ratings']}>
+      <WeightedRatingsSOSPage />
+</ProtectedRoute>
     ),
   }
 ]

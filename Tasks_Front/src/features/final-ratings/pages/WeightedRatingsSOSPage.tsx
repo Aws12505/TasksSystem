@@ -33,7 +33,7 @@ const WeightedRatingsSOSPage: React.FC = () => {
 
     try {
       // `/services/api.ts` already applies baseURL and token headers
-      const resp = await apiClient.post<SosRow[]>('/calculate-weighted-ratings-sos', {
+      const resp = await apiClient.post<SosRow[]>('final-ratings/calculate-weighted-ratings-sos', {
         user_ids: hardcodedUserIds,
         start_date: start,
         end_date: end,

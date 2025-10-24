@@ -1,11 +1,13 @@
 // pages/WeightedRatingsSOSPage.tsx
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { TrendingUp, Calculator, Loader2, RefreshCw } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { TrendingUp, Calculator, Loader2, RefreshCw, ArrowUpDown } from 'lucide-react'
 import { apiClient } from '@/services/api'
 
 type SosRow = { user_name: string; rating: number | null }
@@ -17,11 +19,12 @@ const WeightedRatingsSOSPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [results, setResults] = useState<SosRow[] | null>(null)
+  const [desc, setDesc] = useState(true) // sort by highest first
 
   const hardcodedUserIds = [1, 4, 5, 6]
 
   const extractPayload = <T,>(resp: MaybeWrapped<T>): T =>
-    (resp as any)?.data ? (resp as any).data as T : (resp as T)
+    (resp as any)?.data ? ((resp as any).data as T) : (resp as T)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,7 +35,7 @@ const WeightedRatingsSOSPage: React.FC = () => {
     setResults(null)
 
     try {
-      // `/services/api.ts` already applies baseURL and token headers
+      // uses your Axios client (baseURL + token)
       const resp = await apiClient.post<SosRow[]>('final-ratings/calculate-weighted-ratings-sos', {
         user_ids: hardcodedUserIds,
         start_date: start,
@@ -41,7 +44,6 @@ const WeightedRatingsSOSPage: React.FC = () => {
 
       const payload = extractPayload<SosRow[]>(resp)
       setResults(payload)
-      // optional scroll to table
       setTimeout(() => {
         document.getElementById('sos-results-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }, 0)
@@ -59,6 +61,31 @@ const WeightedRatingsSOSPage: React.FC = () => {
     setResults(null)
   }
 
+  const sorted = useMemo(() => {
+    if (!results) return null
+    const toNumber = (r: number | null) => (typeof r === 'number' ? r : -Infinity) // nulls go to bottom
+    const arr = [...results].sort((a, b) => (desc ? toNumber(b.rating) - toNumber(a.rating) : toNumber(a.rating) - toNumber(b.rating)))
+    return arr
+  }, [results, desc])
+
+  const summary = useMemo(() => {
+    if (!results || results.length === 0) return null
+    const valid = results.filter(r => typeof r.rating === 'number') as { user_name: string; rating: number }[]
+    if (valid.length === 0) return { avg: null, top: null }
+    const sum = valid.reduce((acc, r) => acc + r.rating, 0)
+    const avg = +(sum / valid.length).toFixed(2)
+    const top = valid.reduce((best, r) => (r.rating > best.rating ? r : best), valid[0])
+    return { avg, top }
+  }, [results])
+
+  const barIntent = (val: number | null) => {
+    if (val === null) return 'bg-muted'
+    if (val >= 85) return 'bg-green-500'
+    if (val >= 70) return 'bg-blue-500'
+    if (val >= 50) return 'bg-yellow-500'
+    return 'bg-red-500'
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
@@ -70,15 +97,19 @@ const WeightedRatingsSOSPage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-foreground font-sans">Weighted Ratings (SOS)</h1>
-              <p className="text-muted-foreground">
-                Latest task rating × user percentage, averaged per user (out of 100)
-              </p>
+              <p className="text-muted-foreground">Latest task rating × user percentage, averaged per user (out of 100)</p>
             </div>
           </div>
-          <Button variant="outline" onClick={clearAll}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Reset
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setDesc(d => !d)}>
+              <ArrowUpDown className="w-4 h-4 mr-2" />
+              {desc ? 'Highest → Lowest' : 'Lowest → Highest'}
+            </Button>
+            <Button variant="outline" onClick={clearAll}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Reset
+            </Button>
+          </div>
         </div>
 
         {/* Form + Results */}
@@ -137,27 +168,68 @@ const WeightedRatingsSOSPage: React.FC = () => {
               </div>
             )}
 
+            {/* Quick Summary */}
+            {sorted && summary && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-muted/40 border border-border rounded-lg p-3">
+                  <div className="text-xs text-muted-foreground">Users Calculated</div>
+                  <div className="text-2xl font-semibold">{sorted.length}</div>
+                </div>
+                <div className="bg-muted/40 border border-border rounded-lg p-3">
+                  <div className="text-xs text-muted-foreground">Average Rating</div>
+                  <div className="text-2xl font-semibold">
+                    {summary.avg === null ? '—' : summary.avg}
+                  </div>
+                </div>
+                <div className="bg-muted/40 border border-border rounded-lg p-3">
+                  <div className="text-xs text-muted-foreground">Top Performer</div>
+                  <div className="text-sm font-medium">
+                    {summary.top ? `${summary.top.user_name} • ${summary.top.rating.toFixed(2)}` : '—'}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Results Table */}
-            {results && (
+            {sorted && (
               <div id="sos-results-table" className="rounded-md border border-border overflow-hidden">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-muted/50">
                     <TableRow>
-                      <TableHead className="w-[60px]">#</TableHead>
+                      <TableHead className="w-[70px]">Rank</TableHead>
                       <TableHead>User</TableHead>
-                      <TableHead className="text-right">Rating (out of 100)</TableHead>
+                      <TableHead className="text-right">Rating</TableHead>
+                      <TableHead className="w-[240px]">Progress</TableHead>
+                      <TableHead className="text-right w-[120px]">Badge</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {results.map((row, idx) => (
-                      <TableRow key={`${row.user_name}-${idx}`}>
-                        <TableCell className="font-medium">{idx + 1}</TableCell>
-                        <TableCell>{row.user_name}</TableCell>
-                        <TableCell className="text-right">
-                          {row.rating === null ? '—' : row.rating.toFixed(2)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {sorted.map((row, idx) => {
+                      const r = row.rating
+                      const isTop3 = idx < 3 && typeof r === 'number'
+                      return (
+                        <TableRow key={`${row.user_name}-${idx}`} className="hover:bg-muted/30">
+                          <TableCell className="font-medium">{idx + 1}</TableCell>
+                          <TableCell className="font-medium">{row.user_name}</TableCell>
+                          <TableCell className="text-right tabular-nums">{r === null ? '—' : r.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1">
+                                <Progress value={typeof r === 'number' ? Math.max(0, Math.min(100, r)) : 0} className="h-2" />
+                              </div>
+                              <div className={`h-2 w-2 rounded-full ${barIntent(r)}`} />
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {isTop3 ? (
+                              <Badge variant="secondary">{idx === 0 ? '🏆 Top 1' : idx === 1 ? '🥈 Top 2' : '🥉 Top 3'}</Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>

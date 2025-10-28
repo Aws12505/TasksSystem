@@ -1,23 +1,21 @@
-version: '3.8'
-
 services:
   backend:
     build: 
       context: ./Tasks_Back
       dockerfile: Dockerfile
-    container_name: tasks_backend
+    container_name: pizza_tasks_backend
     ports:
-      - "2654:80"
+      - "2676:80"
     volumes:
       - ./Tasks_Back:/var/www/html
     restart: unless-stopped
 
   frontend:
     image: busybox:latest
-    container_name: tasks_frontend
+    container_name: pizza_tasks_frontend
     command: httpd -f -v -p 80 -h /var/www/html
     ports:
-      - "2876:80"
+      - "2820:80"
     volumes:
       - ./Tasks_Front/dist:/var/www/html:ro
     restart: unless-stopped
@@ -27,7 +25,7 @@ services:
     build:
       context: ./Tasks_Back
       dockerfile: Dockerfile
-    container_name: tasks_queue
+    container_name: pizza_tasks_queue
     command: sh -lc "php artisan queue:work --queue=high,default --tries=3 --timeout=120 --sleep=1"
     volumes:
       - ./Tasks_Back:/var/www/html
@@ -40,12 +38,18 @@ services:
     build:
       context: ./Tasks_Back
       dockerfile: Dockerfile
-    container_name: tasks_reverb
-    command: sh -lc "php artisan reverb:start --host=0.0.0.0 --port=6001"
+    container_name: pizza_tasks_reverb
+    command: sh -lc "php artisan reverb:start --host=0.0.0.0 --port=6031"
     ports:
-      - "6001:6001"   # Nginx will proxy wss://ws.tasksbackend.rdexperts.tech -> 127.0.0.1:6001
+      - "6031:6031"   # Nginx will proxy wss://ws.tasksbackend.rdexperts.tech -> 127.0.0.1:6001
     volumes:
       - ./Tasks_Back:/var/www/html
     restart: unless-stopped
     depends_on:
       - backend
+
+
+
+
+
+

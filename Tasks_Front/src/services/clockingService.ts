@@ -5,7 +5,6 @@ import type {
   SessionResponse,
   ManagerSessionsResponse,
   EndBreakRequest,
-  ExportResponse,
   ExportRequest,
   RecordsFilters,
   ManagerRecordsFilters,
@@ -59,8 +58,8 @@ export class ClockingService {
   /**
    * Export user's records
    */
-  async exportRecords(data?: ExportRequest): Promise<ApiResponse<ExportResponse>> {
-    return apiClient.post<ExportResponse>('/clocking/export', data);
+  async exportRecords(data?: ExportRequest): Promise<{ blob: Blob; filename: string }> {
+    return apiClient.downloadFile('/clocking/export', data);
   }
 
   /**
@@ -80,8 +79,8 @@ export class ClockingService {
   /**
    * Export all records
    */
-  async exportAllRecords(data?: ExportRequest): Promise<ApiResponse<ExportResponse>> {
-    return apiClient.post<ExportResponse>('/clocking/manager/export-all', data);
+  async exportAllRecords(data?: ExportRequest): Promise<{ blob: Blob; filename: string }> {
+    return apiClient.downloadFile('/clocking/manager/export-all', data);
   }
 }
 

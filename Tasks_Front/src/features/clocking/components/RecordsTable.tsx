@@ -1,3 +1,5 @@
+// src/features/clocking/components/RecordsTable.tsx
+
 import { useState } from 'react';
 import {
   Table,
@@ -10,7 +12,7 @@ import {
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar';
-import { ChevronLeft, ChevronRight, Coffee, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Coffee, AlertCircle, Loader2 } from 'lucide-react';
 import type { ClockSession } from '../../../types/Clocking';
 import { 
   calculateWorkDuration, 
@@ -19,6 +21,7 @@ import {
   convertToCompanyTime,
   formatCompanyCalendarDate,
 } from '../../../utils/clockingCalculations';
+
 
 import {
   Dialog,
@@ -30,31 +33,46 @@ import {
 } from '../../../components/ui/dialog';
 import { Separator } from '../../../components/ui/separator';
 
+
 interface Props {
   records: ClockSession[];
   companyTimezone: string;
   pagination: any | null;
   showUser?: boolean;
   onPageChange?: (page: number) => void;
+  isLoading?: boolean;
 }
+
 
 export const RecordsTable = ({ 
   records, 
   companyTimezone, 
   pagination, 
   showUser = false, 
-  onPageChange 
+  onPageChange,
+  isLoading = false,
 }: Props) => {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<ClockSession | null>(null);
 
-  if (!records.length) {
+
+  if (!records.length && !isLoading) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">No records found</p>
       </div>
     );
   }
+
+  // FIX: Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
 
   return (
     <div className="space-y-4">
@@ -80,6 +98,7 @@ export const RecordsTable = ({
                 session.break_records
               );
               const breakSeconds = calculateTotalBreakDuration(session.break_records);
+
 
               return (
                 <TableRow
@@ -162,6 +181,7 @@ export const RecordsTable = ({
         </Table>
       </div>
 
+
       {pagination && pagination.last_page > 1 && (
         <div className="flex items-center justify-between px-2">
           <p className="text-sm text-muted-foreground">
@@ -195,6 +215,7 @@ export const RecordsTable = ({
         </div>
       )}
 
+
       {/* Breaks Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="bg-card border-border text-foreground max-w-lg">
@@ -212,6 +233,7 @@ export const RecordsTable = ({
             </DialogDescription>
           </DialogHeader>
 
+
           {selected?.break_records?.length ? (
             <div className="space-y-4">
               {selected.break_records.map((b, idx) => {
@@ -219,6 +241,7 @@ export const RecordsTable = ({
                 const end = b.break_end_utc
                   ? convertToCompanyTime(b.break_end_utc, companyTimezone).split(', ')[1]
                   : null;
+
 
                 const seconds =
                   b.break_end_utc
@@ -230,6 +253,7 @@ export const RecordsTable = ({
                         )
                       )
                     : 0;
+
 
                 return (
                   <div key={b.id} className="rounded-md border border-border p-4 bg-accent">
@@ -249,7 +273,9 @@ export const RecordsTable = ({
                       ) : null}
                     </div>
 
+
                     <Separator className="my-3 bg-border" />
+
 
                     <div className="text-sm text-muted-foreground">
                       <div>
@@ -271,6 +297,7 @@ export const RecordsTable = ({
           ) : (
             <div className="text-sm text-muted-foreground">No breaks recorded for this session.</div>
           )}
+
 
           <DialogFooter className="mt-4">
             <Button variant="outline" className="border-input" onClick={() => setOpen(false)}>

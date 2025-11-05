@@ -3,25 +3,44 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Label } from '../../../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import { useClockingManager } from '../hooks/useClockingManager';
 import { useClockingStore } from '../stores/clockingStore';
 import { ManagerDashboard } from '../components/ManagerDashboard';
 import { RecordsTable } from '../components/RecordsTable';
-import { RefreshCw, Users } from 'lucide-react';
+import { RefreshCw, Users, Download } from 'lucide-react';
 
 type DashboardLayout = 'list' | 'grid';
 
 const ClockingManagerPage = () => {
-  const { sessions, companyTimezone, isLoading, refresh, fetchAllRecords } = useClockingManager();
+  const { sessions, companyTimezone, isLoading, isExporting, refresh, fetchAllRecords, exportAll } = useClockingManager();
   const { managerAllRecords, managerAllRecordsPagination } = useClockingStore();
   const [filters, setFilters] = useState<any>({ per_page: 15 });
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportRange, setExportRange] = useState<any>({ start_date: '', end_date: '' });
 
-  // NEW: layout state
   const [layout] = useState<DashboardLayout>('grid');
 
   const handleFetchRecords = () => {
     fetchAllRecords(filters);
+  };
+
+  const handlePageChange = (page: number) => {
+    const newFilters = { ...filters, page };
+    setFilters(newFilters);
+    fetchAllRecords(newFilters);
+  };
+
+  // NEW: Handle export with date range
+  const handleExport = () => {
+    const exportFilters = {
+      start_date: exportRange.start_date || undefined,
+      end_date: exportRange.end_date || undefined,
+    };
+    exportAll(exportFilters);
+    setShowExportDialog(false);
   };
 
   return (
@@ -39,32 +58,6 @@ const ClockingManagerPage = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* NEW: layout toggle */}
-            {/* <div className="inline-flex rounded-md border border-input bg-background p-1">
-              <Button
-                type="button"
-                size="sm"
-                variant={layout === 'list' ? 'default' : 'ghost'}
-                className="rounded-sm"
-                onClick={() => setLayout('list')}
-                aria-label="List layout"
-                title="List layout"
-              >
-                <LayoutList className="w-4 h-4" />
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={layout === 'grid' ? 'default' : 'ghost'}
-                className="rounded-sm"
-                onClick={() => setLayout('grid')}
-                aria-label="Grid layout"
-                title="Grid layout"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </Button>
-            </div> */}
-
             <Button 
               onClick={refresh} 
               disabled={isLoading}
@@ -87,15 +80,24 @@ const ClockingManagerPage = () => {
             <ManagerDashboard 
               sessions={sessions} 
               companyTimezone={companyTimezone}
-              // NEW
               layout={layout}
             />
           </TabsContent>
 
           <TabsContent value="records" className="space-y-4">
             <Card className="bg-card border-border">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-foreground">All Employee Records</CardTitle>
+                {/* NEW: Export button */}
+                <Button 
+                  onClick={() => setShowExportDialog(true)}
+                  disabled={isExporting || managerAllRecords.length === 0}
+                  size="sm"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isExporting ? 'Exporting...' : 'Export'}
+                </Button>
               </CardHeader>
               <CardContent>
                 <RecordsTable
@@ -103,12 +105,66 @@ const ClockingManagerPage = () => {
                   companyTimezone={companyTimezone}
                   pagination={managerAllRecordsPagination}
                   showUser
-                  onPageChange={(page) => setFilters({ ...filters, page })}
+                  onPageChange={handlePageChange}
+                  isLoading={isLoading}
                 />
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* NEW: Export Date Range Dialog */}
+        {showExportDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="bg-card border-border w-full max-w-md mx-4">
+              <CardHeader>
+                <CardTitle className="text-foreground">Export Records</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground text-sm">Choose a date range or leave empty to export all records</p>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="export_start_date" className="text-foreground">Start Date (Optional)</Label>
+                  <Input
+                    id="export_start_date"
+                    type="date"
+                    value={exportRange.start_date}
+                    onChange={(e) => setExportRange({ ...exportRange, start_date: e.target.value })}
+                    className="bg-background border-input text-foreground"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="export_end_date" className="text-foreground">End Date (Optional)</Label>
+                  <Input
+                    id="export_end_date"
+                    type="date"
+                    value={exportRange.end_date}
+                    onChange={(e) => setExportRange({ ...exportRange, end_date: e.target.value })}
+                    className="bg-background border-input text-foreground"
+                  />
+                </div>
+
+                <div className="flex gap-2 justify-end pt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowExportDialog(false)}
+                    className="border-input"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleExport}
+                    disabled={isExporting}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    {isExporting ? 'Exporting...' : 'Export'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

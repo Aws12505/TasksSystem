@@ -3,17 +3,17 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
-import { Textarea } from '../../../components/ui/textarea';
-import { Label } from '../../../components/ui/label';
 import { Badge } from '../../../components/ui/badge';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../../../components/ui/dialog';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../../components/ui/alert-dialog';
 import { LogIn, LogOut, Coffee, Play } from 'lucide-react';
 import type { ClockSession } from '../../../types/Clocking';
 import { convertToCompanyTime } from '../../../utils/clockingCalculations';
@@ -25,7 +25,7 @@ interface Props {
   onClockIn: () => void;
   onClockOut: () => void;
   onStartBreak: () => void;
-  onEndBreak: (description?: string) => void;
+  onEndBreak: () => void;
 }
 
 export const ClockingCard = ({
@@ -35,20 +35,36 @@ export const ClockingCard = ({
   onClockIn,
   onClockOut,
   onStartBreak,
-  onEndBreak
+  onEndBreak,
 }: Props) => {
+  // NEW: Confirmation states
+  const [clockInOpen, setClockInOpen] = useState(false);
+  const [clockOutOpen, setClockOutOpen] = useState(false);
+  const [startBreakOpen, setStartBreakOpen] = useState(false);
   const [endBreakOpen, setEndBreakOpen] = useState(false);
-  const [description, setDescription] = useState('');
 
-  const handleEndBreak = () => {
-    onEndBreak(description.trim() || undefined);
-    setDescription('');
-    setEndBreakOpen(false);
+  // NEW: Confirm and execute
+  const handleClockInConfirm = () => {
+    setClockInOpen(false);
+    onClockIn();
   };
 
-  const activeBreak = session?.break_records?.find(b => b.status === 'active');
-  
-  // Treat completed sessions as no session
+  const handleClockOutConfirm = () => {
+    setClockOutOpen(false);
+    onClockOut();
+  };
+
+  const handleStartBreakConfirm = () => {
+    setStartBreakOpen(false);
+    onStartBreak();
+  };
+
+  const handleEndBreakConfirm = () => {
+    setEndBreakOpen(false);
+    onEndBreak();
+  };
+
+  const activeBreak = session?.break_records?.find((b) => b.status === 'active');
   const isSessionActive = session && session.status !== 'completed';
 
   return (
@@ -69,11 +85,13 @@ export const ClockingCard = ({
                     {convertToCompanyTime(session.clock_in_utc, companyTimezone).split(', ')[1]}
                   </p>
                 </div>
-                <Badge className={
-                  session.status === 'active' 
-                    ? 'bg-chart-3 text-white' 
-                    : 'bg-chart-2 text-white'
-                }>
+                <Badge
+                  className={
+                    session.status === 'active'
+                      ? 'bg-chart-3 text-white'
+                      : 'bg-chart-2 text-white'
+                  }
+                >
                   {session.status === 'active' ? 'Working' : 'On Break'}
                 </Badge>
               </div>
@@ -94,105 +112,132 @@ export const ClockingCard = ({
           {/* Action Buttons */}
           <div className="space-y-3">
             {!isSessionActive ? (
-              // No active session or completed session - show Clock In button
+              // NEW: Clock In with confirmation
               <Button
-                onClick={onClockIn}
+                onClick={() => setClockInOpen(true)}
                 disabled={isLoading}
-                className="w-full h-16 text-lg bg-primary text-primary-foreground hover:bg-primary/90"
+                className="w-full bg-chart-3 text-white hover:bg-chart-3/90"
                 size="lg"
               >
-                <LogIn className="w-6 h-6 mr-2" />
+                <LogIn className="w-4 h-4 mr-2" />
                 Clock In
               </Button>
-            ) : session.status === 'active' ? (
-              // Active session - show Start Break and Clock Out
-              <div className="space-y-2">
-                <Button
-                  onClick={onStartBreak}
-                  disabled={isLoading}
-                  variant="outline"
-                  className="w-full h-12 border-chart-2 text-chart-2 hover:bg-accent"
-                >
-                  <Coffee className="w-5 h-5 mr-2" />
-                  Start Break
-                </Button>
-                <Button
-                  onClick={onClockOut}
-                  disabled={isLoading}
-                  className="w-full h-12 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  <LogOut className="w-5 h-5 mr-2" />
-                  Clock Out
-                </Button>
-              </div>
             ) : (
-              // On break - show End Break options
-              <div className="space-y-2">
-                <Button
-                  onClick={() => setEndBreakOpen(true)}
-                  disabled={isLoading}
-                  className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  <Play className="w-5 h-5 mr-2" />
-                  End Break & Resume Work
-                </Button>
-                <Button
-                  onClick={onClockOut}
-                  disabled={isLoading}
-                  variant="outline"
-                  className="w-full h-12"
-                >
-                  <LogOut className="w-5 h-5 mr-2" />
-                  End Break & Clock Out
-                </Button>
-              </div>
+              <>
+                {session.status === 'active' ? (
+                  <>
+                    {/* NEW: Start Break with confirmation */}
+                    <Button
+                      onClick={() => setStartBreakOpen(true)}
+                      disabled={isLoading}
+                      variant="outline"
+                      className="w-full"
+                      size="lg"
+                    >
+                      <Coffee className="w-4 h-4 mr-2" />
+                      Start Break
+                    </Button>
+
+                    {/* NEW: Clock Out with confirmation */}
+                    <Button
+                      onClick={() => setClockOutOpen(true)}
+                      disabled={isLoading}
+                      className="w-full bg-destructive text-white hover:bg-destructive/90"
+                      size="lg"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Clock Out
+                    </Button>
+                  </>
+                ) : (
+                  // NEW: End Break with confirmation
+                  <Button
+                    onClick={() => setEndBreakOpen(true)}
+                    disabled={isLoading}
+                    className="w-full bg-chart-2 text-white hover:bg-chart-2/90"
+                    size="lg"
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    End Break
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* End Break Dialog */}
-      <Dialog open={endBreakOpen} onOpenChange={setEndBreakOpen}>
-        <DialogContent className="bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">End Break</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Add an optional description for this break
-            </DialogDescription>
-          </DialogHeader>
+      {/* NEW: Clock In Confirmation */}
+      <AlertDialog open={clockInOpen} onOpenChange={setClockInOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clock In</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to clock in now?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClockInConfirm}>
+              Clock In
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-          <div className="py-4">
-            <Label htmlFor="description" className="text-foreground">Description (Optional)</Label>
-            <Textarea
-              id="description"
-              placeholder="e.g., Lunch break, Coffee break..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              maxLength={255}
-              disabled={isLoading}
-              className="mt-2 bg-background border-input text-foreground"
-            />
-          </div>
+      {/* NEW: Clock Out Confirmation */}
+      <AlertDialog open={clockOutOpen} onOpenChange={setClockOutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clock Out</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to clock out now?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClockOutConfirm}>
+              Clock Out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setDescription('');
-                setEndBreakOpen(false);
-              }}
-              disabled={isLoading}
-              className="border-input"
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleEndBreak} disabled={isLoading} className="bg-primary text-primary-foreground hover:bg-primary/90">
-              {isLoading ? 'Ending...' : 'End Break'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* NEW: Start Break Confirmation */}
+      <AlertDialog open={startBreakOpen} onOpenChange={setStartBreakOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Start Break</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to start your break now?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleStartBreakConfirm}>
+              Start Break
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* NEW: End Break Confirmation */}
+      <AlertDialog open={endBreakOpen} onOpenChange={setEndBreakOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>End Break</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to end your break now?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleEndBreakConfirm}>
+              End Break
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

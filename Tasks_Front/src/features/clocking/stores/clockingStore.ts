@@ -162,14 +162,22 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
     }
   },
 
-  exportRecords: async (data?: any) => {
+   exportRecords: async (data?: any) => {
     set({ isExporting: true });
     try {
-      const response = await clockingService.exportRecords(data);
-      if (response.success) {
-        window.open(response.data.download_url, '_blank');
-        toast.success(response.message);
-      }
+      // NEW: Download file directly instead of opening URL
+      const result = await clockingService.exportRecords(data);
+      
+      const url = window.URL.createObjectURL(result.blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = result.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Export downloaded successfully');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Export failed');
     } finally {
@@ -252,11 +260,19 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
   exportManagerRecords: async (data?: any) => {
     set({ isExporting: true });
     try {
-      const response = await clockingService.exportAllRecords(data);
-      if (response.success) {
-        window.open(response.data.download_url, '_blank');
-        toast.success(response.message);
-      }
+      // NEW: Download file directly instead of opening URL
+      const result = await clockingService.exportAllRecords(data);
+      
+      const url = window.URL.createObjectURL(result.blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = result.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Export downloaded successfully');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Export failed');
     } finally {

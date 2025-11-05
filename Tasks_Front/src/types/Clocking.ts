@@ -82,7 +82,4 @@ export interface ManagerRecordsFilters extends RecordsFilters {
   user_id?: number;
 }
 
-export interface ExportResponse {
-  download_url: string;
-  path: string;
-}
+

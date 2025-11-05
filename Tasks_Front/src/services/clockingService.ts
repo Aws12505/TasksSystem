@@ -8,7 +8,9 @@ import type {
   ExportRequest,
   RecordsFilters,
   ManagerRecordsFilters,
-  ClockSession
+  ClockSession,
+  BreakRecord,
+  ClockingCorrectionRequest
 } from '../types/Clocking';
 import type { ApiResponse, PaginatedApiResponse } from '../types/ApiResponse';
 
@@ -81,6 +83,48 @@ export class ClockingService {
    */
   async exportAllRecords(data?: ExportRequest): Promise<{ blob: Blob; filename: string }> {
     return apiClient.downloadFile('/clocking/manager/export-all', data);
+  }
+
+  async requestCorrection(data: {
+    clock_session_id?: number;
+    break_record_id?: number;
+    correction_type: 'clock_in' | 'clock_out' | 'break_in' | 'break_out';
+    requested_time_utc: string;
+    reason: string;
+  }): Promise<ApiResponse<ClockingCorrectionRequest>> {
+    return apiClient.post<ClockingCorrectionRequest>('/clocking/correction-request', data);
+  }
+
+  async getPendingCorrections(): Promise<ApiResponse<ClockingCorrectionRequest[]>> {
+    return apiClient.get<ClockingCorrectionRequest[]>('/clocking/pending-corrections');
+  }
+
+  async getAllPendingCorrections(): Promise<ApiResponse<ClockingCorrectionRequest[]>> {
+    return apiClient.get<ClockingCorrectionRequest[]>('/clocking/manager/pending-corrections');
+  }
+
+  async handleCorrection(correctionId: number, data: {
+    action: 'approve' | 'reject';
+    admin_notes?: string;
+  }): Promise<ApiResponse<ClockingCorrectionRequest>> {
+    return apiClient.post<ClockingCorrectionRequest>(
+      `/clocking/manager/correction/${correctionId}/handle`,
+      data
+    );
+  }
+
+  async directEditClockSession(sessionId: number, data: {
+    clock_in_utc?: string;
+    clock_out_utc?: string;
+  }): Promise<ApiResponse<ClockSession>> {
+    return apiClient.put<ClockSession>(`/clocking/manager/session/${sessionId}/edit`, data);
+  }
+
+  async directEditBreakRecord(breakId: number, data: {
+    break_start_utc?: string;
+    break_end_utc?: string;
+  }): Promise<ApiResponse<BreakRecord>> {
+    return apiClient.put<BreakRecord>(`/clocking/manager/break/${breakId}/edit`, data);
   }
 }
 

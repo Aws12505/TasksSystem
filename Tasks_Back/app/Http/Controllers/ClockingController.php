@@ -10,11 +10,19 @@ use App\Services\ClockingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use ZipArchive;
-
+use App\Services\ClockingCorrectionService;
+use App\Http\Requests\RequestClockingCorrectionRequest;
+use App\Http\Requests\DirectEditClockSessionRequest;
+use App\Http\Requests\DirectEditBreakRecordRequest;
+use App\Http\Requests\HandleCorrectionRequest;
+use App\Models\ClockingCorrectionRequest;
+use App\Models\ClockSession;
+use App\Models\BreakRecord;
 class ClockingController extends Controller
 {
     public function __construct(
         private ClockingService $clockingService,
+        private ClockingCorrectionService $correctionService
     ) {}
 
     /**
@@ -170,7 +178,7 @@ public function exportRecords(ExportClockingsRequest $request)
         $companyTimezone = config('app.company_timezone', 'UTC');
 
         // FIX: Query ALL records directly - NO pagination
-        $query = \App\Models\ClockSession::forUser($userId)->with(['breakRecords', 'user']);
+        $query = ClockSession::forUser($userId)->with(['breakRecords', 'user']);
 
         if (!empty($request->input('start_date'))) {
             $query->where('session_date', '>=', $request->input('start_date'));
@@ -291,7 +299,7 @@ public function exportAllRecords(ExportClockingsRequest $request)
         $companyTimezone = config('app.company_timezone', 'UTC');
 
         // FIX: Query ALL records directly - NO pagination
-        $query = \App\Models\ClockSession::withoutGlobalScope('user_scope')->with(['breakRecords', 'user']);
+        $query = ClockSession::withoutGlobalScope('user_scope')->with(['breakRecords', 'user']);
 
         if (!empty($request->input('start_date'))) {
             $query->where('session_date', '>=', $request->input('start_date'));
@@ -507,5 +515,52 @@ private function formatDuration($seconds)
     $secs = $seconds % 60;
 
     return sprintf('%02d:%02d:%02d', $hours, $minutes, $secs);
+}
+
+public function requestCorrection(RequestClockingCorrectionRequest $request)
+{
+    $correction = $this->correctionService->requestCorrection($request->user(), $request->validated());
+    return response()->json(['success' => true, 'data' => $correction->load(['clockSession', 'breakRecord']), 'message' => 'Correction requested'], 201);
+}
+
+public function getPendingCorrections(Request $request)
+{
+    $corrections = $this->correctionService->getUserPendingCorrections($request->user());
+    return response()->json(['success' => true, 'data' => $corrections]);
+}
+
+public function getAllPendingCorrections()
+{
+    $corrections = $this->correctionService->getAllPendingCorrections();
+    return response()->json(['success' => true, 'data' => $corrections]);
+}
+
+public function handleCorrection(HandleCorrectionRequest $request, $correctionId)
+{
+    $correction = ClockingCorrectionRequest::findOrFail($correctionId);
+
+    if ($request->input('action') === 'approve') {
+        $this->correctionService->approveCorrection($correction, $request->user(), $request->input('admin_notes'));
+        $message = 'Approved';
+    } else {
+        $this->correctionService->rejectCorrection($correction, $request->user(), $request->input('admin_notes'));
+        $message = 'Rejected';
+    }
+
+    return response()->json(['success' => true, 'data' => $correction->fresh(), 'message' => $message]);
+}
+
+public function directEditClockSession(DirectEditClockSessionRequest $request, $sessionId)
+{
+    $session = ClockSession::findOrFail($sessionId);
+    $updated = $this->correctionService->directEditClockSession($session, $request->validated());
+    return response()->json(['success' => true, 'data' => $updated->load(['breakRecords', 'user']), 'message' => 'Session updated']);
+}
+
+public function directEditBreakRecord(DirectEditBreakRecordRequest $request, $breakId)
+{
+    $break = BreakRecord::findOrFail($breakId);
+    $updated = $this->correctionService->directEditBreakRecord($break, $request->validated());
+    return response()->json(['success' => true, 'data' => $updated, 'message' => 'Break updated']);
 }
 }

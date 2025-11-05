@@ -82,4 +82,25 @@ export interface ManagerRecordsFilters extends RecordsFilters {
   user_id?: number;
 }
 
+export interface ClockingCorrectionRequest {
+  id: number;
+  user_id: number;
+  clock_session_id: number | null;
+  break_record_id: number | null;
+  correction_type: 'clock_in' | 'clock_out' | 'break_in' | 'break_out';
+  original_time_utc: string;
+  requested_time_utc: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_notes: string | null;
+  approved_by: number | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  user?: User;
+  clockSession?: ClockSession;
+  breakRecord?: BreakRecord;
+  approvedBy?: User;
+}
+
 

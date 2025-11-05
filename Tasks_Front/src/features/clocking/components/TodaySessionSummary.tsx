@@ -20,7 +20,7 @@ export const TodaySessionSummary = ({ session, companyTimezone }: Props) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-foreground">
             <Calendar className="w-5 h-5" />
-            Today's Session
+            Current Session
           </CardTitle>
         </CardHeader>
         <CardContent>

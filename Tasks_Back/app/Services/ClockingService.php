@@ -165,8 +165,7 @@ public function clockOut(User $user): array
     public function getInitialData(User $user): array
     {
         $session = ClockSession::forUser($user->id)
-            ->whereIn('status', ['active', 'on_break', 'completed'])
-            ->today()
+            ->whereIn('status', ['active', 'on_break'])
             ->with(['breakRecords', 'user'])
             ->first();
 

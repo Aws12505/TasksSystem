@@ -85,4 +85,9 @@ class ClockSession extends Model
     {
         return $query->withoutGlobalScope('user_scope')->where('user_id', $userId);
     }
+
+    public function correctionRequests(): HasMany
+{
+    return $this->hasMany(ClockingCorrectionRequest::class);
+}
 }

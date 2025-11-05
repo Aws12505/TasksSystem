@@ -1,4 +1,4 @@
-// src/features/clocking/components/RecordsTable.tsx
+// src/features/clocking/components/RecordsTable.tsx - FULL REPLACEMENT
 
 import { useState } from 'react';
 import {
@@ -12,7 +12,7 @@ import {
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar';
-import { ChevronLeft, ChevronRight, Coffee, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Coffee, AlertCircle, Loader2, Settings2 } from 'lucide-react';
 import type { ClockSession } from '../../../types/Clocking';
 import { 
   calculateWorkDuration, 
@@ -21,8 +21,6 @@ import {
   convertToCompanyTime,
   formatCompanyCalendarDate,
 } from '../../../utils/clockingCalculations';
-
-
 import {
   Dialog,
   DialogContent,
@@ -41,6 +39,7 @@ interface Props {
   showUser?: boolean;
   onPageChange?: (page: number) => void;
   isLoading?: boolean;
+  onCorrectionClick?: (session: ClockSession) => void;
 }
 
 
@@ -51,6 +50,7 @@ export const RecordsTable = ({
   showUser = false, 
   onPageChange,
   isLoading = false,
+  onCorrectionClick,
 }: Props) => {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<ClockSession | null>(null);
@@ -64,7 +64,7 @@ export const RecordsTable = ({
     );
   }
 
-  // FIX: Show loading state
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -88,6 +88,7 @@ export const RecordsTable = ({
               <TableHead className="text-foreground">Break Time</TableHead>
               <TableHead className="text-foreground">Breaks</TableHead>
               <TableHead className="text-foreground">Status</TableHead>
+              <TableHead className="text-foreground">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -104,7 +105,6 @@ export const RecordsTable = ({
                 <TableRow
                   key={session.id}
                   className="border-border hover:bg-accent/50 cursor-pointer"
-                  role="button"
                   onClick={() => {
                     setSelected(session);
                     setOpen(true);
@@ -132,7 +132,7 @@ export const RecordsTable = ({
                         {formatCompanyCalendarDate({
                           sessionDate: session.session_date,
                           companyTimezone,
-                          utcFallback: session.clock_in_utc, // ensures day matches the time columns
+                          utcFallback: session.clock_in_utc,
                           locale: 'en-US',
                         })}
                       </span>
@@ -173,6 +173,17 @@ export const RecordsTable = ({
                       {session.status === 'completed' ? 'Completed' :
                        session.status === 'active' ? 'Active' : 'On Break'}
                     </Badge>
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-input text-xs"
+                      onClick={() => onCorrectionClick?.(session)}
+                    >
+                      <Settings2 className="w-4 h-4 mr-1" />
+                      Correct
+                    </Button>
                   </TableCell>
                 </TableRow>
               );

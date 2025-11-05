@@ -22,6 +22,8 @@ Route::middleware(['auth:sanctum'])->prefix('clocking')->group(function () {
     Route::get('/records', [ClockingController::class, 'getRecords']);
     Route::post('/export', [ClockingController::class, 'exportRecords']);
 
+    Route::post('/correction-request', [ClockingController::class, 'requestCorrection']);
+    Route::get('/pending-corrections', [ClockingController::class, 'getPendingCorrections']);
     // ========================================
     // MANAGER ENDPOINTS
     // ========================================
@@ -29,7 +31,10 @@ Route::middleware(['auth:sanctum'])->prefix('clocking')->group(function () {
     Route::middleware('can:view all clocking sessions')->prefix('manager')->group(function () {
         // OPTIMIZED: Single endpoint for initial dashboard load
         Route::get('/initial-data', [ClockingController::class, 'getManagerInitialData']);
-        
+        Route::get('/pending-corrections', [ClockingController::class, 'getAllPendingCorrections']);
+    Route::post('/correction/{correctionId}/handle', [ClockingController::class, 'handleCorrection']);
+    Route::put('/session/{sessionId}/edit', [ClockingController::class, 'directEditClockSession']);
+    Route::put('/break/{breakId}/edit', [ClockingController::class, 'directEditBreakRecord']);
         // Additional endpoints
         Route::get('/today-sessions', [ClockingController::class, 'getTodaySessions']);
         Route::get('/all-records', [ClockingController::class, 'getAllRecords']);

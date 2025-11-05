@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { clockingService } from '../../../services/clockingService';
-import type { ClockSession, SessionResponse } from '../../../types/Clocking';
+import type { ClockSession, SessionResponse, ClockingCorrectionRequest } from '../../../types/Clocking';
 import { toast } from 'sonner';
 
 interface ClockingState {
@@ -20,6 +20,11 @@ interface ClockingState {
   isExporting: boolean;
   error: string | null;
   
+  pendingCorrections: ClockingCorrectionRequest[];
+  allPendingCorrections: ClockingCorrectionRequest[];
+  correctionLoading: boolean;
+  correctionError: string | null;
+
   fetchInitialData: () => Promise<void>;
   updateSession: (data: SessionResponse) => void;
   clockIn: () => Promise<void>;
@@ -35,6 +40,14 @@ interface ClockingState {
   exportManagerRecords: (data?: any) => Promise<void>;
   
   clearError: () => void;
+
+  requestCorrection: (data: any) => Promise<void>;
+  getPendingCorrections: () => Promise<void>;
+  getAllPendingCorrections: () => Promise<void>;
+  handleCorrection: (correctionId: number, action: 'approve' | 'reject', notes?: string) => Promise<void>;
+  directEditClockSession: (sessionId: number, data: any) => Promise<void>;
+  directEditBreakRecord: (breakId: number, data: any) => Promise<void>;
+  clearCorrectionError: () => void;
 }
 
 export const useClockingStore = create<ClockingState>((set, get) => ({
@@ -49,6 +62,10 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
   isLoading: false,
   isExporting: false,
   error: null,
+  pendingCorrections: [],
+  allPendingCorrections: [],
+  correctionLoading: false,
+  correctionError: null,
 
   fetchInitialData: async () => {
     try {
@@ -281,4 +298,101 @@ export const useClockingStore = create<ClockingState>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  requestCorrection: async (data) => {
+    set({ correctionLoading: true, correctionError: null });
+    try {
+      const response = await clockingService.requestCorrection(data);
+      if (response.success) {
+        toast.success('Correction request submitted');
+        await get().getPendingCorrections();
+      }
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Failed to submit correction';
+      set({ correctionError: msg });
+      toast.error(msg);
+    } finally {
+      set({ correctionLoading: false });
+    }
+  },
+
+  getPendingCorrections: async () => {
+    try {
+      const response = await clockingService.getPendingCorrections();
+      if (response.success) {
+        set({ pendingCorrections: response.data });
+      }
+    } catch (error) {
+      console.error('Failed to fetch corrections:', error);
+    }
+  },
+
+  getAllPendingCorrections: async () => {
+    try {
+      const response = await clockingService.getAllPendingCorrections();
+      if (response.success) {
+        set({ allPendingCorrections: response.data });
+      }
+    } catch (error) {
+      console.error('Failed to fetch all corrections:', error);
+    }
+  },
+
+  handleCorrection: async (correctionId, action, notes) => {
+    set({ correctionLoading: true, correctionError: null });
+    try {
+      const response = await clockingService.handleCorrection(correctionId, {
+        action,
+        admin_notes: notes,
+      });
+      if (response.success) {
+        toast.success(`Correction ${action}ed`);
+        await get().getAllPendingCorrections();
+      }
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Failed to handle correction';
+      set({ correctionError: msg });
+      toast.error(msg);
+    } finally {
+      set({ correctionLoading: false });
+    }
+  },
+
+  directEditClockSession: async (sessionId, data) => {
+    set({ correctionLoading: true, correctionError: null });
+    try {
+      const response = await clockingService.directEditClockSession(sessionId, data);
+      if (response.success) {
+        toast.success('Session updated');
+        await get().fetchRecords();
+      }
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Failed to update session';
+      set({ correctionError: msg });
+      toast.error(msg);
+    } finally {
+      set({ correctionLoading: false });
+    }
+  },
+
+  directEditBreakRecord: async (breakId, data) => {
+    set({ correctionLoading: true, correctionError: null });
+    try {
+      const response = await clockingService.directEditBreakRecord(breakId, data);
+      if (response.success) {
+        toast.success('Break updated');
+        await get().fetchRecords();
+      }
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Failed to update break';
+      set({ correctionError: msg });
+      toast.error(msg);
+    } finally {
+      set({ correctionLoading: false });
+    }
+  },
+
+  clearCorrectionError: () => {
+    set({ correctionError: null });
+  },
 }));

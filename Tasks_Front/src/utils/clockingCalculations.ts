@@ -113,3 +113,97 @@ export const formatCompanyCalendarDate = ({
   // 3) Last resort: show whatever we got (prevents NaN)
   return yyyyMmDd || '';
 };
+export const companyTimeToUTC = (
+  datetimeLocalValue: string,
+  companyTimezone: string
+): string => {
+  if (!datetimeLocalValue) return '';
+
+  // Input: "2025-01-15T14:30" (datetime-local)
+  const [datePart, timePart] = datetimeLocalValue.split('T');
+  const [year, month, day] = datePart.split('-');
+  const [hours, minutes] = timePart.split(':');
+
+  // Create date as if it's in the company timezone
+  const naiveDate = new Date(
+    parseInt(year, 10),
+    parseInt(month, 10) - 1,
+    parseInt(day, 10),
+    parseInt(hours, 10),
+    parseInt(minutes, 10),
+    0
+  );
+
+  // Get what this time would be in UTC if interpreted as company timezone
+  const utcDate = new Date(naiveDate);
+  const companyDateString = new Intl.DateTimeFormat('en-US', {
+    timeZone: companyTimezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(utcDate);
+
+  const [companyDatePart, companyTimePart] = companyDateString.split(', ');
+  const [companyMonth, companyDay, companyYear] = companyDatePart.split('/');
+  const [companyHours, companyMinutes, companySeconds] = companyTimePart.split(':');
+
+  const companyDate = new Date(
+    parseInt(companyYear, 10),
+    parseInt(companyMonth, 10) - 1,
+    parseInt(companyDay, 10),
+    parseInt(companyHours, 10),
+    parseInt(companyMinutes, 10),
+    parseInt(companySeconds, 10)
+  );
+
+  // Calculate offset
+  const offset = utcDate.getTime() - companyDate.getTime();
+  
+  // Apply offset to get true UTC time
+  const correctUTC = new Date(naiveDate.getTime() + offset);
+
+  // Format: "2025-01-15T14:30:00Z"
+  const year_ = correctUTC.getUTCFullYear();
+  const month_ = String(correctUTC.getUTCMonth() + 1).padStart(2, '0');
+  const day_ = String(correctUTC.getUTCDate()).padStart(2, '0');
+  const hours_ = String(correctUTC.getUTCHours()).padStart(2, '0');
+  const minutes_ = String(correctUTC.getUTCMinutes()).padStart(2, '0');
+  const seconds_ = String(correctUTC.getUTCSeconds()).padStart(2, '0');
+
+  return `${year_}-${month_}-${day_}T${hours_}:${minutes_}:${seconds_}Z`;
+};
+/**
+ * Convert UTC ISO string to company timezone datetime-local format
+ * For use in datetime-local input fields
+ */
+export const utcToCompanyDateTime = (
+  utcIsoString: string,
+  companyTimezone: string
+): string => {
+  if (!utcIsoString) return '';
+
+  const date = new Date(utcIsoString);
+
+  const formatted = new Intl.DateTimeFormat('en-US', {
+    timeZone: companyTimezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(date);
+
+  // Extract parts: "MM/DD/YYYY, HH:MM:SS"
+  const [datePart, timePart] = formatted.split(', ');
+  const [month, day, year] = datePart.split('/');
+  const [hours, minutes] = timePart.split(':');
+
+  // Return in datetime-local format: "YYYY-MM-DDTHH:mm"
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};

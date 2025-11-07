@@ -84,6 +84,9 @@ export const RequestCorrectionDialog = ({
           <DialogDescription className="text-muted-foreground">
             Original: {getOriginalTime()}
           </DialogDescription>
+          <DialogDescription className="text-muted-foreground">
+  Enter corrected time in {companyTimezone}
+</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

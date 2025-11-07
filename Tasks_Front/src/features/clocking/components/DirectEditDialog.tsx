@@ -1,6 +1,4 @@
-// src/features/clocking/components/DirectEditDialog.tsx
-
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import type { ClockSession, BreakRecord } from '@/types/Clocking';
-import { companyTimeToUTC } from '@/utils/clockingCalculations';
+import { convertToCompanyTime, companyTimeToUTC } from '@/utils/clockingCalculations';
 
 interface Props {
   open: boolean;
@@ -30,11 +28,29 @@ export const DirectEditDialog = ({
   open,
   onOpenChange,
   type,
+  session,
+  breakRecord,
   companyTimezone,
   onSubmit,
   isLoading,
 }: Props) => {
   const [time, setTime] = useState('');
+
+  const currentTimeLabel = useMemo(() => {
+    if (type === 'clock_in' && session?.clock_in_utc) {
+      return convertToCompanyTime(session.clock_in_utc, companyTimezone);
+    }
+    if (type === 'clock_out' && session?.clock_out_utc) {
+      return convertToCompanyTime(session.clock_out_utc, companyTimezone);
+    }
+    if (type === 'break_in' && breakRecord?.break_start_utc) {
+      return convertToCompanyTime(breakRecord.break_start_utc, companyTimezone);
+    }
+    if (type === 'break_out' && breakRecord?.break_end_utc) {
+      return convertToCompanyTime(breakRecord.break_end_utc, companyTimezone);
+    }
+    return 'Not set';
+  }, [type, session, breakRecord, companyTimezone]);
 
   const handleSubmit = async () => {
     if (!time) return;
@@ -42,15 +58,10 @@ export const DirectEditDialog = ({
     const data: any = {};
     const utcTime = companyTimeToUTC(time, companyTimezone);
 
-    if (type === 'clock_in') {
-      data.clock_in_utc = utcTime;
-    } else if (type === 'clock_out') {
-      data.clock_out_utc = utcTime;
-    } else if (type === 'break_in') {
-      data.break_start_utc = utcTime;
-    } else if (type === 'break_out') {
-      data.break_end_utc = utcTime;
-    }
+    if (type === 'clock_in') data.clock_in_utc = utcTime;
+    else if (type === 'clock_out') data.clock_out_utc = utcTime;
+    else if (type === 'break_in') data.break_start_utc = utcTime;
+    else if (type === 'break_out') data.break_end_utc = utcTime;
 
     await onSubmit(data);
     setTime('');
@@ -71,7 +82,10 @@ export const DirectEditDialog = ({
             Edit {type.replace('_', ' ').toUpperCase()}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Change the time in {companyTimezone}
+            Current: {currentTimeLabel}
+          </DialogDescription>
+          <DialogDescription className="text-muted-foreground">
+            Enter new time in {companyTimezone}
           </DialogDescription>
         </DialogHeader>
 
@@ -99,6 +113,7 @@ export const DirectEditDialog = ({
               onOpenChange(false);
             }}
             disabled={isLoading}
+            className="border-input"
           >
             Cancel
           </Button>

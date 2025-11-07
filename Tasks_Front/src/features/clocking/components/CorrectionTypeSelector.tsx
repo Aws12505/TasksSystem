@@ -1,5 +1,3 @@
-// src/features/clocking/components/CorrectionTypeSelector.tsx
-
 import {
   Dialog,
   DialogContent,
@@ -28,6 +26,8 @@ export const CorrectionTypeSelector = ({
 }: Props) => {
   if (!session) return null;
 
+  const hasBreaks = !!session.break_records?.length;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card border-border">
@@ -40,10 +40,7 @@ export const CorrectionTypeSelector = ({
 
         <div className="grid grid-cols-2 gap-3 py-4">
           <Button
-            onClick={() => {
-              onSelect('clock_in');
-              onOpenChange(false);
-            }}
+            onClick={() => { onSelect('clock_in'); onOpenChange(false); }}
             disabled={isLoading}
             variant="outline"
             className="h-20 flex flex-col items-center justify-center border-input hover:bg-accent"
@@ -53,10 +50,7 @@ export const CorrectionTypeSelector = ({
           </Button>
 
           <Button
-            onClick={() => {
-              onSelect('clock_out');
-              onOpenChange(false);
-            }}
+            onClick={() => { onSelect('clock_out'); onOpenChange(false); }}
             disabled={!session.clock_out_utc || isLoading}
             variant="outline"
             className="h-20 flex flex-col items-center justify-center border-input hover:bg-accent"
@@ -64,39 +58,42 @@ export const CorrectionTypeSelector = ({
             <span className="text-sm font-semibold text-foreground">Clock Out</span>
             <span className="text-xs text-muted-foreground">Edit end time</span>
           </Button>
-
-          {session.break_records && session.break_records.length > 0 && (
-            <>
-              <Button
-                onClick={() => {
-                  onSelect('break_in', session.break_records[0]?.id);
-                  onOpenChange(false);
-                }}
-                disabled={isLoading}
-                variant="outline"
-                className="h-20 flex flex-col items-center justify-center border-input hover:bg-accent"
-              >
-                <span className="text-sm font-semibold text-foreground">Break Start</span>
-                <span className="text-xs text-muted-foreground">Edit break in</span>
-              </Button>
-
-              <Button
-                onClick={() => {
-                  onSelect('break_out', session.break_records[0]?.id);
-                  onOpenChange(false);
-                }}
-                disabled={!session.break_records[0]?.break_end_utc || isLoading}
-                variant="outline"
-                className="h-20 flex flex-col items-center justify-center border-input hover:bg-accent"
-              >
-                <span className="text-sm font-semibold text-foreground">Break End</span>
-                <span className="text-xs text-muted-foreground">Edit break out</span>
-              </Button>
-            </>
-          )}
         </div>
 
-        <DialogFooter>
+        {hasBreaks && (
+          <div className="space-y-3">
+            <div className="text-sm font-medium text-foreground">Breaks</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {session.break_records.map((b, idx) => {
+                const label = `Break ${idx + 1}`;
+                return (
+                  <div key={b.id} className="flex gap-2">
+                    <Button
+                      onClick={() => { onSelect('break_in', b.id); onOpenChange(false); }}
+                      disabled={isLoading}
+                      variant="outline"
+                      className="flex-1 h-12 justify-between border-input hover:bg-accent"
+                      title={`${label} start`}
+                    >
+                      {label}: Start
+                    </Button>
+                    <Button
+                      onClick={() => { onSelect('break_out', b.id); onOpenChange(false); }}
+                      disabled={!b.break_end_utc || isLoading}
+                      variant="outline"
+                      className="flex-1 h-12 justify-between border-input hover:bg-accent"
+                      title={`${label} end`}
+                    >
+                      {label}: End
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <DialogFooter className="pt-2">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

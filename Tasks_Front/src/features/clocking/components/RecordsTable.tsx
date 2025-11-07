@@ -12,7 +12,19 @@ import {
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../../../components/ui/avatar';
-import { ChevronLeft, ChevronRight, Coffee, AlertCircle, Loader2, Settings2 } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Coffee, 
+  AlertCircle, 
+  Loader2, 
+  Settings2,
+  Clock,
+  Play,
+  Square,
+  Calendar,
+  User
+} from 'lucide-react';
 import type { ClockSession } from '../../../types/Clocking';
 import { 
   calculateWorkDuration, 
@@ -30,6 +42,7 @@ import {
   DialogFooter,
 } from '../../../components/ui/dialog';
 import { Separator } from '../../../components/ui/separator';
+import { Card, CardContent } from '../../../components/ui/card';
 
 
 interface Props {
@@ -227,93 +240,260 @@ export const RecordsTable = ({
       )}
 
 
-      {/* Breaks Dialog */}
+      {/* Enhanced Breaks Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-card border-border text-foreground max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Session Details</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              {selected
-                ? `Date: ${formatCompanyCalendarDate({
-                    sessionDate: selected.session_date,
-                    companyTimezone,
-                    utcFallback: selected.clock_in_utc,
-                    locale: 'en-US',
-                  })} • ${selected.crosses_midnight ? 'Crossed midnight' : 'Same day'}`
-                : ''}
-            </DialogDescription>
+        <DialogContent className="bg-card border-border text-foreground w-[95vw] max-w-4xl p-0 overflow-hidden">
+          {/* Sticky header with gradient background */}
+          <DialogHeader className="sticky top-0 z-20 bg-gradient-to-r from-card to-accent/30 border-b border-border px-6 py-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <Clock className="w-5 h-5 text-chart-1" />
+                  Session Details
+                </DialogTitle>
+                <DialogDescription className="text-muted-foreground mt-1">
+                  {selected && (
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {formatCompanyCalendarDate({
+                          sessionDate: selected.session_date,
+                          companyTimezone,
+                          utcFallback: selected.clock_in_utc,
+                          locale: 'en-US',
+                        })}
+                      </span>
+                      {selected.crosses_midnight && (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          Crossed midnight
+                        </Badge>
+                      )}
+                      {showUser && selected.user && (
+                        <span className="flex items-center gap-1">
+                          <User className="w-4 h-4" />
+                          {selected.user.name}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </DialogDescription>
+              </div>
+              <Badge 
+                variant={
+                  selected?.status === 'completed' ? 'secondary' :
+                  selected?.status === 'active' ? 'default' : 'outline'
+                }
+                className="text-sm px-3 py-1"
+              >
+                {selected?.status === 'completed' ? 'Completed' :
+                 selected?.status === 'active' ? 'Active' : 'On Break'}
+              </Badge>
+            </div>
           </DialogHeader>
 
+          {/* Scrollable content */}
+          <div className="max-h-[70vh] overflow-y-auto px-6 py-6 space-y-6">
+            {/* Session Overview Cards */}
+            {selected && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card className="bg-accent/50 border-border">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                      <Play className="w-4 h-4 text-chart-1" />
+                      Clock In
+                    </div>
+                    <div className="font-medium text-sm">
+                      {convertToCompanyTime(selected.clock_in_utc, companyTimezone)}
+                    </div>
+                  </CardContent>
+                </Card>
 
-          {selected?.break_records?.length ? (
-            <div className="space-y-4">
-              {selected.break_records.map((b, idx) => {
-                const start = convertToCompanyTime(b.break_start_utc, companyTimezone).split(', ')[1];
-                const end = b.break_end_utc
-                  ? convertToCompanyTime(b.break_end_utc, companyTimezone).split(', ')[1]
-                  : null;
+                <Card className="bg-accent/50 border-border">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                      <Square className="w-4 h-4 text-chart-2" />
+                      Clock Out
+                    </div>
+                    <div className="font-medium text-sm">
+                      {selected.clock_out_utc
+                        ? convertToCompanyTime(selected.clock_out_utc, companyTimezone)
+                        : '—'}
+                    </div>
+                  </CardContent>
+                </Card>
 
-
-                const seconds =
-                  b.break_end_utc
-                    ? Math.max(
-                        0,
-                        Math.floor(
-                          (new Date(b.break_end_utc).getTime() -
-                            new Date(b.break_start_utc).getTime()) / 1000
+                <Card className="bg-accent/50 border-border">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                      <Clock className="w-4 h-4 text-chart-3" />
+                      Work Time
+                    </div>
+                    <div className="font-mono tabular-nums font-medium text-chart-3">
+                      {formatDuration(
+                        calculateWorkDuration(
+                          selected.clock_in_utc,
+                          selected.clock_out_utc,
+                          selected.break_records
                         )
-                      )
-                    : 0;
-
-
-                return (
-                  <div key={b.id} className="rounded-md border border-border p-4 bg-accent">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium">
-                        Break {idx + 1}{' '}
-                        {b.status === 'active' ? (
-                          <span className="ml-2 inline-block rounded bg-chart-2 px-2 py-0.5 text-xs text-white">
-                            Active
-                          </span>
-                        ) : null}
-                      </div>
-                      {b.status === 'completed' ? (
-                        <div className="text-sm font-mono tabular-nums text-foreground">
-                          {formatDuration(seconds)}
-                        </div>
-                      ) : null}
+                      )}
                     </div>
+                  </CardContent>
+                </Card>
 
-
-                    <Separator className="my-3 bg-border" />
-
-
-                    <div className="text-sm text-muted-foreground">
-                      <div>
-                        <span className="text-foreground">Start:</span> {start}
-                      </div>
-                      <div>
-                        <span className="text-foreground">End:</span> {end ?? '—'}
-                      </div>
-                      {b.description ? (
-                        <div className="mt-2">
-                          <span className="text-foreground">Notes:</span> {b.description}
-                        </div>
-                      ) : null}
+                <Card className="bg-accent/50 border-border">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                      <Coffee className="w-4 h-4 text-chart-2" />
+                      Break Time
                     </div>
-                  </div>
-                );
-              })}
+                    <div className="font-mono tabular-nums font-medium text-chart-2">
+                      {formatDuration(calculateTotalBreakDuration(selected.break_records))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Breaks Section */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Coffee className="w-5 h-5 text-chart-2" />
+                  Breaks
+                  <Badge variant="secondary" className="ml-2">
+                    {selected?.break_records?.length || 0}
+                  </Badge>
+                </h3>
+                <div className="text-sm text-muted-foreground">
+                  Total: {formatDuration(calculateTotalBreakDuration(selected?.break_records || []))}
+                </div>
+              </div>
+
+              {selected?.break_records?.length ? (
+                <div className="space-y-3">
+                  {selected.break_records.map((b, idx) => {
+                    const start = convertToCompanyTime(b.break_start_utc, companyTimezone).split(', ')[1];
+                    const end = b.break_end_utc
+                      ? convertToCompanyTime(b.break_end_utc, companyTimezone).split(', ')[1]
+                      : null;
+
+                    const seconds = b.break_end_utc
+                      ? Math.max(
+                          0,
+                          Math.floor(
+                            (new Date(b.break_end_utc).getTime() -
+                              new Date(b.break_start_utc).getTime()) / 1000
+                          )
+                        )
+                      : 0;
+
+                    const isActive = b.status === 'active';
+
+                    return (
+                      <Card 
+                        key={b.id} 
+                        className={`border-l-4 ${
+                          isActive 
+                            ? 'border-l-chart-2 bg-chart-2/5' 
+                            : 'border-l-chart-1 bg-accent'
+                        } transition-all duration-200 hover:shadow-md`}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-3 h-3 rounded-full ${
+                                isActive ? 'bg-chart-2 animate-pulse' : 'bg-chart-1'
+                              }`} />
+                              <div className="font-medium">
+                                Break {idx + 1}
+                              </div>
+                              {isActive && (
+                                <Badge variant="default" className="bg-chart-2 text-white">
+                                  Active
+                                </Badge>
+                              )}
+                            </div>
+                            {!isActive && (
+                              <div className="font-mono tabular-nums font-semibold text-chart-1">
+                                {formatDuration(seconds)}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Play className="w-4 h-4 text-chart-1" />
+                                <span className="text-muted-foreground">Start:</span>
+                                <span className="font-medium">{start}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Square className="w-4 h-4 text-chart-2" />
+                                <span className="text-muted-foreground">End:</span>
+                                <span className="font-medium">{end ?? '—'}</span>
+                              </div>
+                            </div>
+                            
+                            {b.description && (
+                              <div className="md:col-span-2">
+                                <Separator className="my-2" />
+                                <div className="flex gap-2">
+                                  <span className="text-muted-foreground min-w-12">Notes:</span>
+                                  <span className="text-foreground bg-accent px-3 py-2 rounded-md border border-border flex-1">
+                                    {b.description}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <Card className="border-border bg-accent/50">
+                  <CardContent className="p-8 text-center">
+                    <Coffee className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                    <p className="text-muted-foreground">No breaks recorded for this session</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      All breaks will appear here when taken
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">No breaks recorded for this session.</div>
-          )}
+          </div>
 
-
-          <DialogFooter className="mt-4">
-            <Button variant="outline" className="border-input" onClick={() => setOpen(false)}>
-              Close
-            </Button>
+          {/* Sticky footer */}
+          <DialogFooter className="sticky bottom-0 z-20 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/70 border-t border-border px-6 py-4">
+            <div className="flex items-center justify-between w-full">
+              <div className="text-sm text-muted-foreground">
+                Timezone: {companyTimezone}
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="border-input"
+                  onClick={() => setOpen(false)}
+                >
+                  Close
+                </Button>
+                {onCorrectionClick && selected && (
+                  <Button 
+                    variant="default"
+                    onClick={() => {
+                      setOpen(false);
+                      onCorrectionClick(selected);
+                    }}
+                  >
+                    <Settings2 className="w-4 h-4 mr-2" />
+                    Correct Session
+                  </Button>
+                )}
+              </div>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

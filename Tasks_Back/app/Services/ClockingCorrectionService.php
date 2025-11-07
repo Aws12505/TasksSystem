@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Events\ClockSessionUpdated;
 
 class ClockingCorrectionService
 {
@@ -68,16 +69,20 @@ class ClockingCorrectionService
                 $session = $request->clockSession;
                 if ($correctionType === 'clock_in') {
                     $session->update(['clock_in_utc' => $newTime]);
+                    broadcast(new ClockSessionUpdated($session));
                 } else {
                     $session->update([
                         'clock_out_utc' => $newTime,
                         'crosses_midnight' => $this->checkIfCrossesMidnight($session->clock_in_utc, $newTime),
                     ]);
+                    broadcast(new ClockSessionUpdated($session));
                 }
             } elseif (in_array($correctionType, ['break_in', 'break_out'])) {
                 $breakRecord = $request->breakRecord;
                 $field = $correctionType === 'break_in' ? 'break_start_utc' : 'break_end_utc';
                 $breakRecord->update([$field => $newTime]);
+                $session = $breakRecord->clockSession;
+                broadcast(new ClockSessionUpdated($session));
             }
 
             $request->update([
@@ -116,6 +121,7 @@ class ClockingCorrectionService
         }
 
         $session->update($updateData);
+        broadcast(new ClockSessionUpdated($session));
         return $session->fresh();
     }
 
@@ -132,6 +138,8 @@ class ClockingCorrectionService
         }
 
         $break->update($updateData);
+        $session = $break->clockSession;
+        broadcast(new ClockSessionUpdated($session));
         return $break->fresh();
     }
 

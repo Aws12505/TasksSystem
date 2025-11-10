@@ -92,10 +92,16 @@ const TasksList: React.FC<TasksListProps> = ({
               return (
                 <TableRow key={task.id} className="border-border hover:bg-accent/50">
                   <TableCell>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-foreground">{task.name}</p>
-                    </div>
-                  </TableCell>
+  <div className="space-y-1">
+    <Link
+      to={`/tasks/${task.id}`}
+      className="text-sm font-medium text-foreground hover:text-primary hover:underline"
+    >
+      {task.name}
+    </Link>
+  </div>
+</TableCell>
+
                   <TableCell>
                     <TaskStatusBadge status={task.status} />
                   </TableCell>

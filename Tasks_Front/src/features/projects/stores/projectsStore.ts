@@ -30,6 +30,7 @@ interface ProjectsState {
   fetchProjects: (page?: number) => Promise<void>
   fetchProject: (id: number) => Promise<void>
   fetchProjectSections: (projectId: number) => Promise<void>
+  fetchAllProjects: (perPageChunk?: number) => Promise<void>
   fetchAvailableUsers: () => Promise<void>
   createProject: (data: CreateProjectRequest) => Promise<Project | null>
   updateProject: (id: number, data: UpdateProjectRequest) => Promise<Project | null>
@@ -73,7 +74,47 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       toast.error(errorMessage)
     }
   },
+fetchAllProjects: async (perPageChunk = 100) => {
+    set({ isLoading: true, error: null })
+    try {
+      let page = 1
+      let all: Project[] = []
+      let lastPage = 1
+      let total = 0
 
+      do {
+        const res = await projectService.getProjects(page, perPageChunk)
+        if (!res.success) {
+          set({ error: res.message, isLoading: false })
+          toast.error(res.message)
+          return
+        }
+
+        all = all.concat(res.data)
+        lastPage = res.pagination.last_page
+        total = res.pagination.total
+        page += 1
+      } while (page <= lastPage)
+
+      set({
+        projects: all,
+        // synthesize a "single page" pagination state over the combined result
+        pagination: {
+          current_page: 1,
+          total,
+          per_page: all.length,
+          last_page: 1,
+          from: all.length > 0 ? 1 : null,
+          to: all.length > 0 ? all.length : null,
+        },
+        isLoading: false
+      })
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to fetch all projects'
+      set({ error: errorMessage, isLoading: false })
+      toast.error(errorMessage)
+    }
+  },
   fetchProject: async (id: number) => {
     set({ isLoading: true, error: null })
     try {

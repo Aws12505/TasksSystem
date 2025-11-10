@@ -60,7 +60,7 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
   isLoading
 }) => {
   const [availableUsers, setAvailableUsers] = useState<User[]>([])
-  const { projects, fetchProjects, isLoading: projectsLoading } = useProjectsStore()
+  const { projects,fetchAllProjects, isLoading: projectsLoading } = useProjectsStore()
   const { sections, fetchSectionsByProject, isLoading: sectionsLoading } = useSectionsStore()
 
   const form = useForm<FormData>({
@@ -111,7 +111,7 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
   // Fetch initial data
   useEffect(() => {
     const initializeData = async () => {
-      await fetchProjects()
+      await fetchAllProjects()
       await fetchUsers()
       
       // If we have initial project ID or sectionId, fetch sections

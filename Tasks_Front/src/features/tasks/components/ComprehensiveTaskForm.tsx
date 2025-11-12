@@ -13,6 +13,7 @@ import { useProjectsStore } from '../../projects/stores/projectsStore'
 import { useSectionsStore } from '../../sections/stores/sectionsStore'
 import { userService } from '../../../services/userService'
 import type { User } from '../../../types/User'
+import { CalendarWithInput } from '@/components/ui/calendar-with-input'
 
 // Fixed schema - make everything properly optional/required
 const subtaskItemSchema = z.object({
@@ -257,11 +258,14 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium">Due Date *</label>
-                <Input 
-                  type="date" 
-                  {...form.register('due_date')} 
-                  disabled={isLoading} 
-                />
+                <CalendarWithInput
+  id="due_date"
+  name="due_date"
+  value={form.watch('due_date') || ''}
+  onChange={(v) => form.setValue('due_date', v, { shouldValidate: true })}
+  disabled={isLoading}
+  required
+/>
                 {form.formState.errors.due_date && (
                   <p className="text-sm text-red-500 mt-1">{form.formState.errors.due_date.message}</p>
                 )}
@@ -380,11 +384,14 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
                     )}
                   </div>
                   <div>
-                    <Input 
-                      type="date" 
-                      {...form.register(`subtasks.${index}.due_date` as const)} 
-                      disabled={isLoading} 
-                    />
+                    <CalendarWithInput
+  id={`subtasks.${index}.due_date`}
+  name={`subtasks.${index}.due_date`}
+  value={form.watch(`subtasks.${index}.due_date` as const) || ''}
+  onChange={(v) => form.setValue(`subtasks.${index}.due_date` as const, v, { shouldValidate: true })}
+  disabled={isLoading}
+  required
+/>
                     {form.formState.errors.subtasks?.[index]?.due_date && (
                       <p className="text-sm text-red-500 mt-1">
                         {form.formState.errors.subtasks[index]?.due_date?.message}

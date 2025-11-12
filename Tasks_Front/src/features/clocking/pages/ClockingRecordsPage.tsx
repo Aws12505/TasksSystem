@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import { useClockingRecords } from '../hooks/useClockingRecords';
@@ -15,6 +14,7 @@ import { RequestCorrectionDialog } from '../components/RequestCorrectionDialog';
 import { CorrectionTypeSelector } from '../components/CorrectionTypeSelector';
 import { Filter, X, Clock, Download, AlertCircle } from 'lucide-react';
 import type { ClockSession } from '../../../types/Clocking';
+import { CalendarWithInput } from '../../../components/ui/calendar-with-input'
 
 const ClockingRecordsPage = () => {
   const [filters, setFilters] = useState<any>({ per_page: 15 });
@@ -140,23 +140,20 @@ const ClockingRecordsPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="start_date" className="text-foreground">Start Date</Label>
-                      <Input
-                        id="start_date"
-                        type="date"
-                        value={filters.start_date || ''}
-                        onChange={(e) => handleFilterChange('start_date', e.target.value)}
-                        className="bg-background border-input text-foreground"
-                      />
+                      <CalendarWithInput
+  id="start_date"
+  value={filters.start_date || ''}
+  onChange={(v) => handleFilterChange('start_date', v)}
+/>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="end_date" className="text-foreground">End Date</Label>
-                      <Input
-                        id="end_date"
-                        type="date"
-                        value={filters.end_date || ''}
-                        onChange={(e) => handleFilterChange('end_date', e.target.value)}
-                        className="bg-background border-input text-foreground"
-                      />
+                      <CalendarWithInput
+  id="end_date"
+  value={filters.end_date || ''}
+  onChange={(v) => handleFilterChange('end_date', v)}
+/>
+
                     </div>
                   </div>
                 </CardContent>
@@ -221,24 +218,20 @@ const ClockingRecordsPage = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="export_start_date" className="text-foreground">Start Date (Optional)</Label>
-                  <Input
-                    id="export_start_date"
-                    type="date"
-                    value={exportRange.start_date}
-                    onChange={(e) => setExportRange({ ...exportRange, start_date: e.target.value })}
-                    className="bg-background border-input text-foreground"
-                  />
+                  <CalendarWithInput
+  id="export_start_date"
+  value={exportRange.start_date}
+  onChange={(v) => setExportRange({ ...exportRange, start_date: v })}
+/>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="export_end_date" className="text-foreground">End Date (Optional)</Label>
-                  <Input
-                    id="export_end_date"
-                    type="date"
-                    value={exportRange.end_date}
-                    onChange={(e) => setExportRange({ ...exportRange, end_date: e.target.value })}
-                    className="bg-background border-input text-foreground"
-                  />
+                  <CalendarWithInput
+  id="export_end_date"
+  value={exportRange.end_date}
+  onChange={(v) => setExportRange({ ...exportRange, end_date: v })}
+/>
                 </div>
 
                 <div className="flex gap-2 justify-end pt-4">

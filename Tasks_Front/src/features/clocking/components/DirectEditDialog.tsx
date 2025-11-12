@@ -9,9 +9,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import type { ClockSession, BreakRecord } from '@/types/Clocking';
 import { convertToCompanyTime, companyTimeToUTC } from '@/utils/clockingCalculations';
+import { CalendarWithInputAndTime } from '../../../components/ui/calendar-with-input-and-time'
 
 interface Props {
   open: boolean;
@@ -67,6 +67,8 @@ export const DirectEditDialog = ({
     setTime('');
     onOpenChange(false);
   };
+const datePart = time ? time.split('T')[0] : ''
+const timePart = time ? (time.split('T')[1] || '') : ''
 
   return (
     <Dialog
@@ -91,18 +93,39 @@ export const DirectEditDialog = ({
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="time" className="text-foreground">
-              New Time ({companyTimezone})
-            </Label>
-            <Input
-              id="time"
-              type="datetime-local"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              className="bg-background border-input text-foreground"
-              disabled={isLoading}
-            />
-          </div>
+  <Label htmlFor="time" className="text-foreground">
+    New Time ({companyTimezone})
+  </Label>
+  <CalendarWithInputAndTime
+    id="time"
+    name="time"
+    /* date part (YYYY-MM-DD) controlled from existing `time` */
+    value={datePart}
+    onChange={(v) => {
+      // keep a single combined string in `time` state
+      if (!v) return setTime('')
+      setTime(timePart ? `${v}T${timePart}` : `${v}T00:00`)
+    }}
+
+    /* time part (HH:mm or HH:mm:ss) controlled from existing `time` */
+    timeId="time_clock"
+    timeName="time_clock"
+    timeValue={timePart}
+    onTimeChange={(v) => {
+      if (!v) return setTime(datePart ? `${datePart}T00:00` : '')
+      setTime(datePart ? `${datePart}T${v}` : '')
+    }}
+
+    /* pass-through flags so UX matches original */
+    required
+    disabled={isLoading}
+    dateLabel="Date"
+    timeLabel="Time"
+    className="border-input text-foreground"
+    timeClassName="border-input text-foreground"
+  />
+</div>
+
         </div>
 
         <DialogFooter>

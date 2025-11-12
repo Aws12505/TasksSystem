@@ -35,6 +35,7 @@ import { userService } from '../../../services/userService'
 import { useProjectsStore } from '../../projects/stores/projectsStore'
 import type { User } from '../../../types/User'
 import type { TaskFilters } from '../../../services/taskService'
+import { CalendarWithInput } from '@/components/ui/calendar-with-input'
 
 const PER_PAGE = 15
 
@@ -264,19 +265,21 @@ const TasksPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex items-center gap-2 flex-wrap">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
-                <Input 
-                  type="date" 
-                  value={dueFrom} 
-                  onChange={(e) => setDueFrom(e.target.value)}
-                  className="min-w-[140px]"
-                />
-                <span className="text-muted-foreground text-sm">to</span>
-                <Input 
-                  type="date" 
-                  value={dueTo} 
-                  onChange={(e) => setDueTo(e.target.value)}
-                  className="min-w-[140px]"
-                />
+                <CalendarWithInput
+  id="due_from"
+  name="due_from"
+  value={dueFrom}
+  onChange={setDueFrom}
+  className="min-w-[140px]"
+/>
+<span className="text-muted-foreground text-sm">to</span>
+<CalendarWithInput
+  id="due_to"
+  name="due_to"
+  value={dueTo}
+  onChange={setDueTo}
+  className="min-w-[140px]"
+/>
                 {(dueFrom || dueTo) && (
                   <Button variant="ghost" size="sm" onClick={() => { setDueFrom(''); setDueTo('') }}>
                     Clear

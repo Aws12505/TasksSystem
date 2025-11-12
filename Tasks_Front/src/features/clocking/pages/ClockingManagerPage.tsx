@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
+import { CalendarWithInput } from '../../../components/ui/calendar-with-input'
 import { Label } from '../../../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import { useClockingManager } from '../hooks/useClockingManager';
@@ -224,56 +224,59 @@ const ClockingManagerPage = () => {
 
         {/* Export Dialog */}
         {showExportDialog && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <Card className="bg-card border-border w-full max-w-md mx-4">
-              <CardHeader>
-                <CardTitle className="text-foreground">Export Records</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-muted-foreground text-sm">Choose a date range or leave empty to export all records</p>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="export_start_date" className="text-foreground">Start Date (Optional)</Label>
-                  <Input
-                    id="export_start_date"
-                    type="date"
-                    value={exportRange.start_date}
-                    onChange={(e) => setExportRange({ ...exportRange, start_date: e.target.value })}
-                    className="bg-background border-input text-foreground"
-                  />
-                </div>
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <Card className="bg-card border-border w-full max-w-md mx-4">
+      <CardHeader>
+        <CardTitle className="text-foreground">Export Records</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-muted-foreground text-sm">
+          Choose a date range or leave empty to export all records
+        </p>
 
-                <div className="space-y-2">
-                  <Label htmlFor="export_end_date" className="text-foreground">End Date (Optional)</Label>
-                  <Input
-                    id="export_end_date"
-                    type="date"
-                    value={exportRange.end_date}
-                    onChange={(e) => setExportRange({ ...exportRange, end_date: e.target.value })}
-                    className="bg-background border-input text-foreground"
-                  />
-                </div>
+        {/* ✅ Start Date */}
+        <div className="space-y-2">
+  <Label htmlFor="export_start_date" className="text-foreground">
+    Start Date (Optional)
+  </Label>
+  <CalendarWithInput
+    id="export_start_date"
+    value={exportRange.start_date}
+    onChange={(v) => setExportRange({ ...exportRange, start_date: v })}
+  />
+</div>
 
-                <div className="flex gap-2 justify-end pt-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowExportDialog(false)}
-                    className="border-input"
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleExport}
-                    disabled={isExporting}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    {isExporting ? 'Exporting...' : 'Export'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* ✅ End Date */}
+        <div className="space-y-2">
+  <Label htmlFor="export_end_date" className="text-foreground">
+    End Date (Optional)
+  </Label>
+  <CalendarWithInput
+    id="export_end_date"
+    value={exportRange.end_date}
+    onChange={(v) => setExportRange({ ...exportRange, end_date: v })}
+  />
+</div>
+        <div className="flex gap-2 justify-end pt-4">
+          <Button
+            variant="outline"
+            onClick={() => setShowExportDialog(false)}
+            className="border-input"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {isExporting ? 'Exporting...' : 'Export'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+)}
       </div>
 
       {/* Type Selector */}

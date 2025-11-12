@@ -25,6 +25,7 @@ import { useProjectsStore } from '../../projects/stores/projectsStore'
 import { useSectionsStore } from '../../sections/stores/sectionsStore'
 import type { Task, CreateTaskRequest, UpdateTaskRequest, Priority, TaskStatus } from '../../../types/Task'
 import type { Section } from '../../../types/Section'
+import { CalendarWithInput } from '@/components/ui/calendar-with-input'
 
 const createTaskSchema = z.object({
   name: z.string().min(1, 'Task name is required').max(255),
@@ -448,12 +449,15 @@ const TaskForm: React.FC<TaskFormProps> = ({
             <FormItem>
               <FormLabel className="text-foreground">Due Date</FormLabel>
               <FormControl>
-                <Input
-                  type="date"
-                  {...field}
-                  disabled={isLoading}
-                  className="bg-background border-input text-foreground"
-                />
+                <CalendarWithInput
+          id="due_date"
+          name="due_date"
+          value={field.value || ''}
+          onChange={field.onChange}
+          disabled={isLoading}
+          className="border-input text-foreground"
+          required
+        />
               </FormControl>
               <FormMessage className="text-destructive" />
             </FormItem>

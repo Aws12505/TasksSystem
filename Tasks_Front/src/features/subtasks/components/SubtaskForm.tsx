@@ -24,6 +24,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2 } from 'lucide-react'
 import type { Subtask, CreateSubtaskRequest, UpdateSubtaskRequest } from '../../../types/Subtask'
 import type { Priority } from '../../../types/Task'
+import { CalendarWithInput } from '@/components/ui/calendar-with-input'
 
 const createSubtaskSchema = z.object({
   name: z.string().min(1, 'Subtask name is required').max(255),
@@ -123,12 +124,15 @@ const SubtaskForm: React.FC<SubtaskFormProps> = ({ subtask, taskId, onSubmit, on
               <FormItem>
                 <FormLabel className="text-foreground">Due Date</FormLabel>
                 <FormControl>
-                  <Input
-                    type="date"
-                    {...field}
-                    disabled={isLoading}
-                    className="bg-background border-input text-foreground"
-                  />
+                  <CalendarWithInput
+          id="due_date"
+          name="due_date"
+          value={field.value}
+          onChange={field.onChange}
+          disabled={isLoading}
+          className="border-input text-foreground"
+          required
+        />
                 </FormControl>
                 <FormMessage className="text-destructive" />
               </FormItem>

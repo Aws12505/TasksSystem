@@ -11,10 +11,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { ClockSession, BreakRecord } from '@/types/Clocking';
 import { convertToCompanyTime, companyTimeToUTC } from '@/utils/clockingCalculations';
+import { CalendarWithInputAndTime } from '@/components/ui/calendar-with-input-and-time'
 
 interface Props {
   open: boolean;
@@ -73,7 +73,8 @@ export const RequestCorrectionDialog = ({
     setReason('');
     onOpenChange(false);
   };
-
+  const datePart = requestedTime ? requestedTime.split('T')[0] : ''
+  const timePart = requestedTime ? (requestedTime.split('T')[1] || '') : ''
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card border-border">
@@ -94,13 +95,36 @@ export const RequestCorrectionDialog = ({
             <Label htmlFor="requested_time" className="text-foreground">
               Corrected Time ({companyTimezone})
             </Label>
-            <Input
+            <CalendarWithInputAndTime
               id="requested_time"
-              type="datetime-local"
-              value={requestedTime}
-              onChange={(e) => setRequestedTime(e.target.value)}
-              className="bg-background border-input text-foreground"
+              name="requested_time"
+
+              /* date (YYYY-MM-DD) is controlled by requestedTime */
+              value={datePart}
+              onChange={(v) => {
+                if (!v) return setRequestedTime('')
+                setRequestedTime(timePart ? `${v}T${timePart}` : `${v}T00:00`)
+              }}
+
+              /* time (HH:mm or HH:mm:ss) is controlled by requestedTime */
+              timeId="requested_time_clock"
+              timeName="requested_time_clock"
+              timeValue={timePart}
+              onTimeChange={(v) => {
+                if (!v) return setRequestedTime(datePart ? `${datePart}T00:00` : '')
+                setRequestedTime(datePart ? `${datePart}T${v}` : '')
+              }}
+
+              /* choose 12h vs 24h display here */
+              timeFormat="hh:mm aa"   // or "HH:mm" if you want 24h
+
+              required
               disabled={isLoading}
+              dateLabel="Date"
+              timeLabel="Time"
+              className="border-input text-foreground"
+              timeClassName="border-input text-foreground"
+              wrapperClassName="items-start"
             />
             <p className="text-xs text-muted-foreground">
               Enter time in {companyTimezone}

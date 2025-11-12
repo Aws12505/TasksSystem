@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useFinalRatings } from '../hooks/useFinalRatings';
 import { Calculator, Loader2 } from 'lucide-react';
+import { CalendarWithInput } from '@/components/ui/calendar-with-input'
 
 const CalculateRatingsForm: React.FC = () => {
   const { configs, activeConfig, isLoading, calculateRatings, fetchActiveConfig } = useFinalRatings();
@@ -73,28 +74,28 @@ const CalculateRatingsForm: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Period Start */}
             <div className="space-y-2">
-              <Label htmlFor="period_start">Period Start</Label>
-              <Input
-                id="period_start"
-                type="date"
-                value={formData.period_start}
-                onChange={(e) => handleChange('period_start', e.target.value)}
-                required
-              />
-            </div>
+  <Label htmlFor="period_start">Period Start</Label>
+  <CalendarWithInput
+    id="period_start"
+    name="period_start"
+    value={formData.period_start}
+    onChange={(v) => handleChange('period_start', v)}
+    required
+  />
+</div>
 
-            {/* Period End */}
-            <div className="space-y-2">
-              <Label htmlFor="period_end">Period End</Label>
-              <Input
-                id="period_end"
-                type="date"
-                value={formData.period_end}
-                onChange={(e) => handleChange('period_end', e.target.value)}
-                required
-                min={formData.period_start}
-              />
-            </div>
+{/* Period End */}
+<div className="space-y-2">
+  <Label htmlFor="period_end">Period End</Label>
+  <CalendarWithInput
+    id="period_end"
+    name="period_end"
+    value={formData.period_end}
+    onChange={(v) => handleChange('period_end', v)}
+    required
+    min={formData.period_start}
+  />
+</div>
           </div>
 
           {/* Max Points */}

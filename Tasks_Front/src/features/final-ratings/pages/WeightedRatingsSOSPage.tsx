@@ -2,13 +2,13 @@
 import React, { useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { TrendingUp, Calculator, Loader2, RefreshCw, ArrowUpDown } from 'lucide-react'
 import { apiClient } from '@/services/api'
+import { CalendarWithInput } from '@/components/ui/calendar-with-input'
 
 type SosRow = { user_name: string; rating: number | null }
 type MaybeWrapped<T> = T | { data: T } // handles both raw array and { data: ... }
@@ -127,24 +127,24 @@ const WeightedRatingsSOSPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div className="space-y-2">
                 <Label htmlFor="start_date">Start Date</Label>
-                <Input
-                  id="start_date"
-                  type="date"
-                  value={start}
-                  onChange={(e) => setStart(e.target.value)}
-                  required
-                />
+                <CalendarWithInput
+  id="start_date"
+  name="start_date"
+  value={start}
+  onChange={setStart}
+  required
+/>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="end_date">End Date</Label>
-                <Input
-                  id="end_date"
-                  type="date"
-                  min={start}
-                  value={end}
-                  onChange={(e) => setEnd(e.target.value)}
-                  required
-                />
+                <CalendarWithInput
+  id="end_date"
+  name="end_date"
+  value={end}
+  onChange={setEnd}
+  required
+  min={start}
+/>
               </div>
               <Button type="submit" className="w-full md:w-auto" disabled={loading}>
                 {loading ? (

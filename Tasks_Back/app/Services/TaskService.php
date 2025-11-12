@@ -79,7 +79,7 @@ class TaskService
    public function getTaskById(int $id)
     {
         return Task::query()
-            ->with(['section.project', 'subtasks'])
+            ->with(['section.project', 'subtasks', 'comments.user'])
             ->addSelect([
                 'latest_final_rating' => TaskRating::select('final_rating')
                     ->whereColumn('task_ratings.task_id', 'tasks.id')

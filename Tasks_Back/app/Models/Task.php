@@ -102,6 +102,13 @@ class Task extends BaseModel
                 ->withTimestamps();
 }
 
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(TaskComment::class)->with('user')->latest();
+    }
+
+    
 // Add method to get total assigned percentage
 public function getTotalAssignedPercentage(): float
 {

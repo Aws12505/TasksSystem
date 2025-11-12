@@ -3,6 +3,7 @@ import type { Section } from './Section';
 import type { Subtask } from './Subtask';
 import type { Project } from './Project';
 import type { AssignedUser } from './TaskAssignment';
+import type { TaskComment } from './TaskComment';
 
 
 export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'rated';
@@ -24,6 +25,7 @@ export interface Task {
   latest_final_rating?: number | string; // string if returned as decimal
   subtasks: Subtask[];
   assigned_users?: AssignedUser[];
+  comments?: TaskComment[]; // ADD THIS LINE
   created_at: string;
   updated_at: string;
   completed_at?: string | null; // New field to track completion time

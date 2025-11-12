@@ -5,6 +5,7 @@ use App\Http\Controllers\SubtaskController;
 use App\Http\Controllers\HelpRequestController;
 use App\Http\Controllers\TaskRatingController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\TaskCommentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +23,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('tasks/{taskId}/help-requests', [HelpRequestController::class, 'getByTask'])->name('tasks.help-requests');
         Route::get('tasks/{taskId}/ratings', [TaskRatingController::class, 'getByTask'])->name('tasks.ratings');
         Route::post('tasks/{id}/status', [TaskController::class, 'updateStatus'])->name('tasks.status');
+        Route::post('tasks/{taskId}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');
+        Route::put('comments/{commentId}', [TaskCommentController::class, 'update'])->name('comments.update');
+        Route::delete('comments/{commentId}', [TaskCommentController::class, 'destroy'])->name('comments.destroy');
     });
     
     Route::middleware(['permission:create tasks'])->group(function () {

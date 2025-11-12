@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
 import {
   Pagination,
   PaginationContent,
@@ -56,8 +58,6 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
 
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingSubtask, setEditingSubtask] = useState<Subtask | null>(null)
-
-  // New: central delete-confirm dialog state
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
 
   const handleCreateSubtask = async (data: any) => {
@@ -72,7 +72,6 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
     }
   }
 
-  // Open dialog instead of window.confirm
   const handleRequestDelete = async (id: number) => {
     setPendingDeleteId(id)
   }
@@ -124,9 +123,9 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
   return (
     <div className="space-y-4">
       <Card className="bg-card border-border">
-        <CardHeader>
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-foreground flex items-center gap-2">
+            <CardTitle className="text-foreground flex items-center gap-2 text-lg">
               <List className="w-5 h-5" />
               Subtasks ({pagination?.total || subtasks.length})
             </CardTitle>
@@ -152,7 +151,7 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
 
           {/* Progress Bar */}
           {subtasks.length > 0 && (
-            <div className="w-full bg-muted rounded-full h-2">
+            <div className="w-full bg-muted rounded-full h-2 mt-2">
               <div 
                 className="bg-chart-3 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${completionPercentage}%` }}
@@ -161,10 +160,10 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
           )}
         </CardHeader>
         
-        <CardContent className="space-y-4">
+        <CardContent className="p-0">
           {/* Create Form */}
           {showCreateForm && (
-            <div className="p-4 border border-border rounded-lg bg-accent/20">
+            <div className="p-4 border-b border-border bg-accent/20">
               <h4 className="text-sm font-medium text-foreground mb-3">Create New Subtask</h4>
               <SubtaskForm
                 taskId={taskId}
@@ -175,103 +174,118 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
             </div>
           )}
 
-          {/* Subtasks List */}
-          {isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />
-              ))}
-            </div>
-          ) : subtasks.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              No subtasks yet. Create your first subtask to break down this task.
-            </p>
-          ) : (
-            subtasks.map((subtask) => (
-              <div key={subtask.id}>
-                {editingSubtask?.id === subtask.id ? (
-                  <div className="p-4 border border-border rounded-lg bg-accent/20">
-                    <h4 className="text-sm font-medium text-foreground mb-3">Edit Subtask</h4>
-                    <SubtaskForm
-                      subtask={editingSubtask}
-                      taskId={taskId}
-                      onSubmit={handleUpdateSubtask}
-                      onCancel={() => setEditingSubtask(null)}
-                      isLoading={isLoading}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-start justify-between p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors">
-                    <div className="flex items-start gap-3 flex-1">
-                      <Checkbox
-                        checked={subtask.is_complete}
-                        onCheckedChange={() => handleToggleCompletion(subtask.id)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className={`font-medium text-foreground ${
-                            subtask.is_complete ? 'line-through text-muted-foreground' : ''
-                          }`}>
-                            {subtask.name}
-                          </h4>
-                          <TaskPriorityBadge priority={subtask.priority} />
-                        </div>
-                        {subtask.description && (
-                          <p className={`text-sm mt-1 ${
-                            subtask.is_complete ? 'line-through text-muted-foreground' : 'text-muted-foreground'
-                          }`}>
-                            {subtask.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-3 mt-2">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(subtask.due_date).toLocaleDateString()}
-                          </div>
-                          {subtask.is_complete && (
-                            <Badge variant="outline" className="text-xs text-chart-3">
-                              Completed
-                            </Badge>
-                          )}
-                        </div>
+          {/* Subtasks List with Scroll Area */}
+          <ScrollArea className="h-[400px]">
+            <div className="p-4 space-y-3">
+              {isLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />
+                  ))}
+                </div>
+              ) : subtasks.length === 0 ? (
+                <div className="text-center py-8">
+                  <List className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                  <p className="text-muted-foreground">
+                    No subtasks yet.
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Create your first subtask to break down this task.
+                  </p>
+                </div>
+              ) : (
+                subtasks.map((subtask, index) => (
+                  <div key={subtask.id}>
+                    {editingSubtask?.id === subtask.id ? (
+                      <div className="p-4 border border-border rounded-lg bg-accent/20">
+                        <h4 className="text-sm font-medium text-foreground mb-3">Edit Subtask</h4>
+                        <SubtaskForm
+                          subtask={editingSubtask}
+                          taskId={taskId}
+                          onSubmit={handleUpdateSubtask}
+                          onCancel={() => setEditingSubtask(null)}
+                          isLoading={isLoading}
+                        />
                       </div>
-                    </div>
-                    
-                    {hasAnyPermission(['edit subtasks', 'delete subtasks']) && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-popover border-border">
-                          {hasPermission('edit subtasks') && (
-                            <DropdownMenuItem 
-                              onClick={() => setEditingSubtask(subtask)}
-                              className="hover:bg-accent hover:text-accent-foreground"
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                          )}
-                          {hasPermission('delete subtasks') && (
-                            <DropdownMenuItem
-                              onClick={async () => { await handleRequestDelete(subtask.id) }}
-                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    ) : (
+                      <div className="flex items-start justify-between p-3 border border-border rounded-lg hover:bg-accent/30 transition-colors group">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <Checkbox
+                            checked={subtask.is_complete}
+                            onCheckedChange={() => handleToggleCompletion(subtask.id)}
+                            className="mt-1 flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className={`font-medium text-foreground truncate ${
+                                subtask.is_complete ? 'line-through text-muted-foreground' : ''
+                              }`}>
+                                {subtask.name}
+                              </h4>
+                              <TaskPriorityBadge priority={subtask.priority} />
+                            </div>
+                            {subtask.description && (
+                              <p className={`text-sm mt-1 line-clamp-2 ${
+                                subtask.is_complete ? 'line-through text-muted-foreground' : 'text-muted-foreground'
+                              }`}>
+                                {subtask.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-3 mt-2 flex-wrap">
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Calendar className="w-3 h-3" />
+                                {new Date(subtask.due_date).toLocaleDateString()}
+                              </div>
+                              {subtask.is_complete && (
+                                <Badge variant="outline" className="text-xs text-chart-3">
+                                  Completed
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {hasAnyPermission(['edit subtasks', 'delete subtasks']) && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover border-border">
+                              {hasPermission('edit subtasks') && (
+                                <DropdownMenuItem 
+                                  onClick={() => setEditingSubtask(subtask)}
+                                  className="hover:bg-accent hover:text-accent-foreground"
+                                >
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                              )}
+                              {hasPermission('delete subtasks') && (
+                                <DropdownMenuItem
+                                  onClick={() => handleRequestDelete(subtask.id)}
+                                  className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
                     )}
+                    {index < subtasks.length - 1 && <Separator className="my-3" />}
                   </div>
-                )}
-              </div>
-            ))
-          )}
+                ))
+              )}
+            </div>
+          </ScrollArea>
         </CardContent>
       </Card>
 
@@ -321,7 +335,7 @@ const SubtasksList: React.FC<SubtasksListProps> = ({ taskId }) => {
         </Card>
       )}
 
-      {/* Centered delete confirmation dialog (shadcn centers in viewport by default) */}
+      {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={pendingDeleteId !== null}
         onOpenChange={(open) => !open && setPendingDeleteId(null)}

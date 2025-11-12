@@ -45,6 +45,7 @@ import {
 } from 'lucide-react'
 import type { PermissionName } from '@/types/User'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface NavigationChild {
   title: string
@@ -389,16 +390,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <div className="flex min-w-0 flex-1 flex-col">
           <AppHeader />
 
-          {/* Scrolling happens inside main; prevent vertical overflow issues */}
-          <main className="flex-1 min-h-0 overflow-auto">
+          <ScrollArea className="flex-1 min-h-0">
             {/* Hard content boundary + safe text/media defaults */}
             <div className="mx-auto w-full max-w-7xl px-4 md:px-6 break-words">
-              {/* If a child is inherently wider (e.g., tables), let it scroll horizontally */}
-              <div className="[&>table]:overflow-x-auto [&>pre]:overflow-auto [&>img]:max-w-full [&>img]:h-auto">
+              <div className="[&>img]:max-w-full [&>img]:h-auto">
                 {children || <Outlet />}
               </div>
             </div>
-          </main>
+          </ScrollArea>
         </div>
       </div>
     </SidebarProvider>

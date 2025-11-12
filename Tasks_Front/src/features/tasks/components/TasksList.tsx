@@ -12,7 +12,7 @@ import {
 import { usePermissions } from '@/hooks/usePermissions'
 import TaskStatusBadge from './TaskStatusBadge'
 import TaskPriorityBadge from './TaskPriorityBadge'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import type { Task } from '../../../types/Task'
 
 type AssigneeLite = { id: number; name?: string | null; email?: string | null; percentage?: number }
@@ -54,12 +54,12 @@ const TasksList: React.FC<TasksListProps> = ({
   }
 
   return (
-    <div className="border border-border rounded-lg bg-card">
-      
-        <Table>
-          <ScrollArea >
+    <div className="h-full border border-border rounded-lg bg-card overflow-hidden">
+      {/* Fill the allocated height from the parent container */}
+      <ScrollArea className="h-full w-full">
+        <Table className="w-full">
           <TableHeader>
-            <TableRow className="border-border">
+            <TableRow className="border-border sticky top-0 z-10 bg-card">
               <TableHead className="text-foreground">Task</TableHead>
               <TableHead className="text-foreground">Status</TableHead>
               <TableHead className="text-foreground">Priority</TableHead>
@@ -71,6 +71,7 @@ const TasksList: React.FC<TasksListProps> = ({
               <TableHead className="text-foreground w-[260px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {tasks.map((task) => {
               const canView = hasPermission('view tasks')
@@ -92,22 +93,24 @@ const TasksList: React.FC<TasksListProps> = ({
               return (
                 <TableRow key={task.id} className="border-border hover:bg-accent/50">
                   <TableCell>
-  <div className="space-y-1">
-    <Link
-      to={`/tasks/${task.id}`}
-      className="text-sm font-medium text-foreground hover:text-primary hover:underline"
-    >
-      {task.name}
-    </Link>
-  </div>
-</TableCell>
+                    <div className="space-y-1">
+                      <Link
+                        to={`/tasks/${task.id}`}
+                        className="text-sm font-medium text-foreground hover:text-primary hover:underline"
+                      >
+                        {task.name}
+                      </Link>
+                    </div>
+                  </TableCell>
 
                   <TableCell>
                     <TaskStatusBadge status={task.status} />
                   </TableCell>
+
                   <TableCell>
                     <TaskPriorityBadge priority={task.priority} />
                   </TableCell>
+
                   <TableCell>
                     {taskAssignees.length ? (
                       <div className="flex flex-wrap gap-1">
@@ -122,11 +125,13 @@ const TasksList: React.FC<TasksListProps> = ({
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </TableCell>
+
                   <TableCell>
                     <span className="text-sm text-foreground">
                       {(task.project?.name) || (task.section?.project?.name) || '—'}
                     </span>
                   </TableCell>
+
                   <TableCell>
                     {task.latest_final_rating != null ? (
                       <Badge variant="secondary" className="text-xs">
@@ -136,17 +141,20 @@ const TasksList: React.FC<TasksListProps> = ({
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </TableCell>
+
                   <TableCell>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="w-4 h-4" />
                       {new Date(task.due_date).toLocaleDateString()}
                     </div>
                   </TableCell>
+
                   <TableCell>
                     <Badge variant="secondary" className="text-xs">
                       {task.subtasks?.length || 0} subtasks
                     </Badge>
                   </TableCell>
+
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {canView && (
@@ -174,6 +182,7 @@ const TasksList: React.FC<TasksListProps> = ({
                           </Button>
                         </>
                       )}
+
                       {hasAnyAction && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -224,8 +233,12 @@ const TasksList: React.FC<TasksListProps> = ({
               )
             })}
           </TableBody>
-          </ScrollArea>
         </Table>
+
+        {/* Rails */}
+        <ScrollBar orientation="vertical" />
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
     </div>
   )
 }

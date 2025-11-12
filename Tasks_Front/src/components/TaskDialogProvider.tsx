@@ -11,7 +11,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { CheckSquare } from 'lucide-react'
-
+import { ScrollArea } from "@/components/ui/scroll-area"
 import ComprehensiveTaskForm from '@/features/tasks/components/ComprehensiveTaskForm'
 import { useTasks } from '@/features/tasks/hooks/useTasks'
 
@@ -174,38 +174,43 @@ const TaskDialogContent: React.FC<TaskDialogContentProps> = ({ section, projectI
         - sm:!max-w-[1100px] overrides shadcn's internal `sm:max-w-[425px]`
         - md:!max-w-[1280px] gives it more room on bigger screens
       */}
-      <DialogContent className="w-[95vw] max-w-none sm:!max-w-[1100px] md:!max-w-[1280px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CheckSquare className="w-5 h-5" />
-            {task ? 'Edit Task' : 'Create New Task'}
-          </DialogTitle>
-          <DialogDescription>
-            {task ? `Edit task in ${section.name}` : `Add a new task to ${section.name} section`}
-          </DialogDescription>
-        </DialogHeader>
+<DialogContent
+  className="w-[95vw] max-w-none sm:!max-w-[1100px] md:!max-w-[1280px] max-h-[90vh] p-0"
+>
+  {/* header stays fixed; body below will scroll */}
+  <div className="border-b p-6">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2">
+        <CheckSquare className="w-5 h-5" />
+        {task ? 'Edit Task' : 'Create New Task'}
+      </DialogTitle>
+      <DialogDescription>
+        {task ? `Edit task in ${section.name}` : `Add a new task to ${section.name} section`}
+      </DialogDescription>
+    </DialogHeader>
+  </div>
 
-        <div className="space-y-6">
-          <ComprehensiveTaskForm
-            mode={task ? 'edit' : 'create'}
-            sectionId={section.id}
-            initialValues={
-              task
-                ? initialValues
-                : {
-                    project_id: projectId,
-                    section_id: section.id,
-                    priority: 'medium',
-                    weight: 10,
-                  }
-            }
-            onSubmit={handleSubmit}
-            onCancel={onClose}
-            isLoading={!!isLoading}
-          />
-
-        </div>
-      </DialogContent>
+  {/* Scrollable body (both vertical and horizontal when needed) */}
+  <ScrollArea className="max-h-[calc(90vh- var(--header-height,72px))]">
+    {/* padding inside so the scrollbar hugs the edge nicely */}
+    <div className="p-6">
+      <div className="space-y-6">
+        <ComprehensiveTaskForm
+          mode={task ? 'edit' : 'create'}
+          sectionId={section.id}
+          initialValues={
+            task
+              ? initialValues
+              : { project_id: projectId, section_id: section.id, priority: 'medium', weight: 10 }
+          }
+          onSubmit={handleSubmit}
+          onCancel={onClose}
+          isLoading={!!isLoading}
+        />
+      </div>
+    </div>
+  </ScrollArea>
+</DialogContent>
     </Dialog>
   )
 }

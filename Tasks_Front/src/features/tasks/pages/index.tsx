@@ -36,6 +36,7 @@ import { useProjectsStore } from '../../projects/stores/projectsStore'
 import type { User } from '../../../types/User'
 import type { TaskFilters } from '../../../services/taskService'
 import { CalendarWithInput } from '@/components/ui/calendar-with-input'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 
 const PER_PAGE = 15
 
@@ -230,34 +231,39 @@ const TasksPage: React.FC = () => {
                   {assigneesFilter.length ? `${assigneesFilter.length} assignee(s)` : 'Filter assignees'}
                 </Button>
                 {assigneeDropdownOpen && (
-                  <div
-                    className="absolute z-20 mt-2 w-full max-h-64 overflow-auto rounded-md border bg-popover p-2 shadow"
-                    onMouseLeave={() => setAssigneeDropdownOpen(false)}
-                  >
-                    <div className="flex items-center justify-between px-2 py-1">
-                      <span className="text-sm font-medium">Assignees</span>
-                      <Button variant="ghost" size="sm" onClick={clearAssignees}>Clear</Button>
-                    </div>
-                    <div className="space-y-1">
-                      {availableUsers.map(u => {
-                        const checked = assigneesFilter.includes(u.id)
-                        return (
-                          <label
-                            key={u.id}
-                            className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => toggleAssignee(u.id)}
-                            />
-                            <span className="text-sm">{u.name}</span>
-                          </label>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
+  <div
+    className="absolute z-20 mt-2 w-full rounded-md border bg-popover p-2 shadow"
+    onMouseLeave={() => setAssigneeDropdownOpen(false)}
+  >
+    <div className="flex items-center justify-between px-2 py-1">
+      <span className="text-sm font-medium">Assignees</span>
+      <Button variant="ghost" size="sm" onClick={clearAssignees}>Clear</Button>
+    </div>
+
+    <ScrollArea className="max-h-64">
+      <div className="space-y-1 pr-2">
+        {availableUsers.map(u => {
+          const checked = assigneesFilter.includes(u.id)
+          return (
+            <label
+              key={u.id}
+              className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => toggleAssignee(u.id)}
+              />
+              <span className="text-sm">{u.name}</span>
+            </label>
+          )
+        })}
+      </div>
+      <ScrollBar orientation="vertical" />
+    </ScrollArea>
+  </div>
+)}
+
               </div>
             </div>
 

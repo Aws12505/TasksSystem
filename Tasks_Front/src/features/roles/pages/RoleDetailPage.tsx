@@ -1,4 +1,3 @@
-// pages/RoleDetailPage.tsx
 import React from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -7,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { useRole } from '../hooks/useRole'
 import { usePermissions } from '@/hooks/usePermissions'
 import { Edit, ArrowLeft, Shield, Key, Calendar } from 'lucide-react'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 
 const RoleDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -150,25 +150,31 @@ const RoleDetailPage: React.FC = () => {
 
           {/* Permissions summary (guarded by permission) */}
           {hasPermission('view permissions') ? (
-            <Card className="bg-card border-border">
+            <Card className="bg-card border-border overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-foreground flex items-center gap-2">
                   <Key className="w-4 h-4" />
                   Permissions ({rolePermissions.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {rolePermissions.length > 0 ? (
-                    rolePermissions.map((permission) => (
-                      <div key={permission.id} className="p-2 bg-accent/50 rounded">
-                        <span className="text-sm text-foreground">{permission.name}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground text-sm">No permissions assigned</p>
-                  )}
-                </div>
+              <CardContent className="p-0">
+                {/* Custom ScrollArea for permissions list */}
+                <ScrollArea className="h-48">
+                  <div className="space-y-2 p-4 pr-6">
+                    {rolePermissions.length > 0 ? (
+                      rolePermissions.map((permission) => (
+                        <div key={permission.id} className="p-2 bg-accent/50 rounded">
+                          <span className="text-sm text-foreground">{permission.name}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground text-sm">
+                        No permissions assigned
+                      </p>
+                    )}
+                  </div>
+                  <ScrollBar orientation="vertical" />
+                </ScrollArea>
               </CardContent>
             </Card>
           ) : (

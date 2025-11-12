@@ -7,6 +7,7 @@ import { useLiveTimer } from '../../../hooks/useClockingTimers';
 import { Calendar, AlertCircle, Coffee } from 'lucide-react';
 import type { ClockSession } from '../../../types/Clocking';
 import { convertToCompanyTime, calculateDuration, formatDuration } from '../../../utils/clockingCalculations';
+import { ScrollArea, ScrollBar } from '../../../components/ui/scroll-area'; // 👈 add this
 
 interface Props {
   session: ClockSession | null;
@@ -81,16 +82,21 @@ export const TodaySessionSummary = ({ session, companyTimezone }: Props) => {
               <Coffee className="w-4 h-4" />
               Breaks ({session.break_records.length})
             </div>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {session.break_records.map((breakRecord, index) => (
-                <BreakRow
-                  key={breakRecord.id}
-                  breakRecord={breakRecord}
-                  index={index}
-                  companyTimezone={companyTimezone}
-                />
-              ))}
-            </div>
+
+            <ScrollArea className="max-h-64">
+              <div className="space-y-2 pr-2">
+                {session.break_records.map((breakRecord, index) => (
+                  <BreakRow
+                    key={breakRecord.id}
+                    breakRecord={breakRecord}
+                    index={index}
+                    companyTimezone={companyTimezone}
+                  />
+                ))}
+              </div>
+              {/* vertical scrollbar appears as needed */}
+              <ScrollBar orientation="vertical" />
+            </ScrollArea>
           </div>
         )}
       </CardContent>

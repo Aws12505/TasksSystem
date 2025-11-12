@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useUser } from '../hooks/useUser'
 import { usePermissions } from '@/hooks/usePermissions'
 import { Edit, ArrowLeft, Mail, Calendar, Shield, Key } from 'lucide-react'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 
 const UserDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -50,10 +51,8 @@ const UserDetailPage: React.FC = () => {
     )
   }
 
-  const userRoles = user.roles || []
   const userPermissions = user.permissions || []
   const allPermissions = userRolesPermissions?.all_permissions || []
-
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
@@ -61,11 +60,11 @@ const UserDetailPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <Avatar className="w-12 h-12">
               {typeof user.avatar_url === 'string' && user.avatar_url.trim() !== '' && (
-              <AvatarImage
-              src={user.avatar_url}
-              alt={user.name || 'User avatar'}
-              className="object-cover"
-              />
+                <AvatarImage
+                  src={user.avatar_url}
+                  alt={user.name || 'User avatar'}
+                  className="object-cover"
+                />
               )}
               <AvatarFallback className="bg-primary text-primary-foreground text-lg">
                 {user.name?.charAt(0).toUpperCase() || 'U'}
@@ -133,54 +132,62 @@ const UserDetailPage: React.FC = () => {
 
           {/* Roles */}
           <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-foreground flex items-center gap-2">
-                <Shield className="w-4 h-4" />
-                Roles ({userRoles.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {userRoles.length > 0 ? (
-                  userRoles.map((role) => (
-                    <div
-                      key={role.id}
-                      className="flex items-center justify-between p-2 bg-accent/50 rounded"
-                    >
-                      <span className="font-medium text-foreground">{role.name}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {role.permissions?.length || 0} permissions
-                      </Badge>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-muted-foreground text-sm">No roles assigned</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+  <CardHeader>
+    <CardTitle className="text-foreground flex items-center gap-2">
+      <Shield className="w-4 h-4" />
+      Roles {(userRolesPermissions?.roles?.length ?? 0) > 0
+        ? `(${userRolesPermissions?.roles?.length})`
+        : '(0)'}
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    <div className="space-y-2">
+      {(userRolesPermissions?.roles?.length ?? 0) > 0 ? (
+        (userRolesPermissions?.roles ?? []).map((role) => (
+          <div
+            key={role.id}
+            className="flex items-center justify-between p-2 bg-accent/50 rounded"
+          >
+            <span className="font-medium text-foreground">{role.name}</span>
+            <Badge variant="outline" className="text-xs">
+              {role.permissions?.length || 0} permissions
+            </Badge>
+          </div>
+        ))
+      ) : (
+        <p className="text-muted-foreground text-sm">No roles assigned</p>
+      )}
+    </div>
+  </CardContent>
+</Card>
 
           {/* Direct Permissions */}
           {hasPermission('view permissions') && (
-            <Card className="bg-card border-border">
+            <Card className="bg-card border-border overflow-hidden">
               <CardHeader>
                 <CardTitle className="text-foreground flex items-center gap-2">
                   <Key className="w-4 h-4" />
                   Direct Permissions ({userPermissions.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {userPermissions.length > 0 ? (
-                    userPermissions.map((permission) => (
-                      <div key={permission.id} className="p-2 bg-accent/50 rounded">
-                        <span className="text-sm text-foreground">{permission.name}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground text-sm">No direct permissions assigned</p>
-                  )}
-                </div>
+              {/* Let the scroller own the height; padding lives inside */}
+              <CardContent className="p-0">
+                <ScrollArea className="h-48">
+                  <div className="space-y-2 p-4 pr-6">
+                    {userPermissions.length > 0 ? (
+                      userPermissions.map((permission) => (
+                        <div key={permission.id} className="p-2 bg-accent/50 rounded">
+                          <span className="text-sm text-foreground">{permission.name}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground text-sm p-2">
+                        No direct permissions assigned
+                      </p>
+                    )}
+                  </div>
+                  <ScrollBar orientation="vertical" />
+                </ScrollArea>
               </CardContent>
             </Card>
           )}
@@ -188,21 +195,27 @@ const UserDetailPage: React.FC = () => {
 
         {/* All Permissions Summary */}
         {hasPermission('view permissions') && userRolesPermissions && allPermissions.length > 0 && (
-          <Card className="bg-card border-border">
+          <Card className="bg-card border-border overflow-hidden">
             <CardHeader>
               <CardTitle className="text-foreground">All Permissions ({allPermissions.length})</CardTitle>
               <p className="text-sm text-muted-foreground">
                 Combined permissions from roles and direct assignments
               </p>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                {allPermissions.map((permission) => (
-                  <Badge key={permission.id} variant="secondary" className="text-xs">
-                    {permission.name}
-                  </Badge>
-                ))}
-              </div>
+            {/* Custom scroll for large lists */}
+            <CardContent className="p-0">
+              <ScrollArea className="h-64">
+                <div className="p-4 pr-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {allPermissions.map((permission) => (
+                      <Badge key={permission.id} variant="secondary" className="text-xs">
+                        {permission.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <ScrollBar orientation="vertical" />
+              </ScrollArea>
             </CardContent>
           </Card>
         )}

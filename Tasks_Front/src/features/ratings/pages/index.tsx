@@ -24,6 +24,7 @@ import {
   Eye,
   AlertCircle,
 } from 'lucide-react'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 
 const EnhancedRatingsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -307,7 +308,8 @@ const EnhancedRatingsPage: React.FC = () => {
                 </div>
 
                 {searchQuery && (
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
+  <ScrollArea className="max-h-60">
+    <div className="space-y-3 pr-2">
                     {/* Task Results */}
                     {canRateTasks && (
                       <div>
@@ -361,6 +363,8 @@ const EnhancedRatingsPage: React.FC = () => {
                       </div>
                     )}
                   </div>
+    <ScrollBar orientation="vertical" />
+  </ScrollArea>
                 )}
               </CardContent>
             </Card>

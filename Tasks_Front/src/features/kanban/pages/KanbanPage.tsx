@@ -36,6 +36,7 @@ import type { TaskStatus } from '../../../types/Task'
 import type { Task } from '../../../types/Task'
 import type { Section } from '../../../types/Section'
 import { useTasks } from '@/features/tasks/hooks/useTasks'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 
 // Enhanced types for section-based Kanban
 type SectionKanbanItem = {
@@ -320,8 +321,12 @@ const ProjectKanbanPage: React.FC = () => {
 
         {/* Kanban area */}
         <Card className="bg-card border-border flex-1 flex flex-col min-h-0">
-          <CardContent className="p-4 flex-1 min-h-0 overflow-auto space-y-6">
-            {groupedColumns.map((group) => (
+  {/* Make CardContent a flex child without padding; put padding inside the scroller */}
+  <CardContent className="p-0 flex-1 min-h-0">
+    {/* Custom scrollbar handles both axes */}
+    <ScrollArea className="h-full w-full">
+      <div className="p-4 space-y-6">
+        {groupedColumns.map((group) => (
               <Card key={group.section.id} className="bg-background border-border">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg font-semibold flex items-center justify-between">
@@ -378,8 +383,12 @@ const ProjectKanbanPage: React.FC = () => {
                 </CardContent>
               </Card>
             ))}
-          </CardContent>
-        </Card>
+            </div>
+          <ScrollBar orientation="vertical" />
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
+  </CardContent>
+</Card>
       </div>
 
       {/* Centered delete confirmation dialog (shadcn centers by default) */}

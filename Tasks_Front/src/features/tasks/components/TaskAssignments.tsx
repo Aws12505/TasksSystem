@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -33,12 +33,14 @@ const TaskAssignments: React.FC<TaskAssignmentsProps> = ({
   onRemoveUser,
   isLoading = false
 }) => {
+  // hooks – always run, regardless of props
   const [showAddForm, setShowAddForm] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [percentage, setPercentage] = useState<number>(10)
   const [editingUserId, setEditingUserId] = useState<number | null>(null)
   const [editPercentage, setEditPercentage] = useState<number>(0)
 
+  // safely handle "no data" case
   if (!taskWithAssignments) {
     return null
   }
@@ -46,16 +48,13 @@ const TaskAssignments: React.FC<TaskAssignmentsProps> = ({
   const assignedUsers = taskWithAssignments.assigned_users || []
   const assignedUserIds = assignedUsers.map(u => u.id)
   const unassignedUsers = availableUsers.filter(u => !assignedUserIds.includes(u.id))
- const totalAssigned = useMemo(() => {
-  return assignedUsers.reduce(
+
+  // no useMemo – just compute directly
+  const totalAssigned = assignedUsers.reduce(
     (sum, user) => sum + (Number(user.pivot?.percentage) || 0),
     0
   )
-}, [assignedUsers])
-
-  const isFullyAssigned = useMemo(() => {
-    return totalAssigned >= 100
-  }, [totalAssigned])
+  const isFullyAssigned = totalAssigned >= 100
   const remainingPercentage = 100 - totalAssigned
 
   const handleAddUser = async () => {
@@ -83,7 +82,6 @@ const TaskAssignments: React.FC<TaskAssignmentsProps> = ({
   const cancelEdit = () => {
     setEditingUserId(null)
   }
-
   return (
     <Card className="bg-card border-border w-full">
       <CardHeader className="p-4 pb-3">

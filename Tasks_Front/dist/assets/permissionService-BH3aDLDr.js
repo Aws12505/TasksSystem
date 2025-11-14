@@ -1,5 +1,0 @@
-<<<<<<<< HEAD:Tasks_Front/dist/assets/permissionService-t5SMtdEH.js
-import{v as s}from"./index-zkLMKkdk.js";class n{async getRoles(e=1,r=15){return s.getPaginated("/roles",{page:e,per_page:r})}async getRole(e){return s.get(`/roles/${e}`)}async createRole(e){return s.post("/roles",e)}async updateRole(e,r){return s.put(`/roles/${e}`,r)}async deleteRole(e){return s.delete(`/roles/${e}`)}}const a=new n;class o{async getPermissions(){return s.get("/permissions")}async getPermission(e){return s.get(`/permissions/${e}`)}}const l=new o;export{l as p,a as r};
-========
-import{v as s}from"./index-Cj_ZlKJu.js";class n{async getRoles(e=1,r=15){return s.getPaginated("/roles",{page:e,per_page:r})}async getRole(e){return s.get(`/roles/${e}`)}async createRole(e){return s.post("/roles",e)}async updateRole(e,r){return s.put(`/roles/${e}`,r)}async deleteRole(e){return s.delete(`/roles/${e}`)}}const a=new n;class o{async getPermissions(){return s.get("/permissions")}async getPermission(e){return s.get(`/permissions/${e}`)}}const l=new o;export{l as p,a as r};
->>>>>>>> 4d77d51 (edits for pizza):Tasks_Front/dist/assets/permissionService-BH3aDLDr.js

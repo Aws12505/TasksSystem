@@ -1,5 +1,0 @@
-<<<<<<<< HEAD:Tasks_Front/dist/assets/filtersStore-D64ZZoq8.js
-import{w as l}from"./index-zkLMKkdk.js";const s=l(t=>({dateRange:{start:null,end:null},selectedUser:null,selectedProject:null,statusFilter:"all",searchQuery:"",setDateRange:e=>t({dateRange:e}),setSelectedUser:e=>t({selectedUser:e}),setSelectedProject:e=>t({selectedProject:e}),setStatusFilter:e=>t({statusFilter:e}),setSearchQuery:e=>t({searchQuery:e}),resetFilters:()=>t({dateRange:{start:null,end:null},selectedUser:null,selectedProject:null,statusFilter:"all",searchQuery:""})}));export{s as u};
-========
-import{w as l}from"./index-Cj_ZlKJu.js";const s=l(t=>({dateRange:{start:null,end:null},selectedUser:null,selectedProject:null,statusFilter:"all",searchQuery:"",setDateRange:e=>t({dateRange:e}),setSelectedUser:e=>t({selectedUser:e}),setSelectedProject:e=>t({selectedProject:e}),setStatusFilter:e=>t({statusFilter:e}),setSearchQuery:e=>t({searchQuery:e}),resetFilters:()=>t({dateRange:{start:null,end:null},selectedUser:null,selectedProject:null,statusFilter:"all",searchQuery:""})}));export{s as u};
->>>>>>>> 4d77d51 (edits for pizza):Tasks_Front/dist/assets/filtersStore-poNFx__b.js

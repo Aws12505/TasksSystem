@@ -1,5 +1,0 @@
-<<<<<<<< HEAD:Tasks_Front/dist/assets/eye-B1TEk86n.js
-import{g as c}from"./index-zkLMKkdk.js";const e=[["path",{d:"M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",key:"1nclc0"}],["circle",{cx:"12",cy:"12",r:"3",key:"1v7zrd"}]],r=c("eye",e);export{r as E};
-========
-import{g as c}from"./index-Cj_ZlKJu.js";const e=[["path",{d:"M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",key:"1nclc0"}],["circle",{cx:"12",cy:"12",r:"3",key:"1v7zrd"}]],r=c("eye",e);export{r as E};
->>>>>>>> 4d77d51 (edits for pizza):Tasks_Front/dist/assets/eye-D2lMdn6a.js

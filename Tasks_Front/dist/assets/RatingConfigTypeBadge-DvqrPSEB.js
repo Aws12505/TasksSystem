@@ -1,5 +1,0 @@
-<<<<<<<< HEAD:Tasks_Front/dist/assets/RatingConfigTypeBadge-B7D7GTRm.js
-import{j as n}from"./index-zkLMKkdk.js";import{B as o}from"./badge-9bYBpW9L.js";const i=({type:e})=>{const a=t=>{switch(t){case"task_rating":return{text:"Task Rating",className:"text-blue-600 bg-blue-100"};case"stakeholder_rating":return{text:"Stakeholder Rating",className:"text-purple-600 bg-purple-100"};default:return{text:t,className:"text-muted-foreground bg-muted"}}},{text:r,className:s}=a(e);return n.jsx(o,{variant:"outline",className:s,children:r})};export{i as R};
-========
-import{j as n}from"./index-Cj_ZlKJu.js";import{B as o}from"./badge-DE0BUwgy.js";const i=({type:e})=>{const a=t=>{switch(t){case"task_rating":return{text:"Task Rating",className:"text-blue-600 bg-blue-100"};case"stakeholder_rating":return{text:"Stakeholder Rating",className:"text-purple-600 bg-purple-100"};default:return{text:t,className:"text-muted-foreground bg-muted"}}},{text:r,className:s}=a(e);return n.jsx(o,{variant:"outline",className:s,children:r})};export{i as R};
->>>>>>>> 4d77d51 (edits for pizza):Tasks_Front/dist/assets/RatingConfigTypeBadge-DvqrPSEB.js

@@ -18,6 +18,29 @@ export class UserService {
     return apiClient.getPaginated<User>('/users', { page, per_page: perPage });
   }
 
+    async getAllUsers(perPage = 100): Promise<User[]> {
+    let page = 1;
+    let lastPage = 1;
+    const allUsers: User[] = [];
+
+    do {
+      const response = await this.getUsers(page, perPage);
+
+      if (!response.success) {
+        // If the API signals failure, break out (or throw if you prefer)
+        break;
+      }
+
+      allUsers.push(...response.data);
+
+      lastPage = response.pagination.last_page;
+      page += 1;
+    } while (page <= lastPage);
+
+    return allUsers;
+  }
+
+  
   async getUser(id: number): Promise<ApiResponse<User>> {
     return apiClient.get<User>(`/users/${id}`);
   }

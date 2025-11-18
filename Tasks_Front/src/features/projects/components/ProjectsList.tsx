@@ -75,7 +75,12 @@ const ProjectsList: React.FC<ProjectsListProps> = ({ projects, isLoading, onDele
               <TableRow key={project.id} className="border-border hover:bg-accent/50">
                 <TableCell>
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">{project.name}</p>
+                    <Link
+                                            to={`/projects/${project.id}`}
+                                            className="text-sm font-medium text-foreground hover:text-primary hover:underline"
+                                          >
+                    {project.name}
+                    </Link>
                     {project.description && (
                       <p className="text-xs text-muted-foreground line-clamp-1">
                         {project.description}

@@ -18,7 +18,7 @@ export class UserService {
     return apiClient.getPaginated<User>('/users', { page, per_page: perPage });
   }
 
-    async getAllUsers(perPage = 100): Promise<User[]> {
+  async getAllUsers(perPage = 100): Promise<User[]> {
     let page = 1;
     let lastPage = 1;
     const allUsers: User[] = [];
@@ -40,7 +40,6 @@ export class UserService {
     return allUsers;
   }
 
-  
   async getUser(id: number): Promise<ApiResponse<User>> {
     return apiClient.get<User>(`/users/${id}`);
   }

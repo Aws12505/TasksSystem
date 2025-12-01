@@ -25,18 +25,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command"
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useTasks } from '../hooks/useTasks'
 import { useFiltersStore } from '../../../stores/filtersStore'
 import { usePermissions } from '@/hooks/usePermissions'
 import TasksList from '../components/TasksList'
-import { Plus, Search, CheckSquare, Users, Calendar } from 'lucide-react'
+import { Plus, Search, CheckSquare, Users, Calendar, Check, ChevronsUpDown } from 'lucide-react'
 import type { TaskStatus } from '../../../types/Task'
 import { userService } from '../../../services/userService'
 import { useProjectsStore } from '../../projects/stores/projectsStore'
 import type { User } from '../../../types/User'
 import type { TaskFilters } from '../../../services/taskService'
 import { CalendarWithInput } from '@/components/ui/calendar-with-input'
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 
 const PER_PAGE = 15
 
@@ -66,7 +79,6 @@ const TasksPage: React.FC = () => {
 
   // Assignee options (for dropdown)
   const [availableUsers, setAvailableUsers] = useState<User[]>([])
-  const [assigneeDropdownOpen, setAssigneeDropdownOpen] = useState(false)
 
   // Delete confirmation dialog state
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
@@ -79,7 +91,9 @@ const TasksPage: React.FC = () => {
         if (res.success && Array.isArray(res.data)) {
           setAvailableUsers(res.data)
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     })()
   }, [fetchProjects])
 
@@ -102,7 +116,9 @@ const TasksPage: React.FC = () => {
 
   // Assignee multi-select helpers
   const toggleAssignee = (id: number) =>
-    setAssigneesFilter(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+    setAssigneesFilter(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
 
   const clearAssignees = () => setAssigneesFilter([])
 
@@ -116,13 +132,16 @@ const TasksPage: React.FC = () => {
       items.push(1)
       if (current_page > 4) items.push('ellipsis-start')
     }
+
     for (let i = Math.max(1, current_page - 2); i <= Math.min(last_page, current_page + 2); i++) {
       items.push(i)
     }
+
     if (current_page < last_page - 2) {
       if (current_page < last_page - 3) items.push('ellipsis-end')
       items.push(last_page)
     }
+
     return items
   }
 
@@ -137,6 +156,7 @@ const TasksPage: React.FC = () => {
       setPendingDeleteId(null)
       return
     }
+
     if (pendingDeleteId != null) {
       await deleteTask(pendingDeleteId)
       setPendingDeleteId(null)
@@ -164,6 +184,7 @@ const TasksPage: React.FC = () => {
               <p className="text-muted-foreground">Manage your tasks and track progress</p>
             </div>
           </div>
+
           {hasPermission('create tasks') && (
             <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
               <Link to="/tasks/create">
@@ -219,51 +240,110 @@ const TasksPage: React.FC = () => {
                 </SelectContent>
               </Select>
 
-              {/* Assignees */}
-              <div className="relative">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => setAssigneeDropdownOpen(o => !o)}
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  {assigneesFilter.length ? `${assigneesFilter.length} assignee(s)` : 'Filter assignees'}
-                </Button>
-                {assigneeDropdownOpen && (
-  <div
-    className="absolute z-20 mt-2 w-full rounded-md border bg-popover p-2 shadow"
-    onMouseLeave={() => setAssigneeDropdownOpen(false)}
-  >
-    <div className="flex items-center justify-between px-2 py-1">
-      <span className="text-sm font-medium">Assignees</span>
-      <Button variant="ghost" size="sm" onClick={clearAssignees}>Clear</Button>
-    </div>
+              {/* Assignees (Popover multi-select with scroll + search) */}
+              <div className="space-y-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <Users className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">
+                          {assigneesFilter.length
+                            ? `${assigneesFilter.length} assignee${assigneesFilter.length !== 1 ? 's' : ''}`
+                            : 'Filter assignees'}
+                        </span>
+                      </div>
+                      <ChevronsUpDown className="w-4 h-4 opacity-60 flex-shrink-0" />
+                    </Button>
+                  </PopoverTrigger>
 
-    <ScrollArea className="max-h-64">
-      <div className="space-y-1 pr-2">
-        {availableUsers.map(u => {
-          const checked = assigneesFilter.includes(u.id)
-          return (
-            <label
-              key={u.id}
-              className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => toggleAssignee(u.id)}
-              />
-              <span className="text-sm">{u.name}</span>
-            </label>
-          )
-        })}
+                  <PopoverContent className="p-0 w-[320px]" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search assignees..." />
+                      <CommandEmpty>No users found</CommandEmpty>
+
+                      <CommandGroup>
+                        <ScrollArea className="h-[260px]">
+                          <div className="pr-2">
+                            {availableUsers.map(u => {
+  const checked = assigneesFilter.includes(u.id)
+  return (
+    <CommandItem
+      key={u.id}
+      onSelect={() => toggleAssignee(u.id)}
+      className="flex items-center justify-between gap-2 cursor-pointer"
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <Avatar className="w-7 h-7 flex-shrink-0">
+          {u.avatar_url?.trim() ? (
+            <AvatarImage src={u.avatar_url} alt={u.name} />
+          ) : null}
+          <AvatarFallback className="text-[10px] bg-primary/10">
+            {u.name?.[0]?.toUpperCase() ?? 'U'}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="flex flex-col min-w-0">
+          <span className="text-sm font-medium truncate">{u.name}</span>
+          {u.email && (
+            <span className="text-xs text-muted-foreground truncate">
+              {u.email}
+            </span>
+          )}
+        </div>
       </div>
-      <ScrollBar orientation="vertical" />
-    </ScrollArea>
-  </div>
-)}
 
+      {checked && <Check className="w-4 h-4 text-primary flex-shrink-0" />}
+    </CommandItem>
+  )
+})}
+
+                          </div>
+                        </ScrollArea>
+                      </CommandGroup>
+                    </Command>
+
+                    <div className="border-t p-2 flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        type="button"
+                        className="flex-1"
+                        onClick={() => setAssigneesFilter(availableUsers.map(u => u.id))}
+                        disabled={availableUsers.length === 0}
+                      >
+                        Select all
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        type="button"
+                        className="flex-1"
+                        onClick={clearAssignees}
+                        disabled={assigneesFilter.length === 0}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* Small helper showing who is selected */}
+                {assigneesFilter.length > 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    Filtering by:{' '}
+                    {availableUsers
+                      .filter(u => assigneesFilter.includes(u.id))
+                      .map(u => u.name)
+                      .slice(0, 2)
+                      .join(', ')}
+                    {assigneesFilter.length > 2 && ` +${assigneesFilter.length - 2} more`}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -272,22 +352,26 @@ const TasksPage: React.FC = () => {
               <div className="flex items-center gap-2 flex-wrap">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
                 <CalendarWithInput
-  id="due_from"
-  name="due_from"
-  value={dueFrom}
-  onChange={setDueFrom}
-  className="min-w-[140px]"
-/>
-<span className="text-muted-foreground text-sm">to</span>
-<CalendarWithInput
-  id="due_to"
-  name="due_to"
-  value={dueTo}
-  onChange={setDueTo}
-  className="min-w-[140px]"
-/>
+                  id="due_from"
+                  name="due_from"
+                  value={dueFrom}
+                  onChange={setDueFrom}
+                  className="min-w-[140px]"
+                />
+                <span className="text-muted-foreground text-sm">to</span>
+                <CalendarWithInput
+                  id="due_to"
+                  name="due_to"
+                  value={dueTo}
+                  onChange={setDueTo}
+                  className="min-w-[140px]"
+                />
                 {(dueFrom || dueTo) && (
-                  <Button variant="ghost" size="sm" onClick={() => { setDueFrom(''); setDueTo('') }}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setDueFrom(''); setDueTo('') }}
+                  >
                     Clear
                   </Button>
                 )}
@@ -355,7 +439,7 @@ const TasksPage: React.FC = () => {
               <TasksList
                 tasks={tasks}
                 isLoading={isLoading}
-                onDelete={async (id) => { await handleDelete(id) }} 
+                onDelete={async (id) => { await handleDelete(id) }}
                 onStatusChange={async (id, status) => { await handleStatusChange(id, status) }}
               />
             </div>
@@ -370,6 +454,7 @@ const TasksPage: React.FC = () => {
                 <div className="text-sm text-muted-foreground text-center sm:text-left">
                   Showing {pagination.from || 0} to {pagination.to || 0} of {pagination.total || 0} results
                 </div>
+
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
@@ -409,7 +494,7 @@ const TasksPage: React.FC = () => {
         )}
       </div>
 
-      {/* Centered confirmation dialog (shadcn centers in viewport by default) */}
+      {/* Centered confirmation dialog */}
       <AlertDialog
         open={pendingDeleteId !== null}
         onOpenChange={(open) => !open && setPendingDeleteId(null)}
@@ -421,8 +506,11 @@ const TasksPage: React.FC = () => {
               Are you sure you want to delete this task? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingDeleteId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setPendingDeleteId(null)}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

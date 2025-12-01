@@ -141,7 +141,7 @@ const ComprehensiveTaskForm: React.FC<ComprehensiveTaskFormProps> = ({
     }
   }, [selectedProjectId, fetchSectionsByProject, sectionId, mode, form])
 
-  const fetchUsers = async () => {
+   const fetchUsers = async () => {
     try {
       // ⬇️ This now loads ALL users (all pages)
       const users = await userService.getAllUsers();

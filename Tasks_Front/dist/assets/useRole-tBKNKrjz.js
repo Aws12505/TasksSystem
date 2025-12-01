@@ -1,1 +1,0 @@
-import{R as l}from"./index-CkhQ5fmu.js";import{u}from"./rolesStore-B534PCJt.js";const p=e=>{const{currentRole:i,availablePermissions:a,isLoading:n,error:c,fetchRole:s,fetchAvailablePermissions:o,clearCurrentRole:t}=u(),r=typeof e=="string"?parseInt(e):e;return l.useEffect(()=>(r&&(s(r),o()),()=>{t()}),[r,s,o,t]),{role:i,availablePermissions:a,isLoading:n,error:c}};export{p as u};

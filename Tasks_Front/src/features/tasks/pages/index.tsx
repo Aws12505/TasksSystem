@@ -87,12 +87,11 @@ const TasksPage: React.FC = () => {
     fetchProjects()
     ;(async () => {
       try {
-        const res = await userService.getUsers(1, 200)
-        if (res.success && Array.isArray(res.data)) {
-          setAvailableUsers(res.data)
-        }
-      } catch {
-        /* ignore */
+        // ✅ unpaginated users, same as your other pages
+        const users = await userService.getAllUsers()
+        setAvailableUsers(users)
+      } catch (e) {
+        console.error('Failed to fetch all users:', e)
       }
     })()
   }, [fetchProjects])

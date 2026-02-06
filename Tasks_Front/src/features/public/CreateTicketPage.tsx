@@ -1,9 +1,9 @@
 // pages/PublicCreateTicketPage.tsx
-import React from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useTicketsStore } from '@/features/tickets/stores/ticketsStore'
-import TicketForm from '@/features/tickets/components/TicketForm'
-import { useAuthStore } from '@/features/auth/stores/authStore'
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useTicketsStore } from "@/features/tickets/stores/ticketsStore";
+import TicketForm from "@/features/tickets/components/TicketForm";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 
 /**
  * PublicCreateTicketPage
@@ -13,23 +13,19 @@ import { useAuthStore } from '@/features/auth/stores/authStore'
  * - reuses the SAME TicketForm (unchanged)
  */
 const PublicCreateTicketPage: React.FC = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  const {
-    isLoading,
-    createTicket,
-    getTypeOptions,
-  } = useTicketsStore()
+  const { isLoading, createTicket, getTypeOptions } = useTicketsStore();
 
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated } = useAuthStore();
 
   const handleCreateTicket = async (data: any) => {
-    const ticket = await createTicket(data)
+    const ticket = await createTicket(data);
     if (ticket) {
       // Navigate to success page instead
-      navigate('/support-ticket/success')
+      navigate("/support-ticket/success");
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
@@ -62,7 +58,7 @@ const PublicCreateTicketPage: React.FC = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default PublicCreateTicketPage
+export default PublicCreateTicketPage;

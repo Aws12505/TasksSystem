@@ -6,6 +6,7 @@ use App\Enums\TicketStatus;
 use App\Enums\TicketType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Ticket extends BaseModel
 {
@@ -39,6 +40,11 @@ class Ticket extends BaseModel
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(Attachment::class);
     }
 
     // Check if ticket is assigned (has an assignee)

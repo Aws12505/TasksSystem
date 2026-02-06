@@ -19,7 +19,16 @@ import { usePermissions } from '@/hooks/usePermissions'
 import TicketStatusBadge from '../components/TicketStatusBadge'
 import TicketTypeBadge from '../components/TicketTypeBadge'
 import TicketPriorityBadge from '../components/TicketPriorityBadge'
-import { Edit, ArrowLeft, Ticket as TicketIcon, Calendar, User, UserCheck, UserX, CheckCircle } from 'lucide-react'
+import { Edit, ArrowLeft, Ticket as TicketIcon, Calendar, User, UserCheck, UserX, CheckCircle, FileIcon, Download, Paperclip } from 'lucide-react'
+
+// Helper function to format file size
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
+};
 
 const TicketDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -203,7 +212,7 @@ const TicketDetailPage: React.FC = () => {
         {/* Content Grid (2/1 split) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: Details */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle className="text-foreground">Ticket Details</CardTitle>
@@ -236,6 +245,44 @@ const TicketDetailPage: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Attachments Card */}
+            {ticket.attachments && ticket.attachments.length > 0 && (
+              <Card className="bg-card border-border">
+                <CardHeader>
+                  <CardTitle className="text-foreground flex items-center gap-2">
+                    <Paperclip className="w-4 h-4" />
+                    Attachments ({ticket.attachments.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {ticket.attachments.map((attachment) => (
+                      <a
+                        key={attachment.id}
+                        href={attachment.file_path}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors group"
+                      >
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
+                          <FileIcon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate group-hover:text-primary">
+                              {attachment.file_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(attachment.file_size)}
+                            </p>
+                          </div>
+                        </div>
+                        <Download className="h-4 w-4 text-muted-foreground group-hover:text-primary flex-shrink-0 ml-2" />
+                      </a>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Right: People & Timeline & Actions */}

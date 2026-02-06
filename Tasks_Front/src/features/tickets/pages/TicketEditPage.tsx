@@ -9,6 +9,7 @@ import { useTicketsStore } from '../stores/ticketsStore'
 import TicketForm from '../components/TicketForm'
 import { ArrowLeft, Ticket } from 'lucide-react'
 import { useAuthStore } from '@/features/auth/stores/authStore'
+import type { UpdateTicketRequest } from '../../../types/Ticket'
 
 const TicketEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -18,7 +19,7 @@ const TicketEditPage: React.FC = () => {
   const { getTypeOptions } = useTicketsStore()
   const { isAuthenticated } = useAuthStore()
 
-  const handleUpdateTicket = async (data: any) => {
+  const handleUpdateTicket = async (data: UpdateTicketRequest) => {
     if (!ticket) return
     const updatedTicket = await updateTicket(ticket.id, data)
     if (updatedTicket) {

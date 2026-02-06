@@ -1,9 +1,17 @@
 // types/Ticket.ts
-import type { User } from './User';
-import type { Priority } from './Task';
+import type { User } from "./User";
+import type { Priority } from "./Task";
 
-export type TicketStatus = 'open' | 'in_progress' | 'resolved';
-export type TicketType = 'quick_fix' | 'bug_investigation' | 'user_support';
+export type TicketStatus = "open" | "in_progress" | "resolved";
+export type TicketType = "quick_fix" | "bug_investigation" | "user_support";
+
+export interface Attachment {
+  id: number;
+  file_name: string;
+  file_path: string;
+  file_type: string;
+  file_size: number;
+}
 
 export interface Ticket {
   id: number;
@@ -26,6 +34,7 @@ export interface Ticket {
   is_assigned: boolean;
   is_available: boolean;
   is_completed: boolean;
+  attachments: Attachment[];
 }
 
 export interface CreateTicketRequest {
@@ -37,6 +46,8 @@ export interface CreateTicketRequest {
 
   // ⬇️ added: for guests
   requester_name?: string;
+
+  attachments?: File[];
 }
 
 export interface UpdateTicketRequest {
@@ -49,6 +60,8 @@ export interface UpdateTicketRequest {
 
   // ⬇️ added: allow editing external name
   requester_name?: string;
+
+  attachments?: File[];
 }
 
 export interface UpdateTicketStatusRequest {

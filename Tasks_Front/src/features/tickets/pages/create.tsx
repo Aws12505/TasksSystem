@@ -1,16 +1,16 @@
 // pages/CreateTicketPage.tsx
-import React from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useTicketsStore } from '../stores/ticketsStore'
-import TicketForm from '../components/TicketForm'
-import { ArrowLeft, Ticket as TicketIcon } from 'lucide-react'
-import { useAuthStore } from '@/features/auth/stores/authStore'
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTicketsStore } from "../stores/ticketsStore";
+import TicketForm from "../components/TicketForm";
+import { ArrowLeft, Ticket as TicketIcon } from "lucide-react";
+import { useAuthStore } from "@/features/auth/stores/authStore";
 
 const CreateTicketPage: React.FC = () => {
-  const navigate = useNavigate()
-  const { isAuthenticated } = useAuthStore()
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
 
   const {
     availableUsers,
@@ -18,16 +18,16 @@ const CreateTicketPage: React.FC = () => {
     createTicket,
     fetchAvailableUsers,
     getTypeOptions,
-  } = useTicketsStore()
+  } = useTicketsStore();
 
   React.useEffect(() => {
-    fetchAvailableUsers()
-  }, [fetchAvailableUsers])
+    fetchAvailableUsers();
+  }, [fetchAvailableUsers]);
 
   const handleCreateTicket = async (data: any) => {
-    const ticket = await createTicket(data)
-    if (ticket) navigate(`/tickets/${ticket.id}`)
-  }
+    const ticket = await createTicket(data);
+    if (ticket) navigate(`/tickets/${ticket.id}`);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -38,8 +38,12 @@ const CreateTicketPage: React.FC = () => {
               <TicketIcon className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground font-sans">Create Ticket</h1>
-              <p className="text-muted-foreground">Submit a new support ticket</p>
+              <h1 className="text-3xl font-bold text-foreground font-sans">
+                Create Ticket
+              </h1>
+              <p className="text-muted-foreground">
+                Submit a new support ticket
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -56,7 +60,9 @@ const CreateTicketPage: React.FC = () => {
         <div className="max-w-2xl">
           <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-foreground">Ticket Information</CardTitle>
+              <CardTitle className="text-foreground">
+                Ticket Information
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -83,7 +89,7 @@ const CreateTicketPage: React.FC = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default CreateTicketPage
+export default CreateTicketPage;

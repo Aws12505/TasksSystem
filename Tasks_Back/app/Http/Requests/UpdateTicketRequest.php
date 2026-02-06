@@ -26,6 +26,8 @@ class UpdateTicketRequest extends FormRequest
 
             // Do NOT accept requester_id changes from client
             'requester_name' => 'sometimes|nullable|string|max:255',
+
+            'attachments.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx,csv,mp4,avi,xlsx,xls|max:5120',  // 5MB max
         ];
     }
 }

@@ -1,19 +1,25 @@
 // services/ticketService.ts
-import { apiClient } from './api';
-import type { 
-  Ticket, 
-  CreateTicketRequest, 
+import { apiClient } from "./api";
+import type {
+  Ticket,
+  CreateTicketRequest,
   UpdateTicketRequest,
   UpdateTicketStatusRequest,
   TicketStatusOption,
-  TicketTypeOption
-} from '../types/Ticket';
-import type { ApiResponse, PaginatedApiResponse } from '../types/ApiResponse';
+  TicketTypeOption,
+} from "../types/Ticket";
+import type { ApiResponse, PaginatedApiResponse } from "../types/ApiResponse";
 
 export class TicketService {
   // Get all tickets
-  async getTickets(page = 1, perPage = 15): Promise<PaginatedApiResponse<Ticket>> {
-    return apiClient.getPaginated<Ticket>('/tickets', { page, per_page: perPage });
+  async getTickets(
+    page = 1,
+    perPage = 15,
+  ): Promise<PaginatedApiResponse<Ticket>> {
+    return apiClient.getPaginated<Ticket>("/tickets", {
+      page,
+      per_page: perPage,
+    });
   }
 
   // Get ticket by ID
@@ -23,42 +29,119 @@ export class TicketService {
 
   // Create new ticket
   async createTicket(data: CreateTicketRequest): Promise<ApiResponse<Ticket>> {
-    return apiClient.post<Ticket>('/tickets', data);
+    const formData = new FormData();
+    formData.append("title", data.title);
+    formData.append("description", data.description);
+    formData.append("type", data.type);
+    formData.append("priority", data.priority);
+
+    if (data.assigned_to) {
+      formData.append("assigned_to", data.assigned_to.toString());
+    }
+
+    if (data.requester_name) {
+      formData.append("requester_name", data.requester_name);
+    }
+
+    // Append files to the form data
+    if (data.attachments) {
+      data.attachments.forEach((attachment) => {
+        formData.append("attachments[]", attachment);
+      });
+    }
+
+    return apiClient.postMultipart<Ticket>("/tickets", formData);
   }
 
-  // Update ticket
-  async updateTicket(id: number, data: UpdateTicketRequest): Promise<ApiResponse<Ticket>> {
-    return apiClient.put<Ticket>(`/tickets/${id}`, data);
-  }
+  async updateTicket(
+    id: number,
+    data: UpdateTicketRequest,
+  ): Promise<ApiResponse<Ticket>> {
+    const formData = new FormData();
+    formData.append("title", data.title ?? "");
+    formData.append("description", data.description ?? "");
+    formData.append("type", data.type ?? "");
+    formData.append("priority", data.priority ?? "");
 
+    if (data.assigned_to) {
+      formData.append("assigned_to", data.assigned_to.toString());
+    }
+
+    if (data.requester_name) {
+      formData.append("requester_name", data.requester_name);
+    }
+
+    // Append files to the form data
+    if (data.attachments) {
+      data.attachments.forEach((attachment) => {
+        formData.append("attachments[]", attachment);
+      });
+    }
+
+    return apiClient.postMultipart<Ticket>(`/tickets/${id}`, formData);
+  }
   // Delete ticket
   async deleteTicket(id: number): Promise<ApiResponse<null>> {
     return apiClient.delete<null>(`/tickets/${id}`);
   }
 
   // Get available tickets (unassigned and open)
-  async getAvailableTickets(page = 1, perPage = 15): Promise<PaginatedApiResponse<Ticket>> {
-    return apiClient.getPaginated<Ticket>('/tickets/available', { page, per_page: perPage });
+  async getAvailableTickets(
+    page = 1,
+    perPage = 15,
+  ): Promise<PaginatedApiResponse<Ticket>> {
+    return apiClient.getPaginated<Ticket>("/tickets/available", {
+      page,
+      per_page: perPage,
+    });
   }
 
   // Get tickets by requester
-  async getTicketsByRequester(userId: number, page = 1, perPage = 15): Promise<PaginatedApiResponse<Ticket>> {
-    return apiClient.getPaginated<Ticket>(`/users/${userId}/tickets/requested`, { page, per_page: perPage });
+  async getTicketsByRequester(
+    userId: number,
+    page = 1,
+    perPage = 15,
+  ): Promise<PaginatedApiResponse<Ticket>> {
+    return apiClient.getPaginated<Ticket>(
+      `/users/${userId}/tickets/requested`,
+      { page, per_page: perPage },
+    );
   }
 
   // Get tickets assigned to user
-  async getTicketsByAssignee(userId: number, page = 1, perPage = 15): Promise<PaginatedApiResponse<Ticket>> {
-    return apiClient.getPaginated<Ticket>(`/users/${userId}/tickets/assigned`, { page, per_page: perPage });
+  async getTicketsByAssignee(
+    userId: number,
+    page = 1,
+    perPage = 15,
+  ): Promise<PaginatedApiResponse<Ticket>> {
+    return apiClient.getPaginated<Ticket>(`/users/${userId}/tickets/assigned`, {
+      page,
+      per_page: perPage,
+    });
   }
 
   // Get tickets by status
-  async getTicketsByStatus(status: string, page = 1, perPage = 15): Promise<PaginatedApiResponse<Ticket>> {
-    return apiClient.getPaginated<Ticket>(`/tickets/status/${status}`, { page, per_page: perPage });
+  async getTicketsByStatus(
+    status: string,
+    page = 1,
+    perPage = 15,
+  ): Promise<PaginatedApiResponse<Ticket>> {
+    return apiClient.getPaginated<Ticket>(`/tickets/status/${status}`, {
+      page,
+      per_page: perPage,
+    });
   }
 
   // Get tickets by type
-  async getTicketsByType(type: string, page = 1, perPage = 15): Promise<PaginatedApiResponse<Ticket>> {
-    return apiClient.getPaginated<Ticket>(`/tickets/type/${type}`, { page, per_page: perPage });
+  async getTicketsByType(
+    type: string,
+    page = 1,
+    perPage = 15,
+  ): Promise<PaginatedApiResponse<Ticket>> {
+    return apiClient.getPaginated<Ticket>(`/tickets/type/${type}`, {
+      page,
+      per_page: perPage,
+    });
   }
 
   // Claim ticket
@@ -82,24 +165,35 @@ export class TicketService {
   }
 
   // Update ticket status
-  async updateTicketStatus(id: number, data: UpdateTicketStatusRequest): Promise<ApiResponse<Ticket>> {
+  async updateTicketStatus(
+    id: number,
+    data: UpdateTicketStatusRequest,
+  ): Promise<ApiResponse<Ticket>> {
     return apiClient.post<Ticket>(`/tickets/${id}/status`, data);
   }
 
   // Helper methods for options
   static getTicketStatusOptions(): TicketStatusOption[] {
     return [
-      { value: 'open', label: 'Open', color: 'red' },
-      { value: 'in_progress', label: 'In Progress', color: 'yellow' },
-      { value: 'resolved', label: 'Resolved', color: 'green' },
+      { value: "open", label: "Open", color: "red" },
+      { value: "in_progress", label: "In Progress", color: "yellow" },
+      { value: "resolved", label: "Resolved", color: "green" },
     ];
   }
 
   static getTicketTypeOptions(): TicketTypeOption[] {
     return [
-      { value: 'quick_fix', label: 'Quick Fix', estimatedTime: '1-2 hours' },
-      { value: 'bug_investigation', label: 'Bug Investigation', estimatedTime: '4-8 hours' },
-      { value: 'user_support', label: 'User Support', estimatedTime: '30 minutes - 2 hours' },
+      { value: "quick_fix", label: "Quick Fix", estimatedTime: "1-2 hours" },
+      {
+        value: "bug_investigation",
+        label: "Bug Investigation",
+        estimatedTime: "4-8 hours",
+      },
+      {
+        value: "user_support",
+        label: "User Support",
+        estimatedTime: "30 minutes - 2 hours",
+      },
     ];
   }
 }

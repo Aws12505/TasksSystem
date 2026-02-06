@@ -33,7 +33,8 @@ class StoreTicketRequest extends FormRequest
                 Rule::requiredIf(fn() => !Auth::check()),
             ],
 
-            'attachments.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx,csv,mp4,avi,xlsx,xls|max:5120',  // 5MB max
+            'attachments'   => 'nullable|array',
+            'attachments.*' => 'file|mimes:jpg,jpeg,png,pdf,doc,docx,csv,mp4,avi,xlsx,xls|max:5120', // 5MB       
         ];
     }
 }

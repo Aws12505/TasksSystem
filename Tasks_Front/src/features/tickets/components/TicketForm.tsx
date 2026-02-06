@@ -650,9 +650,11 @@ const EditTicketForm: React.FC<{
       status: data.status,
       assigned_to: data.assigned_to,
       requester_name: data.requester_name,
-      // Always send attachments (new ones) even if no edits applied
+
       attachments: attachments.length > 0 ? attachments : undefined,
+      keep_attachments: existingAttachments.map((a) => a.id),
     };
+
     await onSubmit(submitData);
   };
 

@@ -24,10 +24,16 @@ class UpdateTicketRequest extends FormRequest
             'status'       => ['sometimes', 'required', new Enum(TicketStatus::class)],
             'assigned_to'  => 'nullable|exists:users,id',
 
-            // Do NOT accept requester_id changes from client
+            // External requester name (editable only for guest tickets)
             'requester_name' => 'sometimes|nullable|string|max:255',
 
-            'attachments.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx,csv,mp4,avi,xlsx,xls|max:5120',  // 5MB max
+            // ✅ Existing attachments to KEEP
+            'keep_attachments'     => 'sometimes|array',
+            'keep_attachments.*'   => 'integer|exists:attachments,id',
+
+            // ✅ New attachments to upload
+            'attachments'   => 'nullable|array',
+            'attachments.*' => 'file|mimes:jpg,jpeg,png,pdf,doc,docx,csv,mp4,avi,xlsx,xls|max:5120', // 5MB
         ];
     }
 }

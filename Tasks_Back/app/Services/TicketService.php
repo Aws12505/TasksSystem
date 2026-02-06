@@ -47,18 +47,25 @@ class TicketService
     public function updateTicket(int $id, array $data): ?Ticket
     {
         $ticket = Ticket::find($id);
-
         if (!$ticket) {
             return null;
         }
 
-        // Handle the update of the ticket details first
+        // Update ticket fields
         $ticket->update($data);
 
-        // Delete all existing attachments
-        $this->deleteAllAttachments($ticket);
+        // Remove attachments NOT in keep list
+        if (isset($data['keep_attachments'])) {
+            $ticket->attachments()
+                ->whereNotIn('id', $data['keep_attachments'])
+                ->get()
+                ->each(function ($attachment) {
+                    Storage::disk('public')->delete($attachment->file_path);
+                    $attachment->delete();
+                });
+        }
 
-        // Handle file uploads on update (i.e., add new attachments)
+        // Upload new attachments
         if (isset($data['attachments'])) {
             foreach ($data['attachments'] as $file) {
                 $this->uploadAttachment($ticket, $file);

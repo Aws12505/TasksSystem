@@ -1,9 +1,9 @@
 // pages/TicketDetailPage.tsx
-import React from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import React from "react";
+import { useParams, Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,13 +13,25 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { useTicket } from '../hooks/useTicket'
-import { usePermissions } from '@/hooks/usePermissions'
-import TicketStatusBadge from '../components/TicketStatusBadge'
-import TicketTypeBadge from '../components/TicketTypeBadge'
-import TicketPriorityBadge from '../components/TicketPriorityBadge'
-import { Edit, ArrowLeft, Ticket as TicketIcon, Calendar, User, UserCheck, UserX, CheckCircle, FileIcon, Download, Paperclip } from 'lucide-react'
+} from "@/components/ui/alert-dialog";
+import { useTicket } from "../hooks/useTicket";
+import { usePermissions } from "@/hooks/usePermissions";
+import TicketStatusBadge from "../components/TicketStatusBadge";
+import TicketTypeBadge from "../components/TicketTypeBadge";
+import TicketPriorityBadge from "../components/TicketPriorityBadge";
+import {
+  Edit,
+  ArrowLeft,
+  Ticket as TicketIcon,
+  Calendar,
+  User,
+  UserCheck,
+  UserX,
+  CheckCircle,
+  FileIcon,
+  Download,
+  Paperclip,
+} from "lucide-react";
 
 // Helper function to format file size
 const formatFileSize = (bytes: number): string => {
@@ -27,11 +39,11 @@ const formatFileSize = (bytes: number): string => {
   const k = 1024;
   const sizes = ["Bytes", "KB", "MB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
 };
 
 const TicketDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>()
+  const { id } = useParams<{ id: string }>();
   const {
     ticket,
     isLoading,
@@ -40,40 +52,41 @@ const TicketDetailPage: React.FC = () => {
     completeTicket,
     unassignTicket,
     updateStatus,
-  } = useTicket(id!)
-  const { hasPermission } = usePermissions()
+  } = useTicket(id!);
+  const { hasPermission } = usePermissions();
 
   // 'complete' or 'unassign' or null; controls the alert dialog
-  const [pendingAction, setPendingAction] = React.useState<null | 'complete' | 'unassign'>(null)
+  const [pendingAction, setPendingAction] = React.useState<
+    null | "complete" | "unassign"
+  >(null);
 
   const handleClaim = async () => {
-    await claimTicket()
-  }
+    await claimTicket();
+  };
 
   // Open dialogs instead of window.confirm
   const handleComplete = async () => {
-    setPendingAction('complete')
-  }
+    setPendingAction("complete");
+  };
 
   const handleUnassign = async () => {
-    setPendingAction('unassign')
-  }
+    setPendingAction("unassign");
+  };
 
   const handleStatusUpdate = async (status: string) => {
-    await updateStatus(status)
-  }
+    await updateStatus(status);
+  };
 
   // Confirms whichever action is pending, then closes the dialog
   const confirmPendingAction = async () => {
-
-    if (pendingAction === 'complete') {
-      await completeTicket()
-    } else if (pendingAction === 'unassign') {
-      await unassignTicket()
+    if (pendingAction === "complete") {
+      await completeTicket();
+    } else if (pendingAction === "unassign") {
+      await unassignTicket();
     }
 
-    setPendingAction(null)
-  }
+    setPendingAction(null);
+  };
 
   // Loading (keep page shell + header cadence)
   if (isLoading) {
@@ -122,7 +135,7 @@ const TicketDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // Error (carded inside same shell)
@@ -132,29 +145,39 @@ const TicketDetailPage: React.FC = () => {
         <div className="flex-1 space-y-6 p-4 md:p-6 max-w-full">
           <Card className="bg-card border-border">
             <CardContent className="p-8 text-center">
-              <p className="text-destructive">{error || 'Ticket not found'}</p>
+              <p className="text-destructive">{error || "Ticket not found"}</p>
             </CardContent>
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   // Dynamic copy for the dialog
   const dialogTitle =
-    pendingAction === 'complete' ? 'Mark ticket as resolved' :
-    pendingAction === 'unassign' ? 'Unassign ticket' :
-    ''
+    pendingAction === "complete"
+      ? "Mark ticket as resolved"
+      : pendingAction === "unassign"
+        ? "Unassign ticket"
+        : "";
   const dialogDescription =
-    pendingAction === 'complete'
-      ? 'Are you sure you want to mark this ticket as resolved? This action may notify the requester.'
-      : pendingAction === 'unassign'
-      ? 'Are you sure you want to unassign this ticket? It will become available for others to claim.'
-      : ''
-  const confirmLabel = pendingAction === 'complete' ? 'Mark Resolved' : 'Unassign'
+    pendingAction === "complete"
+      ? "Are you sure you want to mark this ticket as resolved? This action may notify the requester."
+      : pendingAction === "unassign"
+        ? "Are you sure you want to unassign this ticket? It will become available for others to claim."
+        : "";
+  const confirmLabel =
+    pendingAction === "complete" ? "Mark Resolved" : "Unassign";
 
-  const requesterDisplayName = ticket.requester?.name || ticket.requester_name || 'Unknown Requester'
-  const requesterInitial = (ticket.requester?.name || ticket.requester_name || 'U').charAt(0).toUpperCase()
+  const requesterDisplayName =
+    ticket.requester?.name || ticket.requester_name || "Unknown Requester";
+  const requesterInitial = (
+    ticket.requester?.name ||
+    ticket.requester_name ||
+    "U"
+  )
+    .charAt(0)
+    .toUpperCase();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -165,7 +188,9 @@ const TicketDetailPage: React.FC = () => {
               <TicketIcon className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground font-sans">{ticket.title}</h1>
+              <h1 className="text-3xl font-bold text-foreground font-sans">
+                {ticket.title}
+              </h1>
               <div className="flex items-center gap-2">
                 <TicketStatusBadge status={ticket.status} />
                 <TicketTypeBadge type={ticket.type} showEstimate />
@@ -180,20 +205,24 @@ const TicketDetailPage: React.FC = () => {
                 Claim Ticket
               </Button>
             )}
-            {ticket.is_assigned && ticket.status === 'in_progress' && (
+            {ticket.is_assigned && ticket.status === "in_progress" && (
               <Button variant="outline" size="sm" onClick={handleComplete}>
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Mark Resolved
               </Button>
             )}
-            {ticket.is_assigned && ticket.status !== 'resolved' && (
+            {ticket.is_assigned && ticket.status !== "resolved" && (
               <Button variant="outline" size="sm" onClick={handleUnassign}>
                 <UserX className="mr-2 h-4 w-4" />
                 Unassign
               </Button>
             )}
-            {hasPermission('edit tickets') && (
-              <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            {hasPermission("edit tickets") && (
+              <Button
+                asChild
+                size="sm"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
                 <Link to={`/tickets/${ticket.id}/edit`}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
@@ -215,7 +244,9 @@ const TicketDetailPage: React.FC = () => {
           <div className="lg:col-span-2 space-y-6">
             <Card className="bg-card border-border">
               <CardHeader>
-                <CardTitle className="text-foreground">Ticket Details</CardTitle>
+                <CardTitle className="text-foreground">
+                  Ticket Details
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -236,7 +267,9 @@ const TicketDetailPage: React.FC = () => {
 
                 {ticket.is_completed && ticket.completed_at && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Completed At</p>
+                    <p className="text-sm text-muted-foreground">
+                      Completed At
+                    </p>
                     <p className="text-foreground flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
                       {new Date(ticket.completed_at).toLocaleString()}
@@ -264,6 +297,7 @@ const TicketDetailPage: React.FC = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors group"
+                        download
                       >
                         <div className="flex items-center space-x-3 flex-1 min-w-0">
                           <FileIcon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
@@ -298,13 +332,14 @@ const TicketDetailPage: React.FC = () => {
               <CardContent>
                 <div className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
-                    {typeof ticket.requester?.avatar_url === 'string' && ticket.requester?.avatar_url.trim() !== '' && (
-                      <AvatarImage
-                        src={ticket.requester.avatar_url}
-                        alt={ticket.requester.name || 'User avatar'}
-                        className="object-cover"
-                      />
-                    )}
+                    {typeof ticket.requester?.avatar_url === "string" &&
+                      ticket.requester?.avatar_url.trim() !== "" && (
+                        <AvatarImage
+                          src={ticket.requester.avatar_url}
+                          alt={ticket.requester.name || "User avatar"}
+                          className="object-cover"
+                        />
+                      )}
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {requesterInitial}
                     </AvatarFallback>
@@ -314,7 +349,7 @@ const TicketDetailPage: React.FC = () => {
                       {requesterDisplayName}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {ticket.requester?.email || ''}
+                      {ticket.requester?.email || ""}
                     </p>
                   </div>
                 </div>
@@ -333,20 +368,25 @@ const TicketDetailPage: React.FC = () => {
                 {ticket.assignee ? (
                   <div className="flex items-center gap-3">
                     <Avatar className="w-10 h-10">
-                      {typeof ticket.assignee.avatar_url === 'string' && ticket.assignee.avatar_url.trim() !== '' && (
-                        <AvatarImage
-                          src={ticket.assignee.avatar_url}
-                          alt={ticket.assignee.name || 'User avatar'}
-                          className="object-cover"
-                        />
-                      )}
+                      {typeof ticket.assignee.avatar_url === "string" &&
+                        ticket.assignee.avatar_url.trim() !== "" && (
+                          <AvatarImage
+                            src={ticket.assignee.avatar_url}
+                            alt={ticket.assignee.name || "User avatar"}
+                            className="object-cover"
+                          />
+                        )}
                       <AvatarFallback className="bg-chart-2 text-white">
-                        {ticket.assignee.name?.charAt(0).toUpperCase() || 'A'}
+                        {ticket.assignee.name?.charAt(0).toUpperCase() || "A"}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium text-foreground">{ticket.assignee.name}</p>
-                      <p className="text-sm text-muted-foreground">{ticket.assignee.email}</p>
+                      <p className="font-medium text-foreground">
+                        {ticket.assignee.name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {ticket.assignee.email}
+                      </p>
                     </div>
                   </div>
                 ) : (
@@ -381,40 +421,40 @@ const TicketDetailPage: React.FC = () => {
             </Card>
 
             {/* Quick Actions */}
-              <Card className="bg-card border-border">
-                <CardHeader>
-                  <CardTitle className="text-foreground">Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleStatusUpdate('open')}
-                    disabled={ticket.status === 'open'}
-                  >
-                    Mark as Open
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleStatusUpdate('in_progress')}
-                    disabled={ticket.status === 'in_progress'}
-                  >
-                    Mark In Progress
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => handleStatusUpdate('resolved')}
-                    disabled={ticket.status === 'resolved'}
-                  >
-                    Mark Resolved
-                  </Button>
-                </CardContent>
-              </Card>
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => handleStatusUpdate("open")}
+                  disabled={ticket.status === "open"}
+                >
+                  Mark as Open
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => handleStatusUpdate("in_progress")}
+                  disabled={ticket.status === "in_progress"}
+                >
+                  Mark In Progress
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => handleStatusUpdate("resolved")}
+                  disabled={ticket.status === "resolved"}
+                >
+                  Mark Resolved
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
@@ -430,12 +470,16 @@ const TicketDetailPage: React.FC = () => {
             <AlertDialogDescription>{dialogDescription}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingAction(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setPendingAction(null)}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmPendingAction}
-              className={pendingAction === 'complete'
-                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
+              className={
+                pendingAction === "complete"
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              }
             >
               {confirmLabel}
             </AlertDialogAction>
@@ -443,7 +487,7 @@ const TicketDetailPage: React.FC = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
-}
+  );
+};
 
-export default TicketDetailPage
+export default TicketDetailPage;

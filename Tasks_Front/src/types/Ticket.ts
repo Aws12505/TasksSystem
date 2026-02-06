@@ -62,6 +62,7 @@ export interface UpdateTicketRequest {
   requester_name?: string;
 
   attachments?: File[];
+  keep_attachments?: number[]; // 👈 existing attachment IDs to keep
 }
 
 export interface UpdateTicketStatusRequest {

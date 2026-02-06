@@ -293,11 +293,10 @@ const TicketDetailPage: React.FC = () => {
                     {ticket.attachments.map((attachment) => (
                       <a
                         key={attachment.id}
-                        href={attachment.file_path}
+                        href={attachment.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors group"
-                        download
                       >
                         <div className="flex items-center space-x-3 flex-1 min-w-0">
                           <FileIcon className="h-5 w-5 text-muted-foreground flex-shrink-0" />

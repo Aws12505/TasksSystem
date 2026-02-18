@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Collection;
 
 class WorkspaceService
 {
+    public function getAllWorkspaces(): Collection
+    {
+        return Workspace::latest()->get();
+    }
     public function getAll(): Collection
     {
         return Auth::user()
@@ -44,4 +48,5 @@ class WorkspaceService
     {
         $workspace->delete();
     }
+    
 }

@@ -36,6 +36,27 @@ class WorkspaceController extends Controller
             ], 500);
         }
     }
+    public function all(): JsonResponse
+    {
+        try {
+
+            $workspaces = $this->workspaceService->getAllWorkspaces();
+
+            return response()->json([
+                'success' => true,
+                'data' => $workspaces
+            ]);
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch workspaces'
+            ], 500);
+        }
+    }
+
+    
 
     public function store(WorkspaceRequest $request): JsonResponse
     {

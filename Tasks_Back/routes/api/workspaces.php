@@ -4,5 +4,13 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WorkspaceController;
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::apiResource('workspaces', WorkspaceController::class);
+
+     //  (view only)
+    Route::get('workspaces/all', [WorkspaceController::class, 'all']);
+
+    //  only owner 
+    Route::get('workspaces', [WorkspaceController::class, 'index']);
+
+    Route::apiResource('workspaces', WorkspaceController::class)
+        ->except(['index']);
 });

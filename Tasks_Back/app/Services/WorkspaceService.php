@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -47,6 +48,62 @@ class WorkspaceService
     public function delete(Workspace $workspace): void
     {
         $workspace->delete();
+    }
+
+    public function addUser(int $workspaceId, int $userId, string $role = 'member'): void
+    {
+        try {
+            DB::transaction(function () use ($workspaceId, $userId, $role) {
+
+                $workspace = Workspace::findOrFail($workspaceId);
+                $user = User::findOrFail($userId);
+
+                $workspace->users()->syncWithoutDetaching([
+                    $user->id => ['role' => $role]
+                ]);
+            });
+
+        } catch (\Throwable $e) {
+            throw new \Exception('Failed to add user');
+        }
+    }
+
+    public function removeUser(int $workspaceId, int $userId): void
+    {
+        try {
+            $workspace = Workspace::findOrFail($workspaceId);
+
+            $workspace->users()->detach($userId);
+
+        } catch (\Throwable $e) {
+            throw new \Exception('Failed to remove user');
+        }
+    }
+
+    public function updateUserRole(int $workspaceId, int $userId, string $role): void
+    {
+        try {
+            $workspace = Workspace::findOrFail($workspaceId);
+
+            $workspace->users()->updateExistingPivot($userId, [
+                'role' => $role
+            ]);
+
+        } catch (\Throwable $e) {
+            throw new \Exception('Failed to update role');
+        }
+    }
+
+    public function getMembers(int $workspaceId)
+    {
+        try {
+            $workspace = Workspace::with('users')->findOrFail($workspaceId);
+
+            return $workspace->users;
+
+        } catch (\Throwable $e) {
+            throw new \Exception('Failed to fetch members');
+        }
     }
     
 }

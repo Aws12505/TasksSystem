@@ -7,6 +7,7 @@ use App\Services\WorkspaceService;
 use App\Http\Requests\WorkspaceRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Request;
 
 class WorkspaceController extends Controller
 {
@@ -143,6 +144,112 @@ class WorkspaceController extends Controller
             ], 403);
         }
     }
+    public function addUser(Request $request, int $workspaceId)
+    {
+        try {
+
+            $request->validate([
+                'user_id' => 'required|exists:users,id',
+                'role' => 'nullable|in:owner,member,viewer'
+            ]);
+
+            $this->ensureOwnerByWorkspaceId($workspaceId);
+
+            $this->workspaceService->addUser(
+                $workspaceId,
+                $request->user_id,
+                $request->role ?? 'member'
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User added successfully'
+            ]);
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function removeUser(int $workspaceId, int $userId)
+    {
+        try {
+
+            $this->ensureOwnerByWorkspaceId($workspaceId);
+
+            $this->workspaceService->removeUser($workspaceId, $userId);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User removed successfully'
+            ]);
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateRole(Request $request, int $workspaceId, int $userId)
+    {
+        try {
+
+            $request->validate([
+                'role' => 'required|in:owner,member,viewer'
+            ]);
+
+            $this->ensureOwnerByWorkspaceId($workspaceId);
+
+            $this->workspaceService->updateUserRole(
+                $workspaceId,
+                $userId,
+                $request->role
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Role updated successfully'
+            ]);
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function members(int $workspaceId)
+    {
+        try {
+
+            $this->ensureOwnerByWorkspaceId($workspaceId);
+
+            $members = $this->workspaceService->getMembers($workspaceId);
+
+            return response()->json([
+                'success' => true,
+                'data' => $members
+            ]);
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    
 
     /*
     |--------------------------------------------------------------------------
@@ -175,4 +282,20 @@ class WorkspaceController extends Controller
             throw new \Exception('Only owner can perform this action');
         }
     }
+    private function ensureOwnerByWorkspaceId(int $workspaceId): void
+    {
+        $workspace = Auth::user()
+            ->workspaces()
+            ->where('workspaces.id', $workspaceId)
+            ->first();
+
+        $role = $workspace?->pivot?->role;
+
+        if ($role !== 'owner') {
+            throw new \Exception('Only owner can perform this action');
+        }
+    }
+
+
+    
 }

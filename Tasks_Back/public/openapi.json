@@ -614,69 +614,6 @@
             }
           }
         }
-      },
-      "post": {
-        "summary": "Create a new todo",
-        "tags": ["Todos"],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TodoRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Todo created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Todo"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to create todo",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": { "type": "boolean" },
-                    "message": { "type": "string" }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "headers": {
-          "Authorization": {
-            "description": "Bearer token for user authentication",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "Bearer {JWT Token}"
-            }
-          },
-          "Content-Type": {
-            "description": "Content type for the request body",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "example": "application/json"
-            }
-          }
-        }
       }
     },
     "/todos/{todo}": {
@@ -867,7 +804,74 @@
           }
         }
       }
+    },
+     "/todos/": {
+       
+      "post": {
+        "summary": "Create a new todo",
+        "tags": ["Todos"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Todo created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Todo"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to create todo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "headers": {
+          "Authorization": {
+            "description": "Bearer token for user authentication",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "Bearer {JWT Token}"
+            }
+          },
+          "Content-Type": {
+            "description": "Content type for the request body",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "application/json"
+            }
+          }
+        }
+      }
     }
+    
   },
   "components": {
     "schemas": {

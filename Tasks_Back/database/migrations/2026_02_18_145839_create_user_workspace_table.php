@@ -15,10 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('workspace_id')->constrained()->cascadeOnDelete();
-            $table->enum('role', ['owner', 'member', 'viewer'])->default('member');
+            $table->enum('role', ['owner','viewer','editor']);
             $table->timestamps();
 
-            // مهم لمنع تكرار نفس العضو بنفس الـ workspace
+            // Important to prevent duplication of the same member in the same workspace
             $table->unique(['user_id', 'workspace_id']);
         });
     }

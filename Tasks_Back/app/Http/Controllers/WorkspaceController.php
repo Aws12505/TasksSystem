@@ -37,28 +37,7 @@ class WorkspaceController extends Controller
             ], 500);
         }
     }
-    public function all(): JsonResponse
-    {
-        try {
-
-            $workspaces = $this->workspaceService->getAllWorkspaces();
-
-            return response()->json([
-                'success' => true,
-                'data' => $workspaces
-            ]);
-
-        } catch (\Throwable $e) {
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch workspaces'
-            ], 500);
-        }
-    }
-
-    
-
+ 
     public function store(WorkspaceRequest $request): JsonResponse
     {
         try {
@@ -144,13 +123,14 @@ class WorkspaceController extends Controller
             ], 403);
         }
     }
+
     public function addUser(Request $request, int $workspaceId)
     {
         try {
 
             $request->validate([
                 'user_id' => 'required|exists:users,id',
-                'role' => 'nullable|in:owner,member,viewer'
+                'role' => 'nullable|in:viewer,editor'
             ]);
 
             $this->ensureOwnerByWorkspaceId($workspaceId);
@@ -158,7 +138,7 @@ class WorkspaceController extends Controller
             $this->workspaceService->addUser(
                 $workspaceId,
                 $request->user_id,
-                $request->role ?? 'member'
+                $request->role ?? 'viewer'
             );
 
             return response()->json([
@@ -202,7 +182,7 @@ class WorkspaceController extends Controller
         try {
 
             $request->validate([
-                'role' => 'required|in:owner,member,viewer'
+                'role' => 'required|in:viewer,editor'
             ]);
 
             $this->ensureOwnerByWorkspaceId($workspaceId);
@@ -278,10 +258,11 @@ class WorkspaceController extends Controller
             ?->pivot
             ?->role;
 
-        if ($role !== 'owner') {
-            throw new \Exception('Only owner can perform this action');
+          if (!in_array($role, ['owner', 'editor'])) {
+            throw new \Exception('Only owner and editor can perform this action');
         }
     }
+
     private function ensureOwnerByWorkspaceId(int $workspaceId): void
     {
         $workspace = Auth::user()
@@ -291,8 +272,8 @@ class WorkspaceController extends Controller
 
         $role = $workspace?->pivot?->role;
 
-        if ($role !== 'owner') {
-            throw new \Exception('Only owner can perform this action');
+         if (!in_array($role, ['owner', 'editor'])) {
+            throw new \Exception('Only owner and editor can perform this action');
         }
     }
 

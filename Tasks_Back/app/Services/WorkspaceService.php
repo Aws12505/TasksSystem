@@ -10,10 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 class WorkspaceService
 {
-    public function getAllWorkspaces(): Collection
-    {
-        return Workspace::latest()->get();
-    }
+   
     public function getAll(): Collection
     {
         return Auth::user()
@@ -50,7 +47,7 @@ class WorkspaceService
         $workspace->delete();
     }
 
-    public function addUser(int $workspaceId, int $userId, string $role = 'member'): void
+    public function addUser(int $workspaceId, int $userId, string $role = 'viewer'): void
     {
         try {
             DB::transaction(function () use ($workspaceId, $userId, $role) {

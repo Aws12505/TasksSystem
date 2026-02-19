@@ -11,7 +11,7 @@ class TodoService
     public function getAllByWorkspace(int $workspaceId)
     {
         return Todo::where('workspace_id', $workspaceId)
-            ->whereNull('parent_id') // فقط التودوز الرئيسية
+            ->whereNull('parent_id') // only todo main
             ->with('subtodos')
             ->latest()
             ->get();

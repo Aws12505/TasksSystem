@@ -87,6 +87,22 @@
         {
             "name": "Workspaces",
             "description": "Workspace management endpoints"
+        },
+        {
+            "name": "Work Sessions",
+            "description": "Daily work session endpoints (employee)"
+        },
+        {
+            "name": "Work Sessions Admin",
+            "description": "Admin views of work sessions"
+        },
+        {
+            "name": "Work Session Reports",
+            "description": "Aggregated work session reports and PDF export"
+        },
+        {
+            "name": "Monthly Ratings",
+            "description": "Manual monthly user ratings"
         }
     ],
     "paths": {
@@ -4136,6 +4152,1686 @@
                     "401": {"$ref": "#/components/responses/Unauthorized"},
                     "403": {"$ref": "#/components/responses/WorkspaceForbidden"},
                     "422": {"$ref": "#/components/responses/ValidationError"}
+                }
+            }
+        },
+        "/work-sessions/today": {
+            "get": {
+                "tags": [
+                    "Work Sessions"
+                ],
+                "summary": "Today's work session with carry-over candidates",
+                "operationId": "getWorkSessionToday",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkSessionTodayPayload"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    }
+                }
+            }
+        },
+        "/work-sessions/assignable-tasks": {
+            "get": {
+                "tags": [
+                    "Work Sessions"
+                ],
+                "summary": "My open project tasks available to link to items",
+                "operationId": "getWorkSessionAssignableTasks",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AssignableTask"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    }
+                }
+            }
+        },
+        "/work-sessions": {
+            "get": {
+                "tags": [
+                    "Work Sessions"
+                ],
+                "summary": "List my work sessions",
+                "operationId": "listMyWorkSessions",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "open",
+                                "confirmed"
+                            ]
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/PerPageQuery"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageQuery"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Work sessions retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/WorkSessionWithCounts"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Work sessions retrieved successfully"
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/PaginationMeta"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Work Sessions"
+                ],
+                "summary": "Start today's work session",
+                "operationId": "startWorkSession",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StartWorkSessionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Work session started",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkSession"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Work session started"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Business rule violation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/work-sessions/{workSession}": {
+            "get": {
+                "tags": [
+                    "Work Sessions"
+                ],
+                "summary": "Get one of my work sessions",
+                "operationId": "getMyWorkSession",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "workSession",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkSession"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Work Sessions"
+                ],
+                "summary": "Update the summary note",
+                "operationId": "updateWorkSessionSummary",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "workSession",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateWorkSessionSummaryRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkSession"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Business rule violation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/work-sessions/{workSession}/confirm": {
+            "post": {
+                "tags": [
+                    "Work Sessions"
+                ],
+                "summary": "Confirm (lock) the session with every item's outcome",
+                "operationId": "confirmWorkSession",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "workSession",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConfirmWorkSessionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Work session confirmed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkSession"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Work session confirmed"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Business rule violation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/work-sessions/{workSession}/items": {
+            "post": {
+                "tags": [
+                    "Work Sessions"
+                ],
+                "summary": "Add a planned item",
+                "operationId": "addWorkSessionItem",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "workSession",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreWorkSessionItemRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Item added",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkSessionItem"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Item added"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Business rule violation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/work-sessions/{workSession}/items/reorder": {
+            "put": {
+                "tags": [
+                    "Work Sessions"
+                ],
+                "summary": "Reorder items",
+                "operationId": "reorderWorkSessionItems",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "workSession",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReorderWorkSessionItemsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/WorkSessionItem"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Business rule violation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/work-sessions/{workSession}/items/{item}": {
+            "put": {
+                "tags": [
+                    "Work Sessions"
+                ],
+                "summary": "Update an item",
+                "operationId": "updateWorkSessionItem",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "workSession",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "item",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreWorkSessionItemRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkSessionItem"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Business rule violation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Work Sessions"
+                ],
+                "summary": "Delete an item",
+                "operationId": "deleteWorkSessionItem",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "workSession",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "item",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Item removed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "nullable": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Item removed"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Business rule violation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                }
+            }
+        },
+        "/work-sessions/{workSession}/items/{item}/outcome": {
+            "put": {
+                "tags": [
+                    "Work Sessions"
+                ],
+                "summary": "Set an item's outcome",
+                "operationId": "setWorkSessionItemOutcome",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "workSession",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "item",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetWorkSessionItemOutcomeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkSessionItem"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Business rule violation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/work-sessions/admin/users": {
+            "get": {
+                "tags": [
+                    "Work Sessions Admin"
+                ],
+                "summary": "All users for admin pickers",
+                "operationId": "listWorkSessionAdminUsers",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/WorkSessionUser"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                }
+            }
+        },
+        "/work-sessions/admin/sessions": {
+            "get": {
+                "tags": [
+                    "Work Sessions Admin"
+                ],
+                "summary": "List work sessions across users",
+                "operationId": "listAllWorkSessions",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "user_ids[]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "open",
+                                "confirmed"
+                            ]
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/PerPageQuery"
+                    },
+                    {
+                        "$ref": "#/components/parameters/PageQuery"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Work sessions retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/WorkSessionWithCounts"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Work sessions retrieved successfully"
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/PaginationMeta"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/work-sessions/admin/sessions/{workSession}": {
+            "get": {
+                "tags": [
+                    "Work Sessions Admin"
+                ],
+                "summary": "Get any user's work session",
+                "operationId": "getAnyWorkSession",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "workSession",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkSession"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                }
+            }
+        },
+        "/work-sessions/admin/sessions/{workSession}/reopen": {
+            "post": {
+                "tags": [
+                    "Work Sessions Admin"
+                ],
+                "summary": "Reopen a confirmed session",
+                "operationId": "reopenWorkSession",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "workSession",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Work session reopened",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkSession"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Work session reopened"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Business rule violation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                }
+            }
+        },
+        "/work-sessions/admin/reports/overview": {
+            "get": {
+                "tags": [
+                    "Work Session Reports"
+                ],
+                "summary": "Overview report for a date range",
+                "operationId": "getWorkSessionOverviewReport",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "user_ids[]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    {
+                        "name": "include_open",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkSessionOverviewReport"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/work-sessions/admin/reports/by-task": {
+            "get": {
+                "tags": [
+                    "Work Session Reports"
+                ],
+                "summary": "Per-task report for a date range",
+                "operationId": "getWorkSessionByTaskReport",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "user_ids[]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    {
+                        "name": "include_open",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "group_by",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "task",
+                                "title"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkSessionByTaskReport"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/work-sessions/admin/reports/export-pdf": {
+            "post": {
+                "tags": [
+                    "Work Session Reports"
+                ],
+                "summary": "Export monthly PDF report (zip)",
+                "operationId": "exportWorkSessionMonthlyPdf",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ExportWorkSessionMonthlyPdfRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/ZipDownloadResponse"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/work-sessions/admin/ratings": {
+            "get": {
+                "tags": [
+                    "Monthly Ratings"
+                ],
+                "summary": "List all users with their rating and stats for a month",
+                "operationId": "listMonthlyRatings",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "month",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/MonthlyRatingRow"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/work-sessions/admin/ratings/average": {
+            "post": {
+                "tags": [
+                    "Monthly Ratings"
+                ],
+                "summary": "Average ratings for selected users over a month range",
+                "operationId": "averageMonthlyRatings",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RatingAverageRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/RatingAverageResponse"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "OK"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/work-sessions/admin/ratings/{user}/{year}/{month}": {
+            "put": {
+                "tags": [
+                    "Monthly Ratings"
+                ],
+                "summary": "Create or update a user's monthly rating",
+                "operationId": "upsertMonthlyRating",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "month",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpsertMonthlyRatingRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Rating updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/UserMonthlyRating"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Rating updated"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "Rating created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/UserMonthlyRating"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Rating created"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Business rule violation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Monthly Ratings"
+                ],
+                "summary": "Delete a user's monthly rating",
+                "operationId": "deleteMonthlyRating",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "year",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "month",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Rating deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "nullable": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Rating deleted"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
                 }
             }
         }
@@ -12387,6 +14083,913 @@
                 "required": ["role"],
                 "properties": {
                     "role": {"type": "string", "enum": ["viewer", "editor"], "example": "viewer"}
+                }
+            },
+            "WorkSessionItem": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "work_session_id": {
+                        "type": "integer"
+                    },
+                    "task_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "title": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": [
+                            "low",
+                            "medium",
+                            "high",
+                            "critical"
+                        ]
+                    },
+                    "estimated_minutes": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": 1,
+                        "maximum": 1440
+                    },
+                    "sort_order": {
+                        "type": "integer"
+                    },
+                    "outcome": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "done",
+                            "partial",
+                            "not_done"
+                        ]
+                    },
+                    "outcome_note": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "completed_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "carried_from_item_id": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "task": {
+                        "type": "object",
+                        "nullable": true,
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "type": "string"
+                            },
+                            "priority": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "WorkSession": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "user_id": {
+                        "type": "integer"
+                    },
+                    "work_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-09-22"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "open",
+                            "confirmed"
+                        ]
+                    },
+                    "started_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "confirmed_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "reopened_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "reopened_by": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "summary_note": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WorkSessionItem"
+                        }
+                    },
+                    "user": {
+                        "type": "object",
+                        "nullable": true,
+                        "properties": {
+                            "id": {
+                                "type": "integer"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "avatar_url": {
+                                "type": "string",
+                                "nullable": true
+                            }
+                        }
+                    }
+                }
+            },
+            "WorkSessionWithCounts": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/WorkSession"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "items_count": {
+                                "type": "integer"
+                            },
+                            "done_count": {
+                                "type": "integer"
+                            },
+                            "partial_count": {
+                                "type": "integer"
+                            },
+                            "not_done_count": {
+                                "type": "integer"
+                            },
+                            "pending_count": {
+                                "type": "integer"
+                            },
+                            "completion_pct": {
+                                "type": "number",
+                                "format": "float",
+                                "nullable": true,
+                                "description": "(done + 0.5*partial)/items*100"
+                            }
+                        }
+                    }
+                ]
+            },
+            "WorkSessionUser": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "avatar_url": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                }
+            },
+            "AssignableTask": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "priority": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "due_date": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "project_name": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                }
+            },
+            "WorkSessionTodayPayload": {
+                "type": "object",
+                "properties": {
+                    "today": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "company_timezone": {
+                        "type": "string"
+                    },
+                    "session": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/WorkSession"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "carry_over_candidates": {
+                        "type": "array",
+                        "items": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/WorkSessionItem"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "source_work_date": {
+                                            "type": "string",
+                                            "format": "date"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "previous_open_sessions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "work_date": {
+                                    "type": "string",
+                                    "format": "date"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "StartWorkSessionRequest": {
+                "type": "object",
+                "properties": {
+                    "carry_over_item_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "maxItems": 100
+                    }
+                }
+            },
+            "StoreWorkSessionItemRequest": {
+                "type": "object",
+                "required": [
+                    "title"
+                ],
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 5000
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": [
+                            "low",
+                            "medium",
+                            "high",
+                            "critical"
+                        ]
+                    },
+                    "estimated_minutes": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": 1,
+                        "maximum": 1440
+                    },
+                    "task_id": {
+                        "type": "integer",
+                        "nullable": true
+                    }
+                }
+            },
+            "ReorderWorkSessionItemsRequest": {
+                "type": "object",
+                "required": [
+                    "item_ids"
+                ],
+                "properties": {
+                    "item_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            },
+            "SetWorkSessionItemOutcomeRequest": {
+                "type": "object",
+                "required": [
+                    "outcome"
+                ],
+                "properties": {
+                    "outcome": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "done",
+                            "partial",
+                            "not_done"
+                        ]
+                    },
+                    "outcome_note": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 2000
+                    }
+                }
+            },
+            "ConfirmWorkSessionRequest": {
+                "type": "object",
+                "required": [
+                    "items"
+                ],
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "id",
+                                "outcome"
+                            ],
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "outcome": {
+                                    "type": "string",
+                                    "enum": [
+                                        "done",
+                                        "partial",
+                                        "not_done"
+                                    ]
+                                },
+                                "outcome_note": {
+                                    "type": "string",
+                                    "nullable": true,
+                                    "maxLength": 2000
+                                }
+                            }
+                        }
+                    },
+                    "summary_note": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 5000
+                    }
+                }
+            },
+            "UpdateWorkSessionSummaryRequest": {
+                "type": "object",
+                "properties": {
+                    "summary_note": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 5000
+                    }
+                }
+            },
+            "WorkSessionOverviewReport": {
+                "type": "object",
+                "properties": {
+                    "period": {
+                        "type": "object",
+                        "properties": {
+                            "start_date": {
+                                "type": "string",
+                                "format": "date"
+                            },
+                            "end_date": {
+                                "type": "string",
+                                "format": "date"
+                            },
+                            "include_open": {
+                                "type": "boolean"
+                            }
+                        }
+                    },
+                    "totals": {
+                        "type": "object",
+                        "properties": {
+                            "users": {
+                                "type": "integer"
+                            },
+                            "sessions": {
+                                "type": "integer"
+                            },
+                            "confirmed_sessions": {
+                                "type": "integer"
+                            },
+                            "items_total": {
+                                "type": "integer"
+                            },
+                            "done": {
+                                "type": "integer"
+                            },
+                            "partial": {
+                                "type": "integer"
+                            },
+                            "not_done": {
+                                "type": "integer"
+                            },
+                            "pending": {
+                                "type": "integer"
+                            },
+                            "completion_pct": {
+                                "type": "number",
+                                "format": "float",
+                                "nullable": true
+                            },
+                            "estimated_minutes_total": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    "per_user": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "user_id": {
+                                    "type": "integer"
+                                },
+                                "user_name": {
+                                    "type": "string"
+                                },
+                                "avatar_url": {
+                                    "type": "string",
+                                    "nullable": true
+                                },
+                                "sessions_count": {
+                                    "type": "integer"
+                                },
+                                "items_total": {
+                                    "type": "integer"
+                                },
+                                "done": {
+                                    "type": "integer"
+                                },
+                                "partial": {
+                                    "type": "integer"
+                                },
+                                "not_done": {
+                                    "type": "integer"
+                                },
+                                "pending": {
+                                    "type": "integer"
+                                },
+                                "completion_pct": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "nullable": true
+                                },
+                                "estimated_minutes_total": {
+                                    "type": "integer"
+                                },
+                                "last_work_date": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "nullable": true
+                                }
+                            }
+                        }
+                    },
+                    "daily": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "date": {
+                                    "type": "string",
+                                    "format": "date"
+                                },
+                                "sessions_count": {
+                                    "type": "integer"
+                                },
+                                "items_total": {
+                                    "type": "integer"
+                                },
+                                "done": {
+                                    "type": "integer"
+                                },
+                                "partial": {
+                                    "type": "integer"
+                                },
+                                "not_done": {
+                                    "type": "integer"
+                                },
+                                "pending": {
+                                    "type": "integer"
+                                },
+                                "completion_pct": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "nullable": true
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "WorkSessionByTaskReport": {
+                "type": "object",
+                "properties": {
+                    "group_by": {
+                        "type": "string",
+                        "enum": [
+                            "task",
+                            "title"
+                        ]
+                    },
+                    "rows": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "task_id": {
+                                    "type": "integer",
+                                    "nullable": true
+                                },
+                                "task_name": {
+                                    "type": "string",
+                                    "nullable": true
+                                },
+                                "project_name": {
+                                    "type": "string",
+                                    "nullable": true
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "nullable": true
+                                },
+                                "occurrences": {
+                                    "type": "integer"
+                                },
+                                "sessions_count": {
+                                    "type": "integer"
+                                },
+                                "users": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "user_id": {
+                                                "type": "integer"
+                                            },
+                                            "user_name": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                },
+                                "done": {
+                                    "type": "integer"
+                                },
+                                "partial": {
+                                    "type": "integer"
+                                },
+                                "not_done": {
+                                    "type": "integer"
+                                },
+                                "pending": {
+                                    "type": "integer"
+                                },
+                                "completion_pct": {
+                                    "type": "number",
+                                    "nullable": true
+                                },
+                                "estimated_minutes_total": {
+                                    "type": "integer"
+                                },
+                                "first_date": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "nullable": true
+                                },
+                                "last_date": {
+                                    "type": "string",
+                                    "format": "date",
+                                    "nullable": true
+                                },
+                                "carried_over_count": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "ExportWorkSessionMonthlyPdfRequest": {
+                "type": "object",
+                "required": [
+                    "user_ids",
+                    "year",
+                    "month"
+                ],
+                "properties": {
+                    "user_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "minItems": 1,
+                        "maxItems": 100
+                    },
+                    "year": {
+                        "type": "integer",
+                        "minimum": 2020,
+                        "maximum": 2100
+                    },
+                    "month": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 12
+                    }
+                }
+            },
+            "UserMonthlyRating": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "user_id": {
+                        "type": "integer"
+                    },
+                    "year": {
+                        "type": "integer"
+                    },
+                    "month": {
+                        "type": "integer"
+                    },
+                    "score": {
+                        "type": "string",
+                        "example": "87.50",
+                        "description": "decimal(5,2) serialized as string"
+                    },
+                    "comment": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "rated_by": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "MonthlyRatingRow": {
+                "type": "object",
+                "properties": {
+                    "user": {
+                        "$ref": "#/components/schemas/WorkSessionUser"
+                    },
+                    "rating": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/UserMonthlyRating"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "stats": {
+                        "type": "object",
+                        "properties": {
+                            "sessions_count": {
+                                "type": "integer"
+                            },
+                            "items_total": {
+                                "type": "integer"
+                            },
+                            "done": {
+                                "type": "integer"
+                            },
+                            "partial": {
+                                "type": "integer"
+                            },
+                            "not_done": {
+                                "type": "integer"
+                            },
+                            "completion_pct": {
+                                "type": "number",
+                                "format": "float",
+                                "nullable": true
+                            }
+                        }
+                    }
+                }
+            },
+            "UpsertMonthlyRatingRequest": {
+                "type": "object",
+                "required": [
+                    "score"
+                ],
+                "properties": {
+                    "score": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                    },
+                    "comment": {
+                        "type": "string",
+                        "nullable": true,
+                        "maxLength": 2000
+                    }
+                }
+            },
+            "RatingAverageRequest": {
+                "type": "object",
+                "required": [
+                    "user_ids",
+                    "from",
+                    "to"
+                ],
+                "properties": {
+                    "user_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "minItems": 1
+                    },
+                    "from": {
+                        "type": "object",
+                        "required": [
+                            "year",
+                            "month"
+                        ],
+                        "properties": {
+                            "year": {
+                                "type": "integer"
+                            },
+                            "month": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 12
+                            }
+                        }
+                    },
+                    "to": {
+                        "type": "object",
+                        "required": [
+                            "year",
+                            "month"
+                        ],
+                        "properties": {
+                            "year": {
+                                "type": "integer"
+                            },
+                            "month": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 12
+                            }
+                        }
+                    }
+                }
+            },
+            "RatingAverageResponse": {
+                "type": "object",
+                "properties": {
+                    "range": {
+                        "type": "object",
+                        "properties": {
+                            "from": {
+                                "type": "string",
+                                "example": "2026-01"
+                            },
+                            "to": {
+                                "type": "string",
+                                "example": "2026-09"
+                            },
+                            "months_in_range": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    "per_user": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "user_id": {
+                                    "type": "integer"
+                                },
+                                "user_name": {
+                                    "type": "string"
+                                },
+                                "avatar_url": {
+                                    "type": "string",
+                                    "nullable": true
+                                },
+                                "months_rated": {
+                                    "type": "integer"
+                                },
+                                "average_score": {
+                                    "type": "number",
+                                    "nullable": true
+                                },
+                                "ratings": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "year": {
+                                                "type": "integer"
+                                            },
+                                            "month": {
+                                                "type": "integer"
+                                            },
+                                            "score": {
+                                                "type": "number"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "overall_average": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "users_with_ratings": {
+                        "type": "integer"
+                    }
                 }
             }
         }

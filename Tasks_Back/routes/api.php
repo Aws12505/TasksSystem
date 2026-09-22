@@ -29,5 +29,6 @@ Route::prefix('')->group(function () {
     require __DIR__ . '/api/final-ratings.php';
     require __DIR__ . '/api/workspaces.php'; 
     require __DIR__ . '/api/todos.php';
+    require __DIR__ . '/api/work-sessions.php';
 
 });

@@ -55,6 +55,11 @@ class WorkSession extends Model
                 return;
             }
 
+            // The admin role is privileged everywhere else in the app (see Task/Project)
+            if ($user->hasRole('admin', 'sanctum')) {
+                return;
+            }
+
             if (! $user->can('view all work sessions')) {
                 $query->where('work_sessions.user_id', $user->id);
             }

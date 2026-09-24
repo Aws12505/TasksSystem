@@ -34,7 +34,10 @@ New permissions (guard `sanctum`), all granted to the `admin` role by the seeder
 
 `view all work sessions`, `manage work sessions`, `rate work sessions`, `view work session reports`, `export work session reports`
 
-Employees need **no** new permission for their own sessions (auth only, like clocking/workspaces).
+Access rules:
+- **Employees** need no new permission for their own sessions (auth only, like clocking/workspaces).
+- **The `admin` role always passes** the admin routes, even before the seeder runs — the routes use `role_or_permission:admin|<permission>`, matching how the sidebar and the rest of the app treat `admin`.
+- **Any other role** (e.g. `Developer`, a future `manager`) needs the explicit permissions, so the seeder is still required — see §7.
 
 ## 3. Environment variables to set/confirm
 
@@ -75,6 +78,8 @@ git fetch origin && git checkout feature/work-sessions && git pull   # or merge/
 docker compose up -d --build backend reverb queue
 
 # 3. Run migrations (3 new tables) and seed the permissions
+#    Do NOT skip the seeder: without it the five permissions do not exist, so
+#    every non-admin role is locked out of the admin pages.
 docker compose exec backend php artisan migrate --force
 docker compose exec backend php artisan db:seed --class=WorkSessionPermissionSeeder --force
 docker compose exec backend php artisan permission:cache-reset
@@ -174,3 +179,15 @@ The three touched files (`routes/api.php`, `routes/channels.php`, `public/openap
 - Reports count **confirmed** sessions unless `include_open=1` is passed; the monthly ratings page uses confirmed-only stats.
 - PDF export builds files under `storage/app/temp/` and deletes them after the download; if the process is killed mid-export a `work-sessions-*` folder may remain and can be deleted safely.
 - Open sessions from previous days are never auto-closed; users confirm them from **History**, admins can filter `status=open`.
+
+## 10. Known first-deploy mistakes (seen on tasks.rdexperts.tech)
+
+A live check of the first deployment found two things that were missed. Both are environment steps, not code:
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Admin pages returned 403; the sidebar showed them but they failed | `WorkSessionPermissionSeeder` was never run — the 5 permissions did not exist in the database | run the seeder (§4 step 3), then `permission:cache-reset` |
+| Browser console looping `WebSocket connection to 'wss://localhost/app/...' failed`; no live updates | The **frontend** was built without `VITE_REVERB_*`, so it defaulted to `localhost` | rebuild the frontend with the variables set (see the frontend guide §3) and expose Reverb per §6 |
+
+The code now tolerates the first one for the `admin` role, but run the seeder anyway so other roles work.
+
